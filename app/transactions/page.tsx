@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, ArrowUpCircle, ArrowDownCircle, Search } from 'lucide-react';
+import NavBar from '../components/NavBar';
 
 interface Transaction {
     id: string;
@@ -63,22 +64,19 @@ export default function TransactionsPage() {
 
     return (
         <div className="min-h-screen bg-background pb-20">
-            <nav className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <h1 className="text-2xl font-bold text-foreground">المعاملات المالية</h1>
-                        <button
-                            onClick={() => setShowForm(!showForm)}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-amber-600 transition-colors"
-                        >
-                            <Plus className="w-5 h-5" />
-                            <span>تسجيل حركة</span>
-                        </button>
-                    </div>
-                </div>
-            </nav>
+            <NavBar />
 
             <main className="max-w-7xl mx-auto px-4 py-8">
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold text-foreground">المعاملات المالية</h1>
+                    <button
+                        onClick={() => setShowForm(!showForm)}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-amber-600 transition-colors"
+                    >
+                        <Plus className="w-5 h-5" />
+                        <span>تسجيل حركة</span>
+                    </button>
+                </div>
 
                 {/* Add Transaction Form */}
                 {showForm && (

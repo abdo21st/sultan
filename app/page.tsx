@@ -9,6 +9,7 @@ import {
   Search,
   TrendingUp
 } from "lucide-react";
+import NavBar from "./components/NavBar";
 
 export default function Home() {
   const [stats, setStats] = useState({
@@ -29,20 +30,7 @@ export default function Home() {
   return (
     <div className="min-h-screen pb-20">
       {/* Top Navigation Bar */}
-      <nav className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-amber-400 bg-clip-text text-transparent">
-              سلطان
-            </h1>
-            <div className="flex gap-4">
-              <button className="p-2 text-muted-foreground hover:text-primary transition-colors">
-                <Search className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <NavBar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
