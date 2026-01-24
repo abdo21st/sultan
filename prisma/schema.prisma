@@ -19,8 +19,19 @@ model User {
   password    String // Hashed password
   displayName String
   role        Role     @default(USER)
+  permissions String[] @default([]) // For granular permissions e.g. ["MANAGE_USERS", "VIEW_REPORTS"]
   facilityId  String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SystemSettings {
+  id          String   @id @default("default") // Singleton row
+  appName     String   @default("سلطان")
+  logoUrl     String?
+  printHeader String?
+  printFooter String?
+  themeColor  String   @default("#d97706") // Default amber
   updatedAt   DateTime @updatedAt
 }
 
