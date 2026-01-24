@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, LogOut, User } from 'lucide-react';
+import { Search, LogOut, User, Settings } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
