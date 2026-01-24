@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface Order {
     id: string;
@@ -43,6 +43,17 @@ export default function OrderList() {
         );
     }
 
+
+    async function handleDelete(id: string) {
+        if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
+        try {
+            await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+            setOrders(orders.filter(o => o.id !== id));
+        } catch (error) {
+            console.error('Failed to delete order', error);
+        }
+    }
+
     return (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {orders.map((order) => (
@@ -63,8 +74,8 @@ export default function OrderList() {
                             </div>
                         </div>
                         <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${order.status === 'COMPLETED' ? 'bg-green-500/10 text-green-600' :
-                                order.status === 'REGISTERED' ? 'bg-blue-500/10 text-blue-600' :
-                                    'bg-zinc-500/10 text-zinc-600'
+                            order.status === 'REGISTERED' ? 'bg-blue-500/10 text-blue-600' :
+                                'bg-zinc-500/10 text-zinc-600'
                             }`}>
                             {
                                 order.status === 'REGISTERED' ? 'مسجل' :
@@ -86,9 +97,20 @@ export default function OrderList() {
                         </div>
                     </div>
 
-                    <button className="w-full mt-4 py-2 text-sm font-medium text-primary bg-primary/5 rounded-lg hover:bg-primary hover:text-white transition-colors">
-                        التفاصيل
-                    </button>
+                    <div className="flex gap-2 mt-4 pt-2 border-t border-border/50">
+                        <Link
+                            href={`/orders/${order.id}/edit`}
+                            className="flex-1 py-2 text-sm font-medium text-center text-primary bg-primary/5 rounded-lg hover:bg-primary hover:text-white transition-colors"
+                        >
+                            تعديل
+                        </Link>
+                        <button
+                            onClick={() => handleDelete(order.id)}
+                            className="flex-1 py-2 text-sm font-medium text-center text-red-600 bg-red-500/5 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
+                        >
+                            حذف
+                        </button>
+                    </div>
                 </div>
             ))}
         </div>
