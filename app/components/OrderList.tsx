@@ -44,26 +44,51 @@ export default function OrderList() {
     }
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {orders.map((order) => (
                 <div
                     key={order.id}
-                    className="p-6 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 hover:shadow-md transition-shadow"
+                    className="group relativebg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-lg transition-all hover:bg-muted/30"
                 >
                     <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 className="font-semibold text-lg text-zinc-900 dark:text-zinc-100">
-                                {order.customerName}
-                            </h3>
-                            <p className="text-sm text-zinc-500">{order.status}</p>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                {order.customerName.charAt(0)}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg text-foreground truncate max-w-[150px]">
+                                    {order.customerName}
+                                </h3>
+                                <p className="text-xs text-muted-foreground font-mono" dir="ltr">#{order.id.slice(-6)}</p>
+                            </div>
                         </div>
-                        <span className="px-3 py-1 text-sm font-medium bg-zinc-100 dark:bg-zinc-800 rounded-full">
-                            ${order.totalAmount}
+                        <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${order.status === 'COMPLETED' ? 'bg-green-500/10 text-green-600' :
+                                order.status === 'REGISTERED' ? 'bg-blue-500/10 text-blue-600' :
+                                    'bg-zinc-500/10 text-zinc-600'
+                            }`}>
+                            {
+                                order.status === 'REGISTERED' ? 'مسجل' :
+                                    order.status === 'COMPLETED' ? 'مكتمل' : order.status
+                            }
                         </span>
                     </div>
-                    <div className="text-sm text-zinc-600 dark:text-zinc-400">
-                        تاريخ الاستحقاق: {order.dueDate}
+
+                    <div className="flex justify-between items-end border-t border-border pt-4 mt-2">
+                        <div>
+                            <p className="text-xs text-muted-foreground mb-1">المبلغ الإجمالي</p>
+                            <p className="text-lg font-bold text-foreground font-mono" dir="ltr">${order.totalAmount.toLocaleString()}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xs text-muted-foreground mb-1">تاريخ الاستحقاق</p>
+                            <p className="text-sm font-medium text-foreground font-mono flex items-center gap-1 justify-end">
+                                {order.dueDate}
+                            </p>
+                        </div>
                     </div>
+
+                    <button className="w-full mt-4 py-2 text-sm font-medium text-primary bg-primary/5 rounded-lg hover:bg-primary hover:text-white transition-colors">
+                        التفاصيل
+                    </button>
                 </div>
             ))}
         </div>
