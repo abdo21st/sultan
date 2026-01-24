@@ -46,6 +46,15 @@ export default function NavBar() {
                                     المستخدمين
                                 </Link>
                             )}
+                            {/* Show Settings link only if Admin */}
+                            {user && user.role === 'ADMIN' && (
+                                <Link
+                                    href="/admin/settings"
+                                    className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/settings') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                                >
+                                    الإعدادات
+                                </Link>
+                            )}
                         </div>
                     </div>
 
