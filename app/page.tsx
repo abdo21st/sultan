@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import OrderList from "./components/OrderList";
 import {
@@ -10,6 +11,21 @@ import {
 } from "lucide-react";
 
 export default function Home() {
+  const [stats, setStats] = useState({
+    totalSales: 0,
+    activeOrdersCount: 0,
+    totalDebts: 0
+  });
+
+  useEffect(() => {
+    fetch('/api/dashboard/stats')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) setStats(data);
+      })
+      .catch(console.error);
+  }, []);
+
   return (
     <div className="min-h-screen pb-20">
       {/* Top Navigation Bar */}
@@ -44,7 +60,9 @@ export default function Home() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">إجمالي المبيعات (شهري)</p>
-                <h3 className="text-3xl font-bold text-foreground mt-1">0.00 <span className="text-sm font-normal text-muted-foreground">ر.س</span></h3>
+                <h3 className="text-3xl font-bold text-foreground mt-1" dir="ltr">
+                  ${stats.totalSales.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">ر.س</span>
+                </h3>
               </div>
               <div className="p-2 bg-primary/10 rounded-lg text-primary">
                 <TrendingUp className="w-6 h-6" />
@@ -61,7 +79,7 @@ export default function Home() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">الطلبات النشطة</p>
-                <h3 className="text-3xl font-bold text-foreground mt-1">0</h3>
+                <h3 className="text-3xl font-bold text-foreground mt-1" dir="ltr">{stats.activeOrdersCount}</h3>
               </div>
               <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
                 <ClipboardList className="w-6 h-6" />
@@ -77,7 +95,9 @@ export default function Home() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">الديون المستحقة</p>
-                <h3 className="text-3xl font-bold text-foreground mt-1">0.00 <span className="text-sm font-normal text-muted-foreground">ر.س</span></h3>
+                <h3 className="text-3xl font-bold text-foreground mt-1" dir="ltr">
+                  ${stats.totalDebts.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">ر.س</span>
+                </h3>
               </div>
               <div className="p-2 bg-red-500/10 rounded-lg text-red-500">
                 <Banknote className="w-6 h-6" />
