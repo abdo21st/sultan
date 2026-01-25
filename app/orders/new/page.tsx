@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, X } from "lucide-react";
+import Image from "next/image";
 
 export default function NewOrderPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<{ id: string; role: string; facilityId?: string } | null>(null);
     const [facilities, setFacilities] = useState<{ id: string, name: string, type: string }[]>([]);
     const [images, setImages] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
@@ -93,8 +94,8 @@ export default function NewOrderPage() {
 
             router.push("/");
             router.refresh();
-        } catch (err: any) {
-            setError(err.message || "حدث خطأ ما");
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "حدث خطأ ما");
         } finally {
             setLoading(false);
         }
@@ -138,8 +139,8 @@ export default function NewOrderPage() {
                         <div className="flex flex-wrap gap-4">
                             {previews.map((src, idx) => (
                                 <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-border group">
-                                    <img src={src} alt="preview" className="w-full h-full object-cover" />
-                                    <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Image src={src} alt="preview" width={96} height={96} className="w-full h-full object-cover" />
+                                    <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity" aria-label="حذف الصورة">
                                         <X className="w-3 h-3" />
                                     </button>
                                 </div>
@@ -166,7 +167,7 @@ export default function NewOrderPage() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">تاريخ الاستحقاق</label>
-                            <input required name="dueDate" type="date" min={new Date().toISOString().split('T')[0]} className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none" />
+                            <input required name="dueDate" type="date" min={new Date().toISOString().split('T')[0]} className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none" aria-label="تاريخ الاستحقاق" />
                         </div>
                     </div>
 
@@ -174,7 +175,7 @@ export default function NewOrderPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">تعيين المصنع (الهدف)</label>
-                            <select name="factoryId" required defaultValue="" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none">
+                            <select name="factoryId" required defaultValue="" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none" aria-label="تعيين المصنع">
                                 <option value="" disabled>اختر مصنعاً</option>
                                 {factories.map(f => (
                                     <option key={f.id} value={f.id}>{f.name}</option>
@@ -186,7 +187,7 @@ export default function NewOrderPage() {
                         {!isRestricted ? (
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-muted-foreground">المعرض (المصدر) - <span className="text-red-500">للإدارة فقط</span></label>
-                                <select name="shopId" required defaultValue="" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none">
+                                <select name="shopId" required defaultValue="" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none" aria-label="المعرض المصدر">
                                     <option value="" disabled>اختر معرضاً</option>
                                     {facilities.filter(f => f.type === 'SHOP').map(s => (
                                         <option key={s.id} value={s.id}>{s.name}</option>

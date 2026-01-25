@@ -33,7 +33,7 @@ export default function NewFacilityPage() {
 
             router.push("/"); // Redirect to dashboard
             router.refresh(); // Refresh data
-        } catch (err) {
+        } catch {
             setError("حدث خطأ ما. يرجى المحاولة مرة أخرى.");
         } finally {
             setLoading(false);
@@ -73,6 +73,7 @@ export default function NewFacilityPage() {
                             name="type"
                             required
                             className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            aria-label="نوع المنشأة"
                         >
                             <option value="FACTORY">مصنع</option>
                             <option value="SHOP">معرض</option>
