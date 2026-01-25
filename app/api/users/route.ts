@@ -6,10 +6,18 @@ import { PERMISSIONS } from "@/lib/permissions";
 export async function GET() {
     try {
         const session = await auth();
-        if (!session?.user?.permissions?.includes(PERMISSIONS.USERS_VIEW)) {
+
+        // Bootstrap mode: Allow access if no users exist yet
+        const userCount = await prisma.user.count();
+        const isBootstrap = userCount === 0;
+
+        if (!isBootstrap && !session?.user?.permissions?.includes(PERMISSIONS.USERS_VIEW)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
-        const users = await prisma.user.findMany();
+
+        const users = await prisma.user.findMany({
+            include: { roles: true }
+        });
         return NextResponse.json(users);
     } catch {
         return NextResponse.json(
