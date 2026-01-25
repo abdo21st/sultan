@@ -65,12 +65,26 @@ export default function NavBar() {
 
                             {/* Check SETTINGS_MANAGE permission */}
                             {user && (user.permissions?.includes(PERMISSIONS.SETTINGS_MANAGE) || user.role === 'ADMIN') && (
-                                <Link
-                                    href="/admin/settings"
-                                    className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/settings') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                                >
-                                    الإعدادات
-                                </Link>
+                                <>
+                                    <Link
+                                        href="/admin/booking"
+                                        className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/booking') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                                    >
+                                        الحجز
+                                    </Link>
+                                    <Link
+                                        href="/admin/alerts"
+                                        className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/alerts') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                                    >
+                                        التنبيهات
+                                    </Link>
+                                    <Link
+                                        href="/admin/settings"
+                                        className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/settings') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                                    >
+                                        الإعدادات
+                                    </Link>
+                                </>
                             )}
                         </div>
                     </div>

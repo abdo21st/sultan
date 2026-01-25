@@ -31,6 +31,46 @@ export async function POST(request: Request) {
         const paidAmount = parseFloat((formData.get("paidAmount") as string) || "0");
         const remainingAmount = totalAmount - paidAmount;
         const factoryId = formData.get("factoryId") as string;
+        const dueDateObj = new Date(dueDate);
+        const dayOfWeek = dueDateObj.getDay();
+
+        // Capacity Check
+        const capacityRules = await prisma.capacityRule.findMany({
+            where: {
+                OR: [
+                    { factoryId: null },
+                    { factoryId: factoryId }
+                ],
+                AND: [
+                    {
+                        OR: [
+                            { specificDate: dueDateObj },
+                            { AND: [{ specificDate: null }, { dayOfWeek: dayOfWeek }] }
+                        ]
+                    }
+                ]
+            }
+        });
+
+        if (capacityRules.length > 0) {
+            // Find most specific rule (factory + specific date > factory only > general specific date > general day)
+            // For simplicity, we'll take the minimum capacity among applicable rules
+            const minCapacity = Math.min(...capacityRules.map(r => r.maxCapacity));
+
+            const currentOrdersCount = await prisma.order.count({
+                where: {
+                    factoryId: factoryId,
+                    dueDate: dueDate
+                }
+            });
+
+            if (currentOrdersCount >= minCapacity) {
+                return NextResponse.json(
+                    { error: `عذراً، تم الوصول للحد الأقصى من الطلبات لهذا اليوم (${minCapacity} طلبات). يرجى اختيار تاريخ آخر.` },
+                    { status: 400 }
+                );
+            }
+        }
 
         // Trust shopId from form (which might be auto-filled for restricted users) or fallback to session
         let shopId = formData.get("shopId") as string;
