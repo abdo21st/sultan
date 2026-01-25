@@ -116,13 +116,11 @@ export default function UsersPage() {
                                         </td>
                                         <td className="p-4 text-left">
                                             <div className="flex justify-end gap-2">
-                                                {hasPermission(PERMISSIONS.USERS_EDIT) && (
-                                                    <Link href={`/admin/users/${user.id}/edit`} className="p-2 text-muted-foreground hover:text-primary transition-colors">
-                                                        <Edit className="w-4 h-4" />
-                                                    </Link>
-                                                )}
+                                                <Link href={`/admin/users/${user.id}/edit`} className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors" title="تعديل">
+                                                    <Edit className="w-4 h-4" />
+                                                </Link>
                                                 {hasPermission(PERMISSIONS.USERS_DELETE) && (
-                                                    <button onClick={() => handleDelete(user.id)} className="p-2 text-muted-foreground hover:text-red-600 transition-colors">
+                                                    <button onClick={() => handleDelete(user.id)} className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors" title="حذف">
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 )}
