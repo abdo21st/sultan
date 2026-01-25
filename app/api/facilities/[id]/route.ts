@@ -4,9 +4,10 @@ import { auth } from '@/auth';
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id: facilityId } = await params;
         const session = await auth();
 
         // Check authentication and admin permission
@@ -14,7 +15,6 @@ export async function DELETE(
             return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
         }
 
-        const facilityId = params.id;
 
         // Check if facility has associated orders
         const ordersCount = await prisma.order.count({
