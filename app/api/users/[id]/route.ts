@@ -18,6 +18,7 @@ export async function GET(
                 role: true,
                 facilityId: true,
                 createdAt: true,
+                roles: true,
                 // Exclude password
             }
         });
@@ -27,7 +28,7 @@ export async function GET(
         }
 
         return NextResponse.json(user);
-    } catch (error) {
+    } catch (_error) {
         return NextResponse.json(
             { error: "Failed to fetch user" },
             { status: 500 }
@@ -43,12 +44,15 @@ export async function PATCH(
         const { id } = await params;
         const body = await request.json();
 
-        const updateData: any = {
+        const updateData: Record<string, any> = {
             username: body.username,
             displayName: body.displayName,
             phoneNumber: body.phoneNumber || null,
             role: body.role,
             facilityId: body.facilityId || null,
+            roles: body.roleIds ? {
+                set: body.roleIds.map((id: string) => ({ id }))
+            } : undefined
         };
 
         if (body.password) {
@@ -64,6 +68,7 @@ export async function PATCH(
                 displayName: true,
                 role: true,
                 facilityId: true,
+                roles: true,
             }
         });
 
@@ -88,7 +93,7 @@ export async function DELETE(
         });
 
         return NextResponse.json({ message: "User deleted successfully" });
-    } catch (error) {
+    } catch (_error) {
         return NextResponse.json(
             { error: "Failed to delete user" },
             { status: 500 }

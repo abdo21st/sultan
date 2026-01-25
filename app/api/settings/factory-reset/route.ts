@@ -1,10 +1,8 @@
-
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { PERMISSIONS } from "@/lib/permissions";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
     const session = await auth();
     // STRICT: Only ADMIN can do this. Not just SETTINGS_MANAGE.
     // Factory reset is dangerous.
@@ -45,7 +43,10 @@ export async function POST(req: Request) {
             // Let's detach the role from the current user first if it exists, just in case.
             await tx.user.update({
                 where: { id: currentUserId },
-                data: { roleId: null, role: 'ADMIN' } // Ensure they stay ADMIN
+                data: {
+                    roles: { set: [] },
+                    role: 'ADMIN'
+                } // Ensure they stay ADMIN
             });
 
             await tx.customRole.deleteMany({});
