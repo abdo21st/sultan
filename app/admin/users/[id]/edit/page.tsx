@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import NavBar from '@/app/components/NavBar';
+import NavBar from "../../../../components/NavBar";
 import { User, Shield, Briefcase, Lock, Save } from 'lucide-react';
 
 // Unused AVAILABLE_PERMISSIONS removed

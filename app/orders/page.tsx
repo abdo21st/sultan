@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import NavBar from '@/app/components/NavBar';
-import OrderList from '@/app/components/OrderList';
+import NavBar from '../components/NavBar';
+import OrderList from '../components/OrderList';
 import Link from 'next/link';
 import { Plus, Filter, Search, Calendar, Factory as FactoryIcon, ChevronDown, ChevronUp } from 'lucide-react';
-import { usePermission } from '@/lib/usePermission';
-import { PERMISSIONS } from '@/lib/permissions';
+import { usePermission } from '../../lib/usePermission';
+import { PERMISSIONS } from '../../lib/permissions';
 
 interface Facility {
     id: string;

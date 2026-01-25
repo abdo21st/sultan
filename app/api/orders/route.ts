@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { prisma } from "../../../lib/prisma";
+import { auth } from "../../../auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { Prisma } from "@prisma/client";
-import { PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS } from "../../../lib/permissions";
 
 export async function GET(request: Request) {
     try {
@@ -46,6 +46,21 @@ export async function GET(request: Request) {
     }
 }
 
+import { z } from "zod";
+
+const orderSchema = z.object({
+    customerName: z.string().min(2, "اسم العميل يجب أن يكون حرفين على الأقل"),
+    customerPhone: z.string().regex(/^\d{8,15}$/, "رقم الهاتف غير صحيح"),
+    description: z.string().min(5, "الوصف يجب أن يكون 5 أحرف على الأقل"),
+    dueDate: z.string().refine((val: string) => !isNaN(Date.parse(val)), {
+        message: "تاريخ الاستحقاق غير صحيح",
+    }),
+    totalAmount: z.preprocess((val) => parseFloat(val as string), z.number().positive("الإجمالي يجب أن يكون قيمة موجبة")),
+    paidAmount: z.preprocess((val) => parseFloat((val as string) || "0"), z.number().min(0, "المبلغ المدفوع لا يمكن أن يكون سالباً")),
+    factoryId: z.string().min(1, "يجب اختيار المصنع"),
+    shopId: z.string().min(1, "يجب اختيار المعرض"),
+});
+
 export async function POST(request: Request) {
     try {
         const session = await auth();
@@ -54,15 +69,29 @@ export async function POST(request: Request) {
         }
         const formData = await request.formData();
 
-        const customerName = formData.get("customerName") as string;
-        const customerPhone = formData.get("customerPhone") as string;
-        const description = formData.get("description") as string;
-        const dueDate = formData.get("dueDate") as string;
-        const totalAmount = parseFloat(formData.get("totalAmount") as string);
-        const paidAmount = parseFloat((formData.get("paidAmount") as string) || "0");
-        const remainingAmount = totalAmount - paidAmount;
-        const factoryId = formData.get("factoryId") as string;
-        const dueDateObj = new Date(dueDate);
+        // Convert FormData to object for Zod validation
+        const dataToValidate = {
+            customerName: formData.get("customerName"),
+            customerPhone: formData.get("customerPhone"),
+            description: formData.get("description"),
+            dueDate: formData.get("dueDate"),
+            totalAmount: formData.get("totalAmount"),
+            paidAmount: formData.get("paidAmount"),
+            factoryId: formData.get("factoryId"),
+            shopId: formData.get("shopId") || session?.user?.facilityId,
+        };
+
+        const result = orderSchema.safeParse(dataToValidate);
+
+        if (!result.success) {
+            return NextResponse.json(
+                { error: result.error.issues[0].message },
+                { status: 400 }
+            );
+        }
+
+        const body = result.data;
+        const dueDateObj = new Date(body.dueDate);
         const dayOfWeek = dueDateObj.getDay();
 
         // Capacity Check
@@ -70,7 +99,7 @@ export async function POST(request: Request) {
             where: {
                 OR: [
                     { factoryId: null },
-                    { factoryId: factoryId }
+                    { factoryId: body.factoryId }
                 ],
                 AND: [
                     {
@@ -84,13 +113,10 @@ export async function POST(request: Request) {
         });
 
         if (capacityRules.length > 0) {
-            // Find most specific rule (factory + specific date > factory only > general specific date > general day)
-            // For simplicity, we'll take the minimum capacity among applicable rules
-            const minCapacity = Math.min(...capacityRules.map(r => r.maxCapacity));
-
+            const minCapacity = Math.min(...capacityRules.map((r: { maxCapacity: number }) => r.maxCapacity));
             const currentOrdersCount = await prisma.order.count({
                 where: {
-                    factoryId: factoryId,
+                    factoryId: body.factoryId,
                     dueDate: dueDateObj
                 }
             });
@@ -101,12 +127,6 @@ export async function POST(request: Request) {
                     { status: 400 }
                 );
             }
-        }
-
-        // Trust shopId from form (which might be auto-filled for restricted users) or fallback to session
-        let shopId = formData.get("shopId") as string;
-        if (!shopId && session?.user?.facilityId) {
-            shopId = session.user.facilityId;
         }
 
         // Handle Images
@@ -130,28 +150,28 @@ export async function POST(request: Request) {
         // Create Order
         const order = await prisma.order.create({
             data: {
-                customerName,
-                customerPhone,
-                description,
+                customerName: body.customerName,
+                customerPhone: body.customerPhone,
+                description: body.description,
                 dueDate: dueDateObj,
-                totalAmount,
-                paidAmount,
-                remainingAmount,
-                factoryId,
-                shopId,
-                status: "REGISTERED", // Start as Registered
+                totalAmount: body.totalAmount,
+                paidAmount: body.paidAmount,
+                remainingAmount: body.totalAmount - body.paidAmount,
+                factoryId: body.factoryId,
+                shopId: body.shopId,
+                status: "REGISTERED",
                 images: imagePaths,
             },
         });
 
         // Create Transaction if paidAmount > 0
-        if (paidAmount > 0) {
+        if (body.paidAmount > 0) {
             await prisma.transaction.create({
                 data: {
                     type: 'INCOME',
-                    amount: paidAmount,
+                    amount: body.paidAmount,
                     category: 'SALES',
-                    description: `دفعة مقدمة - طلب #${order.serialNumber} - ${customerName}`,
+                    description: `دفعة مقدمة - طلب #${order.serialNumber} - ${body.customerName}`,
                     createdBy: session?.user?.id,
                 }
             });
@@ -161,7 +181,7 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error("Error creating order:", error);
         return NextResponse.json(
-            { error: "Failed to create order" },
+            { error: "فشل إنشاء الطلب" },
             { status: 500 }
         );
     }

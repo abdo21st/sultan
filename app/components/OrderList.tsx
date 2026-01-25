@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePermission } from "@/lib/usePermission";
-import { PERMISSIONS } from "@/lib/permissions";
+import { usePermission } from "../../lib/usePermission";
+import { PERMISSIONS } from "../../lib/permissions";
 
 interface Order {
     id: string;

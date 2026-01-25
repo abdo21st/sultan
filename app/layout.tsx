@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: "نظام إدارة الطلبات والمعاملات",
 };
 
-import { auth } from "@/auth";
+import { auth } from "../auth";
 import { Providers } from "./providers";
 
 // ...
