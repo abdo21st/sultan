@@ -203,6 +203,7 @@ export default function EditUserPage() {
                                         value={formData.role}
                                         onChange={e => setFormData({ ...formData, role: e.target.value })}
                                         className="w-full px-4 py-2 rounded-lg border border-input bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                                        aria-label="الدور الوظيفي"
                                     >
                                         <option value="EMPLOYEE">موظف (Employee)</option>
                                         <option value="ACCOUNTANT">محاسب (Accountant)</option>
@@ -217,6 +218,7 @@ export default function EditUserPage() {
                                         value={formData.facilityId}
                                         onChange={e => setFormData({ ...formData, facilityId: e.target.value })}
                                         className="w-full px-4 py-2 rounded-lg border border-input bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                                        aria-label="المنشأة التابع لها"
                                     >
                                         <option value="">غير محدد</option>
                                         {facilities.map(facility => (

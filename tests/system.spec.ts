@@ -55,7 +55,7 @@ test('Comprehensive System Check', async ({ page }) => {
             await expect(page).toHaveURL(/.*\/admin\/users/);
             console.log('✅ User Creation Test Passed');
         }
-    } catch (e) {
+    } catch {
         console.log('❌ Failed to access or submit User Form');
         // Don't fail the whole test if it's just a permission issue on dev env with existing data
         // throw e; 

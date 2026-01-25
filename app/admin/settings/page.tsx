@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import NavBar from '@/app/components/NavBar';
-import { Save, Download, Trash2, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Save, Download, Trash2, RefreshCw, AlertTriangle } from 'lucide-react';
 
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState<'general' | 'actions'>('general');
@@ -64,7 +63,7 @@ export default function SettingsPage() {
             const data = await res.json();
             if (res.ok) alert(data.message);
             else alert(data.error || 'حدث خطأ');
-        } catch (error) {
+        } catch {
             alert('حدث خطأ في الاتصال');
         } finally {
             setLoading(false);
@@ -86,7 +85,7 @@ export default function SettingsPage() {
             } else {
                 alert(data.error || 'حدث خطأ');
             }
-        } catch (error) {
+        } catch {
             alert('حدث خطأ في الاتصال');
         } finally {
             setLoading(false);
@@ -137,12 +136,14 @@ export default function SettingsPage() {
                                             value={settings.themeColor}
                                             onChange={e => setSettings({ ...settings, themeColor: e.target.value })}
                                             className="h-10 w-20 p-1 rounded border cursor-pointer"
+                                            aria-label="لون النظام"
                                         />
                                         <input
                                             value={settings.themeColor}
                                             onChange={e => setSettings({ ...settings, themeColor: e.target.value })}
                                             className="flex-1 border p-2 rounded-lg text-left"
                                             dir="ltr"
+                                            aria-label="كود اللون"
                                         />
                                     </div>
                                 </div>
@@ -167,6 +168,7 @@ export default function SettingsPage() {
                                         onChange={e => setSettings({ ...settings, printHeader: e.target.value })}
                                         className="w-full border p-2 rounded-lg h-24"
                                         placeholder="اسم الشركة، العنوان، الهاتف..."
+                                        aria-label="رأس الفاتورة"
                                     />
                                 </div>
                                 <div className="space-y-2">

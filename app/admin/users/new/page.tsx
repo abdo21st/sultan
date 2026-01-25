@@ -64,7 +64,7 @@ export default function NewUserPage() {
                 const data = await res.json();
                 setError(data.error || 'فشل إنشاء المستخدم');
             }
-        } catch (err) {
+        } catch {
             setError('حدث خطأ غير متوقع');
         } finally {
             setLoading(false);
@@ -88,13 +88,14 @@ export default function NewUserPage() {
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">اسم المستخدم</label>
                             <input
-                                required
-                                name="username"
                                 type="text"
+                                required
+                                dir="ltr"
                                 value={formData.username}
                                 onChange={e => setFormData({ ...formData, username: e.target.value })}
-                                className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                                dir="ltr"
+                                className="w-full pr-10 pl-4 py-2 rounded-lg border border-input bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                                placeholder="username"
+                                aria-label="اسم المستخدم"
                             />
                         </div>
                         <div className="space-y-2">
@@ -106,6 +107,7 @@ export default function NewUserPage() {
                                 value={formData.displayName}
                                 onChange={e => setFormData({ ...formData, displayName: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                aria-label="الاسم الظاهر"
                             />
                         </div>
                     </div>
@@ -113,13 +115,13 @@ export default function NewUserPage() {
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground">رقم الهاتف (للتنبيهات)</label>
                         <input
-                            name="phoneNumber"
                             type="tel"
                             dir="ltr"
                             value={formData.phoneNumber}
                             onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
-                            className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                            placeholder="مثال: 2189xxxxxxx"
+                            className="w-full px-4 py-2 rounded-lg border border-input bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                            placeholder="2189xxxxxxx"
+                            aria-label="رقم الهاتف"
                         />
                     </div>
 
@@ -133,6 +135,7 @@ export default function NewUserPage() {
                             onChange={e => setFormData({ ...formData, password: e.target.value })}
                             className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             dir="ltr"
+                            aria-label="كلمة المرور"
                         />
                     </div>
 
@@ -143,6 +146,7 @@ export default function NewUserPage() {
                             value={formData.role}
                             onChange={e => setFormData({ ...formData, role: e.target.value })}
                             className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                            aria-label="الدور الوظيفي"
                         >
                             <option value="USER">مستخدم عادي (User)</option>
                             <option value="ACCOUNTANT">محاسب (Accountant)</option>
@@ -157,7 +161,8 @@ export default function NewUserPage() {
                             name="facilityId"
                             value={formData.facilityId}
                             onChange={e => setFormData({ ...formData, facilityId: e.target.value })}
-                            className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                            className="w-full px-4 py-2 rounded-lg border border-input bg-background focus:ring-2 focus:ring-primary/20 outline-none"
+                            aria-label="المنشأة التابع لها"
                         >
                             <option value="">-- بدون تعيين --</option>
                             {facilities.map(f => (

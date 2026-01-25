@@ -9,7 +9,14 @@ export default function EditOrderPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [formData, setFormData] = useState<any>(null);
+    const [formData, setFormData] = useState<{
+        customerName: string;
+        customerPhone: string;
+        status: string;
+        totalAmount: string;
+        paidAmount: string;
+        dueDate: string;
+    } | null>(null);
 
     useEffect(() => {
         if (!params?.id) return;
@@ -51,7 +58,7 @@ export default function EditOrderPage() {
 
             router.push('/');
             router.refresh();
-        } catch (err) {
+        } catch {
             setError('فشل تحديث الطلب');
             setSaving(false);
         }
@@ -81,6 +88,7 @@ export default function EditOrderPage() {
                                 value={formData.customerName}
                                 onChange={e => setFormData({ ...formData, customerName: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                aria-label="اسم العميل"
                             />
                         </div>
                         <div className="space-y-2">
@@ -92,6 +100,7 @@ export default function EditOrderPage() {
                                 value={formData.customerPhone}
                                 onChange={e => setFormData({ ...formData, customerPhone: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                aria-label="رقم الهاتف"
                             />
                         </div>
                     </div>
@@ -102,6 +111,7 @@ export default function EditOrderPage() {
                             value={formData.status}
                             onChange={e => setFormData({ ...formData, status: e.target.value })}
                             className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                            aria-label="حالة الطلب"
                         >
                             <option value="REGISTERED">مسجل (REGISTERED)</option>
                             <option value="PROCESSING">قيد التنفيذ (PROCESSING)</option>
@@ -121,6 +131,7 @@ export default function EditOrderPage() {
                                 value={formData.totalAmount}
                                 onChange={e => setFormData({ ...formData, totalAmount: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                aria-label="الإجمالي"
                             />
                         </div>
                         <div className="space-y-2">
@@ -132,6 +143,7 @@ export default function EditOrderPage() {
                                 value={formData.paidAmount}
                                 onChange={e => setFormData({ ...formData, paidAmount: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                aria-label="المدفوع"
                             />
                         </div>
                         <div className="space-y-2">
@@ -142,6 +154,7 @@ export default function EditOrderPage() {
                                 value={formData.dueDate}
                                 onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                aria-label="تاريخ الاستحقاق"
                             />
                         </div>
                     </div>

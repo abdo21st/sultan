@@ -61,7 +61,7 @@ export default function TransactionsPage() {
                 fetchTransactions();
                 setFormData({ ...formData, amount: '', description: '' });
             }
-        } catch (e) {
+        } catch {
             alert('فشل حفظ المعاملة');
         }
     }
@@ -129,6 +129,7 @@ export default function TransactionsPage() {
                                         onChange={e => setFormData({ ...formData, category: e.target.value })}
                                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
                                         required
+                                        aria-label="تصنيف الحركة المالية"
                                     >
                                         <option value="" disabled>اختر تصنيفاً</option>
                                         <option value="SALES">مبيعات</option>
@@ -147,6 +148,7 @@ export default function TransactionsPage() {
                                         value={formData.date}
                                         onChange={e => setFormData({ ...formData, date: e.target.value })}
                                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
+                                        aria-label="تاريخ الحركة"
                                     />
                                 </div>
                             </div>
