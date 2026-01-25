@@ -2,17 +2,40 @@
 
 import { useState } from 'react';
 import { updateOrderStatus, completeOrder } from '../actions';
-import { Printer, XCircle, CheckCircle, Truck, AlertCircle, ArrowRightCircle } from 'lucide-react';
+import { Printer, XCircle, CheckCircle, Truck } from 'lucide-react';
 import Link from 'next/link';
 
-export default function OrderActions({ order, currentUser }: { order: any, currentUser: any }) {
+interface Order {
+    id: string;
+    serialNumber: string;
+    customerName: string;
+    customerPhone: string;
+    description?: string;
+    status: string;
+    totalAmount: number;
+    paidAmount: number;
+    remainingAmount: number;
+    factoryId?: string;
+    shopId?: string;
+    rejectionReason?: string;
+}
+
+interface User {
+    id: string;
+    displayName: string;
+    role: string;
+    facilityId?: string;
+    phoneNumber?: string;
+}
+
+export default function OrderActions({ order, currentUser }: { order: Order, currentUser: User }) {
     const [loading, setLoading] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentNote, setPaymentNote] = useState('');
     const [showShareModal, setShowShareModal] = useState(false);
-    const [employees, setEmployees] = useState<any[]>([]);
+    const [employees, setEmployees] = useState<User[]>([]);
 
     // Fetch employees when modal opens
     // We use a simplified approach: fetch all and filter client side if needed, or if we had an API for facility employees
@@ -23,10 +46,10 @@ export default function OrderActions({ order, currentUser }: { order: any, curre
             if (res.ok) {
                 const data = await res.json();
                 // Filter users who have phone numbers
-                setEmployees(data.filter((u: any) => u.phoneNumber));
+                setEmployees(data.filter((u: User) => u.phoneNumber));
             }
-        } catch (err) {
-            console.error(err);
+        } catch (error: unknown) {
+            console.error(error);
         }
     };
 
@@ -245,7 +268,7 @@ export default function OrderActions({ order, currentUser }: { order: any, curre
                             {employees.length === 0 ? (
                                 <p className="text-center text-sm text-muted-foreground py-4">جاري تحميل الموظفين...</p>
                             ) : (
-                                employees.map((emp: any) => (
+                                employees.map((emp: User) => (
                                     <a
                                         key={emp.id}
                                         href={`https://wa.me/${emp.phoneNumber}?text=طلب جديد رقم ${order.serialNumber}%0Aالعميل: ${order.customerName}%0Aالوصف: ${order.description}`}

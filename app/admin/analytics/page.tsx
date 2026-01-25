@@ -13,7 +13,14 @@ import {
 
 const COLORS = ["#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#8b5cf6"];
 
-const StatCard = ({ title, value, icon: Icon, color }: any) => (
+interface StatCardProps {
+    title: string;
+    value: number;
+    icon: React.ElementType;
+    color: string;
+}
+
+const StatCard = ({ title, value, icon: Icon, color }: StatCardProps) => (
     <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
         <div className="flex justify-between items-start">
             <div>
@@ -27,18 +34,25 @@ const StatCard = ({ title, value, icon: Icon, color }: any) => (
     </div>
 );
 
+interface AnalyticsData {
+    summary: { totalOrders: number; totalRevenue: number; totalCollected: number };
+    monthlySales: { month: string; total: number; paid: number }[];
+    factoryStats: { name: string; value: number }[];
+    statusCounts: Record<string, number>;
+}
+
 export default function AnalyticsPage() {
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetch("/api/admin/analytics")
             .then(res => res.json())
-            .then(data => {
+            .then((data: AnalyticsData) => {
                 setData(data);
                 setLoading(false);
             })
-            .catch(err => console.error(err));
+            .catch((err: unknown) => console.error(err));
     }, []);
 
     if (loading) {
@@ -64,25 +78,25 @@ export default function AnalyticsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <StatCard
                         title="إجمالي الطلبات"
-                        value={data.summary.totalOrders}
+                        value={data?.summary.totalOrders || 0}
                         icon={Package}
                         color="bg-amber-100 text-amber-600"
                     />
                     <StatCard
                         title="إجمالي المبيعات (د.ل)"
-                        value={data.summary.totalRevenue}
+                        value={data?.summary.totalRevenue || 0}
                         icon={DollarSign}
                         color="bg-blue-100 text-blue-600"
                     />
                     <StatCard
                         title="إجمالي المحصل (د.ل)"
-                        value={data.summary.totalCollected}
+                        value={data?.summary.totalCollected || 0}
                         icon={TrendingUp}
                         color="bg-green-100 text-green-600"
                     />
                     <StatCard
                         title="الديون المتبقية (د.ل)"
-                        value={data.summary.totalRevenue - data.summary.totalCollected}
+                        value={(data?.summary.totalRevenue || 0) - (data?.summary.totalCollected || 0)}
                         icon={Users}
                         color="bg-red-100 text-red-600"
                     />
@@ -96,7 +110,7 @@ export default function AnalyticsPage() {
                         </h3>
                         <div className="h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={data.monthlySales}>
+                                <LineChart data={data?.monthlySales || []}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
                                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
@@ -117,7 +131,7 @@ export default function AnalyticsPage() {
                         </h3>
                         <div className="h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={data.factoryStats}>
+                                <BarChart data={data?.factoryStats || []}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
                                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
@@ -139,13 +153,13 @@ export default function AnalyticsPage() {
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
-                                        data={Object.entries(data.statusCounts).map(([name, value]) => ({ name, value }))}
+                                        data={data ? Object.entries(data.statusCounts).map(([name, value]) => ({ name, value })) : []}
                                         innerRadius={60}
                                         outerRadius={80}
                                         paddingAngle={5}
                                         dataKey="value"
                                     >
-                                        {Object.entries(data.statusCounts).map((_entry, index) => (
+                                        {data && Object.entries(data.statusCounts).map((_entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>

@@ -4,10 +4,10 @@ import { prisma } from "../../../../lib/prisma";
 import { PERMISSIONS } from "../../../../lib/permissions";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+export async function POST() {
     const session = await auth();
     if (!session?.user ||
-        (session.user.role !== 'ADMIN' && !(session.user as any).permissions?.includes(PERMISSIONS.SETTINGS_MANAGE))) {
+        (session.user.role !== 'ADMIN' && !(session.user as { permissions?: string[] }).permissions?.includes(PERMISSIONS.SETTINGS_MANAGE))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

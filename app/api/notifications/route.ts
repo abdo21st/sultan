@@ -3,12 +3,12 @@ import { prisma } from "../../../lib/prisma";
 import { auth } from "../../../auth";
 
 export async function GET() {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     try {
+        const session = await auth();
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const notifications = await prisma.notification.findMany({
             where: {
                 userId: session.user.id,
@@ -28,7 +28,7 @@ export async function GET() {
         });
 
         return NextResponse.json({ notifications, unreadCount });
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to fetch notifications" },
             { status: 500 }

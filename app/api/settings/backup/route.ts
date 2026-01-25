@@ -8,7 +8,7 @@ export async function GET() {
     const session = await auth();
     // Check permissions
     if (!session?.user ||
-        (session.user.role !== 'ADMIN' && !(session.user as any).permissions?.includes(PERMISSIONS.SETTINGS_MANAGE))) {
+        (session.user.role !== 'ADMIN' && !(session.user as { permissions?: string[] }).permissions?.includes(PERMISSIONS.SETTINGS_MANAGE))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -51,8 +51,8 @@ export async function GET() {
                 'Content-Disposition': `attachment; filename="sultan_backup_${new Date().toISOString().split('T')[0]}.json"`
             }
         });
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: "Backup failed" }, { status: 500 });
+    } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }

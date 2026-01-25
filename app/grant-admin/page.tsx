@@ -35,7 +35,7 @@ export default function GrantAdminPage() {
             <div className="bg-white dark:bg-zinc-800 rounded-2xl shadow-2xl p-8 max-w-2xl w-full">
                 <h1 className="text-3xl font-bold text-center mb-2">⚡ منح صلاحيات المدير</h1>
                 <p className="text-center text-muted-foreground mb-8">
-                    سيتم منح جميع المستخدمين الموجودين دور "مدير النظام" مع كل الصلاحيات
+                    سيتم منح جميع المستخدمين الموجودين دور &quot;مدير النظام&quot; مع كل الصلاحيات
                 </p>
 
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">

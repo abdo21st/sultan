@@ -2,7 +2,7 @@ import { auth } from "../../../../auth";
 import { prisma } from "../../../../lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function POST(_req: Request) {
+export async function POST() {
     const session = await auth();
     // STRICT: Only ADMIN can do this. Not just SETTINGS_MANAGE.
     // Factory reset is dangerous.
