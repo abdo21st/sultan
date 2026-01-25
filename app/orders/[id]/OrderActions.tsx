@@ -10,14 +10,14 @@ interface Order {
     serialNumber: number;
     customerName: string;
     customerPhone: string;
-    description?: string;
+    description: string | null;
     status: string;
     totalAmount: number;
     paidAmount: number;
     remainingAmount: number;
-    factoryId?: string;
-    shopId?: string;
-    rejectionReason?: string;
+    factoryId: string | null;
+    shopId: string | null;
+    rejectionReason: string | null;
 }
 
 interface User {
