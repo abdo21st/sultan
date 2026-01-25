@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 interface Order {
     id: string;
-    serialNumber: string;
+    serialNumber: number;
     customerName: string;
     customerPhone: string;
     description?: string;
