@@ -9,7 +9,7 @@ export async function GET(
 ) {
     try {
         const session = await auth();
-        if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.ORDERS_VIEW)) {
+        if (!session?.user?.permissions?.includes(PERMISSIONS.ORDERS_VIEW)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
         const { id } = await params;
@@ -22,7 +22,7 @@ export async function GET(
         }
 
         return NextResponse.json(order);
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to fetch order" },
             { status: 500 }
@@ -36,14 +36,14 @@ export async function PATCH(
 ) {
     try {
         const session = await auth();
-        if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.ORDERS_EDIT)) {
+        if (!session?.user?.permissions?.includes(PERMISSIONS.ORDERS_EDIT)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
         const { id } = await params;
         const body = await request.json();
 
         // Ensure numeric fields are parsed correctly
-        const dataToUpdate: any = { ...body };
+        const dataToUpdate: Record<string, unknown> = { ...body };
         if (body.totalAmount) dataToUpdate.totalAmount = parseFloat(body.totalAmount);
         if (body.paidAmount) dataToUpdate.paidAmount = parseFloat(body.paidAmount);
         if (body.remainingAmount) dataToUpdate.remainingAmount = parseFloat(body.remainingAmount);
@@ -55,7 +55,7 @@ export async function PATCH(
         });
 
         return NextResponse.json(order);
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to update order" },
             { status: 500 }
@@ -69,7 +69,7 @@ export async function DELETE(
 ) {
     try {
         const session = await auth();
-        if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.ORDERS_DELETE)) {
+        if (!session?.user?.permissions?.includes(PERMISSIONS.ORDERS_DELETE)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
         const { id } = await params;
@@ -78,7 +78,7 @@ export async function DELETE(
         });
 
         return NextResponse.json({ message: "Order deleted successfully" });
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to delete order" },
             { status: 500 }

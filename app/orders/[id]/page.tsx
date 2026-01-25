@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import Link from "next/link";
 import OrderActions from "./OrderActions";
 import { ArrowLeft, Edit } from "lucide-react";
+import Image from "next/image";
 
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -32,7 +33,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                             <span className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString("ar-EG")}</span>
                         </div>
                     </div>
-                    {(session?.user as any)?.permissions?.includes('orders:edit') && (
+                    {session?.user?.permissions?.includes('orders:edit') && (
                         <Link href={`/orders/${id}/edit`} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-primary">
                             <Edit className="w-5 h-5" />
                         </Link>
@@ -99,8 +100,13 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                 <h3 className="font-semibold mb-4 text-foreground border-b border-border pb-2">المرفقات</h3>
                                 <div className="grid grid-cols-3 gap-2">
                                     {order.images.map((img, idx) => (
-                                        <a key={idx} href={img} target="_blank" rel="noopener noreferrer" className="block w-full h-32 rounded-lg overflow-hidden border border-border">
-                                            <img src={img} alt={`Order ${idx}`} className="w-full h-full object-cover hover:scale-105 transition-transform" />
+                                        <a key={idx} href={img} target="_blank" rel="noopener noreferrer" title={`عرض الصورة ${idx + 1}`} className="relative group block w-full h-32 rounded-lg overflow-hidden border border-border">
+                                            <Image
+                                                src={img}
+                                                alt={`Order image ${idx + 1}`}
+                                                fill
+                                                className="object-cover group-hover:scale-105 transition-transform"
+                                            />
                                         </a>
                                     ))}
                                 </div>

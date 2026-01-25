@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const session = await auth();
-        if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.ORDERS_ADD)) {
+        if (!session?.user?.permissions?.includes(PERMISSIONS.ORDERS_ADD)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
         const formData = await request.formData();
