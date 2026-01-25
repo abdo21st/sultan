@@ -119,11 +119,9 @@ export default function UsersPage() {
                                                 <Link href={`/admin/users/${user.id}/edit`} className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors" title="تعديل">
                                                     <Edit className="w-4 h-4" />
                                                 </Link>
-                                                {hasPermission(PERMISSIONS.USERS_DELETE) && (
-                                                    <button onClick={() => handleDelete(user.id)} className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors" title="حذف">
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                )}
+                                                <button onClick={() => handleDelete(user.id)} className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors" title="حذف">
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
