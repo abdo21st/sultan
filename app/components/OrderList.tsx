@@ -34,7 +34,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 interface OrderListProps {
-    statusFilter?: string[];
+    statusFilter?: { status?: string[] };
 }
 
 export default function OrderList({ statusFilter }: OrderListProps) {
@@ -47,8 +47,8 @@ export default function OrderList({ statusFilter }: OrderListProps) {
                 const res = await fetch("/api/orders");
                 if (res.ok) {
                     let data = await res.json();
-                    if (statusFilter && statusFilter.length > 0) {
-                        data = data.filter((o: Order) => statusFilter.includes(o.status));
+                    if (statusFilter?.status && statusFilter.status.length > 0) {
+                        data = data.filter((o: Order) => statusFilter.status!.includes(o.status));
                     }
                     setOrders(data);
                 }
