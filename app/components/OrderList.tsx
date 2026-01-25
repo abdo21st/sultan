@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePermission } from "@/lib/usePermission";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface Order {
     id: string;
@@ -38,6 +40,7 @@ interface OrderListProps {
 }
 
 export default function OrderList({ queryParams }: OrderListProps) {
+    const { hasPermission } = usePermission();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -123,18 +126,22 @@ export default function OrderList({ queryParams }: OrderListProps) {
                     </Link>
 
                     <div className="flex gap-2 p-4 pt-0">
-                        <Link
-                            href={`/orders/${order.id}/edit`}
-                            className="flex-1 py-2 text-sm font-medium text-center text-primary bg-primary/5 rounded-lg hover:bg-primary hover:text-white transition-colors"
-                        >
-                            تعديل
-                        </Link>
-                        <button
-                            onClick={() => handleDelete(order.id)}
-                            className="flex-1 py-2 text-sm font-medium text-center text-red-600 bg-red-500/5 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
-                        >
-                            حذف
-                        </button>
+                        {hasPermission(PERMISSIONS.ORDERS_EDIT) && (
+                            <Link
+                                href={`/orders/${order.id}/edit`}
+                                className="flex-1 py-2 text-sm font-medium text-center text-primary bg-primary/5 rounded-lg hover:bg-primary hover:text-white transition-colors"
+                            >
+                                تعديل
+                            </Link>
+                        )}
+                        {hasPermission(PERMISSIONS.ORDERS_DELETE) && (
+                            <button
+                                onClick={() => handleDelete(order.id)}
+                                className="flex-1 py-2 text-sm font-medium text-center text-red-600 bg-red-500/5 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
+                            >
+                                حذف
+                            </button>
+                        )}
                     </div>
                 </div>
             ))}

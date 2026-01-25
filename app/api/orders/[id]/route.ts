@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.ORDERS_VIEW)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const { id } = await params;
         const order = await prisma.order.findUnique({
             where: { id },
@@ -29,6 +35,10 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.ORDERS_EDIT)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const { id } = await params;
         const body = await request.json();
 
@@ -58,6 +68,10 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.ORDERS_DELETE)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const { id } = await params;
         await prisma.order.delete({
             where: { id },
