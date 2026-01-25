@@ -12,7 +12,11 @@ export default function EditOrderPage() {
     const [formData, setFormData] = useState<any>(null);
 
     useEffect(() => {
-        fetch(`/api/orders/${params.id}`)
+        if (!params?.id) return;
+
+        const id = Array.isArray(params.id) ? params.id[0] : params.id;
+
+        fetch(`/api/orders/${id}`)
             .then(res => {
                 if (!res.ok) throw new Error('Order not found');
                 return res.json();
@@ -26,16 +30,18 @@ export default function EditOrderPage() {
                 setLoading(false);
             })
             .catch(err => {
+                console.error("Fetch error:", err);
                 setError('فشل تحميل الطلب');
                 setLoading(false);
             });
-    }, [params.id]);
+    }, [params]);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setSaving(true);
         try {
-            const res = await fetch(`/api/orders/${params.id}`, {
+            const id = Array.isArray(params.id) ? params.id[0] : params.id;
+            const res = await fetch(`/api/orders/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),

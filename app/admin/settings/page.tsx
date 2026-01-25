@@ -1,13 +1,13 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import NavBar from '../../components/NavBar';
-import { Settings, Save, Printer, Palette, Type } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import NavBar from '@/app/components/NavBar';
+import { Save, Download, Trash2, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
 
 export default function SettingsPage() {
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
+    const [activeTab, setActiveTab] = useState<'general' | 'actions'>('general');
+    const [loading, setLoading] = useState(false);
     const [settings, setSettings] = useState({
         appName: '',
         logoUrl: '',
@@ -15,165 +15,258 @@ export default function SettingsPage() {
         printFooter: '',
         themeColor: '#d97706'
     });
-    const router = useRouter();
 
+    // Fetch initial settings
     useEffect(() => {
         fetch('/api/settings')
             .then(res => res.json())
             .then(data => {
-                setSettings({
-                    appName: data.appName || '',
-                    logoUrl: data.logoUrl || '',
-                    printHeader: data.printHeader || '',
-                    printFooter: data.printFooter || '',
-                    themeColor: data.themeColor || '#d97706'
-                });
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setLoading(false);
+                if (data && !data.error) {
+                    setSettings({
+                        appName: data.appName || '',
+                        logoUrl: data.logoUrl || '',
+                        printHeader: data.printHeader || '',
+                        printFooter: data.printFooter || '',
+                        themeColor: data.themeColor || '#d97706'
+                    });
+                }
             });
     }, []);
 
-    async function handleSubmit(e: React.FormEvent) {
+    const handleSaveSettings = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSaving(true);
+        setLoading(true);
         try {
             const res = await fetch('/api/settings', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settings),
+                body: JSON.stringify(settings)
             });
-
-            if (res.ok) {
-                alert('تم حفظ الإعدادات بنجاح! سيتم تطبيق التغييرات فوراً.');
-                router.refresh(); // To update the navbar if we dynamic it later
-            } else {
-                alert('فشل حفظ الإعدادات');
-            }
-        } catch (e) {
-            alert('حدث خطأ');
+            if (res.ok) alert('تم حفظ الإعدادات بنجاح');
+            else alert('حدث خطأ أثناء الحفظ');
+        } catch (error) {
+            console.error(error);
         } finally {
-            setSaving(false);
+            setLoading(false);
         }
-    }
+    };
 
-    if (loading) return <div className="p-8 text-center">جاري التحميل...</div>;
+    const handleBackup = () => {
+        window.open('/api/settings/backup', '_blank');
+    };
+
+    const handleClearData = async () => {
+        if (!confirm('تحذير: سيتم حذف جميع الطلبات والحركات المالية والإشعارات. هل أنت متأكد؟')) return;
+
+        setLoading(true);
+        try {
+            const res = await fetch('/api/settings/clear-data', { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) alert(data.message);
+            else alert(data.error || 'حدث خطأ');
+        } catch (error) {
+            alert('حدث خطأ في الاتصال');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFactoryReset = async () => {
+        const confirmMsg = "تحذير خطير: سيتم حذف جميع البيانات بما في ذلك الطلبات، المستخدمين، والأدوار والعودة لحالة المصنع.\n\nهل أنت متأكد تماماً؟";
+        if (!confirm(confirmMsg)) return;
+        if (!confirm("تأكيد أخير: هل أنت متأكد؟ العملية لا يمكن التراجع عنها.")) return;
+
+        setLoading(true);
+        try {
+            const res = await fetch('/api/settings/factory-reset', { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+                alert(data.message);
+                window.location.href = '/login';
+            } else {
+                alert(data.error || 'حدث خطأ');
+            }
+        } catch (error) {
+            alert('حدث خطأ في الاتصال');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-gray-50/50 pb-10">
             <NavBar />
 
-            <main className="max-w-4xl mx-auto px-4 py-8">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="p-3 bg-primary/10 rounded-xl text-primary">
-                        <Settings className="w-8 h-8" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-foreground">إعدادات النظام</h1>
-                        <p className="text-muted-foreground">تخصيص هوية البرنامج وإعدادات التقارير</p>
-                    </div>
+            <div className="max-w-4xl mx-auto px-4 py-8">
+                <h1 className="text-2xl font-bold mb-6">إعدادات النظام</h1>
+
+                {/* Tabs */}
+                <div className="flex gap-4 mb-6 border-b">
+                    <button
+                        onClick={() => setActiveTab('general')}
+                        className={`pb-3 px-4 font-medium transition-colors border-b-2 ${activeTab === 'general' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-gray-700'}`}
+                    >
+                        الإعدادات العامة
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('actions')}
+                        className={`pb-3 px-4 font-medium transition-colors border-b-2 ${activeTab === 'actions' ? 'border-red-500 text-red-600' : 'border-transparent text-muted-foreground hover:text-gray-700'}`}
+                    >
+                        إجراءات النظام والبيانات
+                    </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-8">
-
-                    {/* General Settings */}
-                    <section className="bg-card border border-border rounded-xl p-6 shadow-sm">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                            <Type className="w-5 h-5 text-primary" />
-                            هوية البرنامج
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">اسم البرنامج</label>
-                                <input
-                                    type="text"
-                                    value={settings.appName}
-                                    onChange={e => setSettings({ ...settings, appName: e.target.value })}
-                                    className="w-full rounded-lg border border-input bg-background px-4 py-2"
-                                    placeholder="مثال: نظام سلطان"
-                                />
-                                <p className="text-xs text-muted-foreground">يظهر في شريط العنوان والشاشة الرئيسية.</p>
+                {activeTab === 'general' ? (
+                    <div className="bg-white p-6 rounded-xl shadow-sm border">
+                        <form onSubmit={handleSaveSettings} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">اسم التطبيق</label>
+                                    <input
+                                        value={settings.appName}
+                                        onChange={e => setSettings({ ...settings, appName: e.target.value })}
+                                        className="w-full border p-2 rounded-lg"
+                                        placeholder="سلطان"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">لون الثيم (Hex)</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="color"
+                                            value={settings.themeColor}
+                                            onChange={e => setSettings({ ...settings, themeColor: e.target.value })}
+                                            className="h-10 w-20 p-1 rounded border cursor-pointer"
+                                        />
+                                        <input
+                                            value={settings.themeColor}
+                                            onChange={e => setSettings({ ...settings, themeColor: e.target.value })}
+                                            className="flex-1 border p-2 rounded-lg text-left"
+                                            dir="ltr"
+                                        />
+                                    </div>
+                                </div>
                             </div>
+
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">رابط الشعار (Logo URL)</label>
+                                <label className="text-sm font-medium">رابط الشعار (URL)</label>
                                 <input
-                                    type="text"
-                                    dir="ltr"
                                     value={settings.logoUrl}
                                     onChange={e => setSettings({ ...settings, logoUrl: e.target.value })}
-                                    className="w-full rounded-lg border border-input bg-background px-4 py-2"
-                                    placeholder="/logo.png or https://..."
+                                    className="w-full border p-2 rounded-lg text-left"
+                                    dir="ltr"
+                                    placeholder="https://example.com/logo.png"
                                 />
-                                <p className="text-xs text-muted-foreground">رابط صورة الشعار (يفضل أن يكون مربعاً).</p>
                             </div>
-                        </div>
-                    </section>
 
-                    {/* Theme Settings (Simplified) */}
-                    <section className="bg-card border border-border rounded-xl p-6 shadow-sm">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                            <Palette className="w-5 h-5 text-primary" />
-                            المظهر والألوان
-                        </h3>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">لون النظام الرئيسي</label>
-                            <div className="flex items-center gap-4">
-                                <input
-                                    type="color"
-                                    value={settings.themeColor}
-                                    onChange={e => setSettings({ ...settings, themeColor: e.target.value })}
-                                    className="h-10 w-20 rounded cursor-pointer"
-                                />
-                                <span className="text-sm font-mono" dir="ltr">{settings.themeColor}</span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">رأس الفاتورة (طباعة)</label>
+                                    <textarea
+                                        value={settings.printHeader}
+                                        onChange={e => setSettings({ ...settings, printHeader: e.target.value })}
+                                        className="w-full border p-2 rounded-lg h-24"
+                                        placeholder="اسم الشركة، العنوان، الهاتف..."
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">تذييل الفاتورة (طباعة)</label>
+                                    <textarea
+                                        value={settings.printFooter}
+                                        onChange={e => setSettings({ ...settings, printFooter: e.target.value })}
+                                        className="w-full border p-2 rounded-lg h-24"
+                                        placeholder="شروط الخدمة، شكراً لزيارتكم..."
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    </section>
 
-                    {/* Print Settings */}
-                    <section className="bg-card border border-border rounded-xl p-6 shadow-sm">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                            <Printer className="w-5 h-5 text-primary" />
-                            إعدادات الطباعة والتقارير
-                        </h3>
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">نص رأس الصفحة (Header)</label>
-                                <input
-                                    type="text"
-                                    value={settings.printHeader}
-                                    onChange={e => setSettings({ ...settings, printHeader: e.target.value })}
-                                    className="w-full rounded-lg border border-input bg-background px-4 py-2"
-                                    placeholder="مثال: مؤسسة سلطان التجارية - الرياض"
-                                />
+                            <div className="pt-4 flex justify-end">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 flex items-center gap-2"
+                                >
+                                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    حفظ التغييرات
+                                </button>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">نص تذييل الصفحة (Footer)</label>
-                                <input
-                                    type="text"
-                                    value={settings.printFooter}
-                                    onChange={e => setSettings({ ...settings, printFooter: e.target.value })}
-                                    className="w-full rounded-lg border border-input bg-background px-4 py-2"
-                                    placeholder="مثال: العنوان: شارع الملك فهد | هاتف: 05000000"
-                                />
-                            </div>
-                        </div>
-                    </section>
-
-                    <div className="flex justify-end">
-                        <button
-                            type="submit"
-                            disabled={saving}
-                            className="flex items-center gap-2 px-8 py-3 bg-primary text-white font-bold rounded-xl hover:bg-amber-600 shadow-lg transition-all disabled:opacity-50"
-                        >
-                            <Save className="w-5 h-5" />
-                            {saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
-                        </button>
+                        </form>
                     </div>
+                ) : (
+                    <div className="space-y-6">
+                        {/* Backup Section */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-100 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-2 h-full bg-blue-500"></div>
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <h3 className="text-lg font-bold flex items-center gap-2 text-blue-800">
+                                        <Download className="w-5 h-5" />
+                                        النسخ الاحتياطي
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mt-1 max-w-lg">
+                                        تصدير نسخة كاملة من قاعدة البيانات (المستخدمين، الطلبات، الإعدادات) بتنسيق JSON. يمكنك استخدام هذا الملف لاستعادة البيانات لاحقاً.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleBackup}
+                                    className="bg-blue-50 text-blue-700 border border-blue-200 px-4 py-2 rounded-lg hover:bg-blue-100 flex items-center gap-2 font-medium"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    تحميل النسخة
+                                </button>
+                            </div>
+                        </div>
 
-                </form>
-            </main>
+                        {/* Clear Data Section */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-amber-100 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-2 h-full bg-amber-500"></div>
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <h3 className="text-lg font-bold flex items-center gap-2 text-amber-800">
+                                        <Trash2 className="w-5 h-5" />
+                                        مسح بيانات العمليات
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mt-1 max-w-lg">
+                                        حذف جميع <strong>الطلبات، الحركات المالية، والإشعارات</strong>. سيتم الاحتفاظ بالمستخدمين، الأدوار، والإعدادات العامة.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleClearData}
+                                    disabled={loading}
+                                    className="bg-amber-50 text-amber-700 border border-amber-200 px-4 py-2 rounded-lg hover:bg-amber-100 flex items-center gap-2 font-medium"
+                                >
+                                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                    مسح البيانات
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Factory Reset Section */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-red-100 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-2 h-full bg-red-600"></div>
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <h3 className="text-lg font-bold flex items-center gap-2 text-red-800">
+                                        <AlertTriangle className="w-5 h-5" />
+                                        ضبط المصنع
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mt-1 max-w-lg">
+                                        حذف <strong>كافة البيانات</strong> وإعادة النظام لحالته الأولية. سيتم حذف جميع المستخدمين (ماعدا حسابك الحالي)، الطلبات، والأدوار. لا يمكن التراجع عن هذا الإجراء.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleFactoryReset}
+                                    disabled={loading}
+                                    className="bg-red-50 text-red-700 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-100 flex items-center gap-2 font-medium"
+                                >
+                                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
+                                    تهيئة كاملة
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

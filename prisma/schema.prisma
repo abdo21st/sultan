@@ -14,15 +14,29 @@ enum Role {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  username    String   @unique
+  id          String  @id @default(cuid())
+  username    String  @unique
   password    String // Hashed password
   displayName String
-  role        Role     @default(USER)
-  permissions String[] @default([]) // For granular permissions e.g. ["MANAGE_USERS", "VIEW_REPORTS"]
+  phoneNumber String? // For WhatsApp notifications
+  role        Role    @default(USER) // Legacy Enum, kept for safe migration
+
+  // New Relation
+  roleRel CustomRole? @relation(fields: [roleId], references: [id])
+  roleId  String?
+
+  permissions String[] @default([]) // Overrides or extra permissions
   facilityId  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model CustomRole {
+  id          String   @id @default(cuid())
+  name        String   @unique // e.g. "ADMIN", "MANAGER"
+  displayName String
+  permissions String[]
+  users       User[]
 }
 
 model SystemSettings {
@@ -44,6 +58,7 @@ model Facility {
 
 model Order {
   id              String   @id @default(cuid())
+  serialNumber    Int      @default(autoincrement())
   customerName    String
   customerPhone   String
   description     String
@@ -52,12 +67,19 @@ model Order {
   totalAmount     Float
   paidAmount      Float
   remainingAmount Float    @default(0)
-  imageUrl        String?
+  images          String[]
   factoryId       String
   shopId          String
+  rejectionReason String?
+  paymentNote     String?
   history         Json[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([factoryId])
+  @@index([shopId])
+  @@index([status])
+  @@index([customerPhone])
 }
 
 model Transaction {
@@ -70,4 +92,20 @@ model Transaction {
   createdBy   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([date])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?
+  title     String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
 }

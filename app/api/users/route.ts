@@ -25,8 +25,9 @@ export async function POST(request: Request) {
             data: {
                 username: body.username,
                 displayName: body.displayName,
+                phoneNumber: body.phoneNumber,
                 role: body.role || 'USER',
-                facilityId: body.facilityId,
+                facilityId: body.facilityId || null,
                 password: hashedPassword,
             },
         });

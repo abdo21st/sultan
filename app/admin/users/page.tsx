@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { Plus, Trash2, Edit, User as UserIcon } from 'lucide-react';
 import NavBar from '../../components/NavBar';
 
+import { usePermission } from '@/lib/usePermission';
+import { PERMISSIONS } from '@/lib/permissions';
+
 interface User {
     id: string;
     username: string;
@@ -16,6 +19,7 @@ interface User {
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const { hasPermission } = usePermission();
 
     useEffect(() => {
         fetchUsers();
@@ -62,10 +66,12 @@ export default function UsersPage() {
                             <h1 className="text-2xl font-bold text-foreground">إدارة المستخدمين</h1>
                             <p className="text-muted-foreground">صلاحيات وأدوار الموظفين</p>
                         </div>
-                        <Link href="/admin/users/new" className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-amber-600 transition-colors">
-                            <Plus className="w-4 h-4" />
-                            <span>مستخدم جديد</span>
-                        </Link>
+                        {hasPermission(PERMISSIONS.USERS_ADD) && (
+                            <Link href="/admin/users/new" className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-amber-600 transition-colors">
+                                <Plus className="w-4 h-4" />
+                                <span>مستخدم جديد</span>
+                            </Link>
+                        )}
                     </div>
 
                     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
@@ -73,7 +79,7 @@ export default function UsersPage() {
                             <thead className="bg-muted text-muted-foreground">
                                 <tr>
                                     <th className="p-4 font-medium">المستخدم</th>
-                                    <th className="p-4 font-medium">الدور (Role)</th>
+                                    <th className="p-4 font-medium">الدور الوظيفي</th>
                                     <th className="p-4 font-medium">تاريخ التسجيل</th>
                                     <th className="p-4 font-medium text-left">إجراءات</th>
                                 </tr>
@@ -99,7 +105,10 @@ export default function UsersPage() {
                                                         user.role === 'ACCOUNTANT' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                                                             'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}
                     `}>
-                                                {user.role}
+                                                {user.role === 'ADMIN' ? 'مدير النظام' :
+                                                    user.role === 'MANAGER' ? 'مدير' :
+                                                        user.role === 'ACCOUNTANT' ? 'محاسب' :
+                                                            user.role}
                                             </span>
                                         </td>
                                         <td className="p-4 text-muted-foreground" dir="ltr">
@@ -107,12 +116,16 @@ export default function UsersPage() {
                                         </td>
                                         <td className="p-4 text-left">
                                             <div className="flex justify-end gap-2">
-                                                <button className="p-2 text-muted-foreground hover:text-primary transition-colors">
-                                                    <Edit className="w-4 h-4" />
-                                                </button>
-                                                <button onClick={() => handleDelete(user.id)} className="p-2 text-muted-foreground hover:text-red-600 transition-colors">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                {hasPermission(PERMISSIONS.USERS_EDIT) && (
+                                                    <Link href={`/admin/users/${user.id}/edit`} className="p-2 text-muted-foreground hover:text-primary transition-colors">
+                                                        <Edit className="w-4 h-4" />
+                                                    </Link>
+                                                )}
+                                                {hasPermission(PERMISSIONS.USERS_DELETE) && (
+                                                    <button onClick={() => handleDelete(user.id)} className="p-2 text-muted-foreground hover:text-red-600 transition-colors">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

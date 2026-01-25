@@ -51,8 +51,9 @@ export async function GET() {
             totalDebts,
         });
     } catch (error) {
+        console.error("Dashboard Stats API Error:", error);
         return NextResponse.json(
-            { error: "Failed to fetch stats" },
+            { error: "Failed to fetch stats", details: String(error) },
             { status: 500 }
         );
     }

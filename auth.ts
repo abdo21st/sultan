@@ -15,7 +15,18 @@ async function getUser(username: string) {
     try {
         const user = await prisma.user.findUnique({
             where: { username },
+            include: { roleRel: true } // Fetch Custom Role
         });
+
+        if (user && user.roleRel) {
+            // Merge permissions: Role Permissions + User Specific Permissions
+            const mergedPermissions = Array.from(new Set([
+                ...user.roleRel.permissions,
+                ...user.permissions
+            ]));
+            return { ...user, permissions: mergedPermissions };
+        }
+
         return user;
     } catch (error) {
         console.error('Failed to fetch user:', error);

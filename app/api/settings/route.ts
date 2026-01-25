@@ -1,6 +1,8 @@
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET() {
     try {
@@ -27,8 +29,11 @@ export async function GET() {
 export async function PATCH(request: Request) {
     try {
         const session = await auth();
-        // @ts-ignore
-        if (session?.user?.role !== "ADMIN") {
+
+        const hasPermission = session?.user?.role === "ADMIN" ||
+            (session?.user as any)?.permissions?.includes(PERMISSIONS.SETTINGS_MANAGE);
+
+        if (!session?.user || !hasPermission) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
