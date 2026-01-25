@@ -22,15 +22,26 @@ export default function NewUserPage() {
         phoneNumber: '',
         role: 'USER',
         facilityId: '',
-        permissions: [] as string[]
+        permissions: [] as string[],
+        roleIds: [] as string[]
     });
     const [facilities, setFacilities] = useState<{ id: string, name: string, type: string }[]>([]);
+    const [availableRoles, setAvailableRoles] = useState<{ id: string, displayName: string }[]>([]);
 
     useEffect(() => {
+        // Fetch Facilities
         fetch('/api/facilities')
             .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) setFacilities(data);
+            })
+            .catch(console.error);
+
+        // Fetch Custom Roles
+        fetch('/api/roles')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setAvailableRoles(data);
             })
             .catch(console.error);
     }, []);
@@ -42,6 +53,14 @@ export default function NewUserPage() {
             setFormData({ ...formData, permissions: formData.permissions.filter(p => p !== permId) });
         } else {
             setFormData({ ...formData, permissions: [...formData.permissions, permId] });
+        }
+    }
+
+    function toggleRole(roleId: string) {
+        if (formData.roleIds.includes(roleId)) {
+            setFormData({ ...formData, roleIds: formData.roleIds.filter(id => id !== roleId) });
+        } else {
+            setFormData({ ...formData, roleIds: [...formData.roleIds, roleId] });
         }
     }
 
@@ -139,20 +158,24 @@ export default function NewUserPage() {
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-muted-foreground">الدور الوظيفي</label>
-                        <select
-                            name="role"
-                            value={formData.role}
-                            onChange={e => setFormData({ ...formData, role: e.target.value })}
-                            className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                            aria-label="الدور الوظيفي"
-                        >
-                            <option value="USER">مستخدم عادي (User)</option>
-                            <option value="ACCOUNTANT">محاسب (Accountant)</option>
-                            <option value="MANAGER">مشرف (Manager)</option>
-                            <option value="ADMIN">مدير نظام (Admin)</option>
-                        </select>
+                    <div className="space-y-4">
+                        <label className="text-sm font-medium text-muted-foreground">التخصص / الأدوار الوظيفية (يمكن اختيار أكثر من واحد)</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {availableRoles.map(role => (
+                                <label key={role.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${formData.roleIds.includes(role.id) ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}>
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.roleIds.includes(role.id)}
+                                        onChange={() => toggleRole(role.id)}
+                                        className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+                                    />
+                                    <span className="text-sm font-bold">{role.displayName}</span>
+                                </label>
+                            ))}
+                        </div>
+                        <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                            تنبيه: لم يتم العثور على أدوار معرفة مسبقاً. يرجى مراجعة صفحة &quot;الأدوار والصلاحيات&quot;.
+                        </p>
                     </div>
 
                     <div className="space-y-2">

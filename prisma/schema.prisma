@@ -21,9 +21,8 @@ model User {
   phoneNumber String? // For WhatsApp notifications
   role        Role    @default(USER) // Legacy Enum, kept for safe migration
 
-  // New Relation
-  roleRel CustomRole? @relation(fields: [roleId], references: [id])
-  roleId  String?
+  // New Relation: Multi-role support
+  roles CustomRole[]
 
   permissions String[] @default([]) // Overrides or extra permissions
   facilityId  String?

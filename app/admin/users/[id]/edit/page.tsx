@@ -5,13 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import NavBar from '@/app/components/NavBar';
 import { User, Shield, Briefcase, Lock, Save } from 'lucide-react';
 
-// Define available permissions
-const AVAILABLE_PERMISSIONS = [
-    { id: 'MANAGE_USERS', label: 'إدارة المستخدمين' },
-    { id: 'MANAGE_ORDERS', label: 'إدارة الطلبات' },
-    { id: 'VIEW_REPORTS', label: 'عرض التقارير' },
-    { id: 'MANAGE_SETTINGS', label: 'إعدادات النظام' },
-];
+// Unused AVAILABLE_PERMISSIONS removed
 
 export default function EditUserPage() {
     const router = useRouter();
@@ -20,6 +14,7 @@ export default function EditUserPage() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [facilities, setFacilities] = useState<any[]>([]);
+    const [availableRoles, setAvailableRoles] = useState<{ id: string, displayName: string }[]>([]);
 
     const [formData, setFormData] = useState({
         username: '',
@@ -28,12 +23,16 @@ export default function EditUserPage() {
         phoneNumber: '',
         role: 'EMPLOYEE',
         facilityId: '',
-        permissions: [] as string[]
+        permissions: [] as string[],
+        roleIds: [] as string[]
     });
 
     useEffect(() => {
         // Fetch facilities
         fetch('/api/facilities').then(res => res.json()).then(data => setFacilities(data)).catch(() => { });
+
+        // Fetch roles
+        fetch('/api/roles').then(res => res.json()).then(data => setAvailableRoles(data)).catch(() => { });
 
         // Fetch user data
         if (!params?.id) return;
@@ -52,7 +51,8 @@ export default function EditUserPage() {
                     phoneNumber: data.phoneNumber || '',
                     role: data.role,
                     facilityId: data.facilityId || '',
-                    permissions: data.permissions || []
+                    permissions: data.permissions || [],
+                    roleIds: data.roles ? data.roles.map((r: any) => r.id) : []
                 });
                 setLoading(false);
             })
@@ -62,11 +62,13 @@ export default function EditUserPage() {
             });
     }, [params]);
 
-    function togglePermission(perm: string) {
-        if (formData.permissions.includes(perm)) {
-            setFormData({ ...formData, permissions: formData.permissions.filter(p => p !== perm) });
+    // togglePermission and unused state removed
+
+    function toggleRole(roleId: string) {
+        if (formData.roleIds.includes(roleId)) {
+            setFormData({ ...formData, roleIds: formData.roleIds.filter(id => id !== roleId) });
         } else {
-            setFormData({ ...formData, permissions: [...formData.permissions, perm] });
+            setFormData({ ...formData, roleIds: [...formData.roleIds, roleId] });
         }
     }
 
@@ -197,19 +199,21 @@ export default function EditUserPage() {
                                 الوظيفة والمنشأة
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-muted-foreground">الدور الوظيفي</label>
-                                    <select
-                                        value={formData.role}
-                                        onChange={e => setFormData({ ...formData, role: e.target.value })}
-                                        className="w-full px-4 py-2 rounded-lg border border-input bg-background focus:ring-2 focus:ring-primary/20 outline-none"
-                                        aria-label="الدور الوظيفي"
-                                    >
-                                        <option value="EMPLOYEE">موظف (Employee)</option>
-                                        <option value="ACCOUNTANT">محاسب (Accountant)</option>
-                                        <option value="MANAGER">مدير (Manager)</option>
-                                        <option value="ADMIN">مدير نظام (Admin)</option>
-                                    </select>
+                                <div className="md:col-span-1 space-y-4">
+                                    <label className="text-sm font-medium text-muted-foreground">التخصص / الأدوار الوظيفية</label>
+                                    <div className="space-y-2">
+                                        {availableRoles.map(role => (
+                                            <label key={role.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${formData.roleIds.includes(role.id) ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.roleIds.includes(role.id)}
+                                                    onChange={() => toggleRole(role.id)}
+                                                    className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+                                                />
+                                                <span className="text-sm font-bold">{role.displayName}</span>
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 <div className="space-y-2">

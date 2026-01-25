@@ -13,6 +13,7 @@ interface User {
     username: string;
     displayName: string;
     role: string;
+    roles?: { id: string, name: string, displayName: string }[];
     createdAt: string;
 }
 
@@ -99,17 +100,27 @@ export default function UsersPage() {
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold
-                      ${user.role === 'ADMIN' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                                    user.role === 'MANAGER' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                                                        user.role === 'ACCOUNTANT' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                            'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}
-                    `}>
-                                                {user.role === 'ADMIN' ? 'مدير النظام' :
-                                                    user.role === 'MANAGER' ? 'مدير' :
-                                                        user.role === 'ACCOUNTANT' ? 'محاسب' :
-                                                            user.role}
-                                            </span>
+                                            <div className="flex flex-wrap gap-1">
+                                                {user.roles && user.roles.length > 0 ? (
+                                                    user.roles.map((r) => (
+                                                        <span key={r.id} className="px-2 py-1 bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 rounded-full text-[10px] font-bold border border-zinc-200 dark:border-zinc-700">
+                                                            {r.displayName}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold
+                              ${user.role === 'ADMIN' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                            user.role === 'MANAGER' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                                                                user.role === 'ACCOUNTANT' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                                    'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400'}
+                            `}>
+                                                        {user.role === 'ADMIN' ? 'مدير النظام' :
+                                                            user.role === 'MANAGER' ? 'مدير' :
+                                                                user.role === 'ACCOUNTANT' ? 'محاسب' :
+                                                                    user.role}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="p-4 text-muted-foreground" dir="ltr">
                                             {new Date(user.createdAt).toLocaleDateString()}

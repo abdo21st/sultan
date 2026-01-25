@@ -1,7 +1,6 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { authConfig } from './auth.config';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
@@ -15,13 +14,14 @@ async function getUser(username: string) {
     try {
         const user = await prisma.user.findUnique({
             where: { username },
-            include: { roleRel: true } // Fetch Custom Role
+            include: { roles: true } // Fetch All Custom Roles
         });
 
-        if (user && user.roleRel) {
-            // Merge permissions: Role Permissions + User Specific Permissions
+        if (user && user.roles && user.roles.length > 0) {
+            // Merge permissions: All Roles Permissions + User Specific Permissions
+            const rolePermissions = user.roles.flatMap(role => role.permissions);
             const mergedPermissions = Array.from(new Set([
-                ...user.roleRel.permissions,
+                ...rolePermissions,
                 ...user.permissions
             ]));
             return { ...user, permissions: mergedPermissions };
