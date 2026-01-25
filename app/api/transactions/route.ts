@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
-import { auth } from "../../../auth";
 
 export async function GET() {
     try {
@@ -8,7 +7,7 @@ export async function GET() {
             orderBy: { date: "desc" },
         });
         return NextResponse.json(transactions);
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to fetch transactions" },
             { status: 500 }
@@ -27,6 +26,8 @@ const transactionSchema = z.object({
         message: "التاريخ غير صحيح",
     }),
 });
+
+import { auth } from "../../../auth";
 
 export async function POST(request: Request) {
     try {

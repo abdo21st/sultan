@@ -18,7 +18,7 @@ export async function DELETE(
         });
 
         return NextResponse.json({ success: true });
-    } catch (error) {
-        return NextResponse.json({ error: 'حدث خطأ' }, { status: 500 });
+    } catch {
+        return NextResponse.json({ error: 'Failed to delete capacity rule' }, { status: 500 });
     }
 }

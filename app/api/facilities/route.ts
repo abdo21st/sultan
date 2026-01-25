@@ -5,7 +5,7 @@ export async function GET() {
     try {
         const facilities = await prisma.facility.findMany();
         return NextResponse.json(facilities);
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to fetch facilities" },
             { status: 500 }

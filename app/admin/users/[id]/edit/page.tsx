@@ -7,13 +7,19 @@ import { User, Shield, Briefcase, Lock, Save } from 'lucide-react';
 
 // Unused AVAILABLE_PERMISSIONS removed
 
+interface Facility {
+    id: string;
+    name: string;
+    type: string;
+}
+
 export default function EditUserPage() {
     const router = useRouter();
     const params = useParams();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
-    const [facilities, setFacilities] = useState<any[]>([]);
+    const [facilities, setFacilities] = useState<Facility[]>([]);
     const [availableRoles, setAvailableRoles] = useState<{ id: string, displayName: string }[]>([]);
 
     const [formData, setFormData] = useState({
@@ -52,11 +58,11 @@ export default function EditUserPage() {
                     role: data.role,
                     facilityId: data.facilityId || '',
                     permissions: data.permissions || [],
-                    roleIds: data.roles ? data.roles.map((r: any) => r.id) : []
+                    roleIds: data.roles ? data.roles.map((r: { id: string }) => r.id) : []
                 });
                 setLoading(false);
             })
-            .catch(err => {
+            .catch(() => {
                 setError('فشل تحميل بيانات المستخدم');
                 setLoading(false);
             });
@@ -80,7 +86,7 @@ export default function EditUserPage() {
         try {
             const id = Array.isArray(params.id) ? params.id[0] : params.id;
             // Only send password if it's not empty
-            const body: any = { ...formData };
+            const body: Partial<typeof formData> = { ...formData };
             if (!body.password) delete body.password;
 
             const res = await fetch(`/api/users/${id}`, {
@@ -96,7 +102,7 @@ export default function EditUserPage() {
                 const data = await res.json();
                 setError(data.error || 'فشل تحديث المستخدم');
             }
-        } catch (err) {
+        } catch {
             setError('حدث خطأ أثناء التحديث');
         } finally {
             setSaving(false);

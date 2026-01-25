@@ -46,7 +46,7 @@ export async function POST() {
             },
         });
 
-        const managerRole = await prisma.customRole.upsert({
+        await prisma.customRole.upsert({
             where: { name: 'MANAGER' },
             update: {},
             create: {
@@ -69,7 +69,7 @@ export async function POST() {
         // 2. Create Users
         const hashedPassword = await bcrypt.hash('admin123', 10);
 
-        const adminUser = await prisma.user.upsert({
+        await prisma.user.upsert({
             where: { username: 'admin' },
             update: {},
             create: {

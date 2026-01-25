@@ -4,28 +4,36 @@ import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import Link from 'next/link';
 
+interface Notification {
+    id: string;
+    title: string;
+    message: string;
+    read: boolean;
+    link?: string;
+    createdAt: string;
+}
+
 export default function Notifications() {
-    const [notifications, setNotifications] = useState<any[]>([]);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
 
-    const fetchNotifications = async () => {
-        try {
-            const res = await fetch('/api/notifications');
-            if (res.ok) {
-                const data = await res.json();
-                setNotifications(data.notifications);
-                setUnreadCount(data.unreadCount);
-            }
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
     useEffect(() => {
-        fetchNotifications();
-        // Poll every 30 seconds
-        const interval = setInterval(fetchNotifications, 30000);
+        const loadNotifications = async () => {
+            try {
+                const res = await fetch('/api/notifications');
+                if (res.ok) {
+                    const data = await res.json();
+                    setNotifications(data.notifications);
+                    setUnreadCount(data.unreadCount);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        };
+
+        loadNotifications();
+        const interval = setInterval(loadNotifications, 30000);
         return () => clearInterval(interval);
     }, []);
 
@@ -65,9 +73,9 @@ export default function Notifications() {
                         </div>
                         <div className="max-h-80 overflow-y-auto">
                             {notifications.length === 0 ? (
-                                <div className="p-8 text-center text-muted-foreground text-sm">
+                                <p className="p-8 text-center text-muted-foreground text-sm">
                                     لا توجد إشعارات جديدة
-                                </div>
+                                </p>
                             ) : (
                                 <div className="divide-y divide-border">
                                     {notifications.map(notification => (

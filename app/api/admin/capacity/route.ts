@@ -13,8 +13,8 @@ export async function GET() {
             orderBy: { createdAt: 'desc' }
         });
         return NextResponse.json(rules);
-    } catch (error) {
-        return NextResponse.json({ error: 'حدث خطأ' }, { status: 500 });
+    } catch {
+        return NextResponse.json({ error: 'Failed to fetch/update rules' }, { status: 500 });
     }
 }
 

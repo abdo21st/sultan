@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
 import { auth } from "../../../../auth";
-import { PERMISSIONS } from "../../../../lib/permissions";
+import { prisma } from "../../../../lib/prisma";
 
 export async function GET() {
     try {
@@ -14,7 +13,7 @@ export async function GET() {
             orderBy: { createdAt: 'desc' }
         });
         return NextResponse.json(settings);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'حدث خطأ' }, { status: 500 });
     }
 }
@@ -27,7 +26,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const setting = await prisma.alertSetting.create({
+        const data = await prisma.alertSetting.create({
             data: {
                 name: body.name,
                 triggerStatus: body.triggerStatus,
@@ -37,8 +36,8 @@ export async function POST(req: Request) {
             }
         });
 
-        return NextResponse.json(setting);
-    } catch (error) {
-        return NextResponse.json({ error: 'حدث خطأ' }, { status: 500 });
+        return NextResponse.json(data);
+    } catch {
+        return NextResponse.json({ error: "Failed to fetch alerts" }, { status: 500 });
     }
 }

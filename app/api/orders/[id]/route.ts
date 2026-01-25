@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { auth } from "../../../../auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { Prisma } from "@prisma/client";
 import { PERMISSIONS } from "../../../../lib/permissions";
 
 export async function GET(

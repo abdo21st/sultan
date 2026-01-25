@@ -1,5 +1,7 @@
 import { prisma } from "../../../../lib/prisma";
 import { notFound } from "next/navigation";
+import Image from "next/image";
+import PrintButton from "../../../components/PrintButton";
 
 export default async function PrintOrderPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -19,7 +21,7 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
             {/* Header */}
             <div className="flex justify-between items-center border-b-2 border-primary pb-4 mb-8">
                 <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white font-bold text-2xl">S</div>
+                    <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-2xl">S</div>
                     <div>
                         <h1 className="text-2xl font-bold">مغسلة ومنجرة سلطان</h1>
                         <p className="text-sm text-zinc-600">للأثاث والمفروشات الحديثة</p>
@@ -89,8 +91,13 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                     <h2 className="text-lg font-bold mb-4">صور المرفقات</h2>
                     <div className="grid grid-cols-2 gap-4">
                         {(order.images as string[]).map((img, idx) => (
-                            <div key={idx} className="border rounded-xl overflow-hidden shadow-sm">
-                                <img src={img} alt="order asset" className="w-full h-auto" />
+                            <div key={idx} className="relative border rounded-xl overflow-hidden shadow-sm h-64 w-full bg-zinc-100">
+                                <Image
+                                    src={img}
+                                    alt={`order asset ${idx + 1}`}
+                                    fill
+                                    className="object-cover"
+                                />
                             </div>
                         ))}
                     </div>
@@ -118,12 +125,7 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                 }
             `}} />
 
-            <button
-                onClick={() => window.print()}
-                className="no-print fixed bottom-8 right-8 bg-primary text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform font-bold"
-            >
-                🖨️ طباعة التقرير
-            </button>
+            <PrintButton />
         </div>
     );
 }

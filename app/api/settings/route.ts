@@ -18,7 +18,8 @@ export async function GET() {
         }
 
         return NextResponse.json(settings);
-    } catch (error) {
+        return NextResponse.json(settings);
+    } catch {
         return NextResponse.json(
             { error: "Failed to fetch settings" },
             { status: 500 }
@@ -31,7 +32,7 @@ export async function PATCH(request: Request) {
         const session = await auth();
 
         const hasPermission = session?.user?.role === "ADMIN" ||
-            (session?.user as any)?.permissions?.includes(PERMISSIONS.SETTINGS_MANAGE);
+            (session?.user as { permissions?: string[] })?.permissions?.includes(PERMISSIONS.SETTINGS_MANAGE);
 
         if (!session?.user || !hasPermission) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

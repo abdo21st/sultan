@@ -3,14 +3,28 @@
 import { PERMISSIONS } from '../../lib/permissions';
 
 import Link from 'next/link';
-import { Search, LogOut, User, Settings } from 'lucide-react';
+import Image from 'next/image';
+import { LogOut, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Notifications from './Notifications';
 
+interface User {
+    displayName?: string;
+    name?: string;
+    username: string;
+    role: string;
+    permissions?: string[];
+}
+
+interface SystemSettings {
+    logoUrl?: string;
+    appName?: string;
+}
+
 export default function NavBar() {
-    const [user, setUser] = useState<any>(null);
-    const [settings, setSettings] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
+    const [settings, setSettings] = useState<SystemSettings | null>(null);
     const pathname = usePathname();
 
     useEffect(() => {
@@ -31,7 +45,15 @@ export default function NavBar() {
                 <div className="flex justify-between items-center h-16">
                     <div className="flex items-center gap-8">
                         <Link href="/" className="flex items-center gap-2 text-2xl font-bold bg-gradient-to-r from-primary to-amber-400 bg-clip-text text-transparent">
-                            {settings?.logoUrl && <img src={settings.logoUrl} alt="Logo" className="w-8 h-8 rounded-md object-cover" />}
+                            {settings?.logoUrl && (
+                                <Image
+                                    src={settings.logoUrl}
+                                    alt="Logo"
+                                    width={32}
+                                    height={32}
+                                    className="rounded-md object-cover"
+                                />
+                            )}
                             <span>{settings?.appName || 'سلطان'}</span>
                         </Link>
                         <div className="hidden md:flex gap-6 items-center">
@@ -122,14 +144,14 @@ export default function NavBar() {
                                             <span>الملف الشخصي</span>
                                         </Link>
                                         <div className="my-1 border-t border-border"></div>
-                                        <a href="/api/auth/signout" className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors w-full text-right">
+                                        <Link href="/api/auth/signout" className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors w-full text-right">
                                             <LogOut className="w-4 h-4" />
                                             <span>تسجيل الخروج</span>
-                                        </a>
-                                        <a href="/api/auth/signout?callbackUrl=/login" className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-lg transition-colors w-full text-right">
+                                        </Link>
+                                        <Link href="/api/auth/signout?callbackUrl=/login" className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-lg transition-colors w-full text-right">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>
                                             <span>تبديل المستخدم</span>
-                                        </a>
+                                        </Link>
                                     </div>
                                 </div>
                             </div>
