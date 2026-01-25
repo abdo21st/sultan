@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "../../../../lib/prisma";
 import { notFound } from "next/navigation";
 import PrintAuto from "./PrintAuto";
 

@@ -1,5 +1,5 @@
-import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "../../../../auth";
+import { prisma } from "../../../../lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function POST(_req: Request) {

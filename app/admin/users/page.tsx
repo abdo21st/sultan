@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { Plus, Trash2, Edit, User as UserIcon } from 'lucide-react';
 import NavBar from '../../components/NavBar';
 
-import { usePermission } from '@/lib/usePermission';
-import { PERMISSIONS } from '@/lib/permissions';
+import { usePermission } from '../../../lib/usePermission';
+import { PERMISSIONS } from '../../../lib/permissions';
 
 interface User {
     id: string;

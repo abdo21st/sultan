@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import NavBar from '@/app/components/NavBar';
+import NavBar from "../../../components/NavBar";
 
 // Define available permissions
 const AVAILABLE_PERMISSIONS = [

@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Plus, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import NavBar from '../components/NavBar';
-import { usePermission } from '@/lib/usePermission';
-import { PERMISSIONS } from '@/lib/permissions';
+import { usePermission } from '../../lib/usePermission';
+import { PERMISSIONS } from '../../lib/permissions';
 
 interface Transaction {
     id: string;

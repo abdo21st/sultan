@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import NavBar from '@/app/components/NavBar';
-import { PERMISSIONS, PERMISSION_LABELS } from '@/lib/permissions';
+import NavBar from '../../components/NavBar';
+import { PERMISSIONS, PERMISSION_LABELS } from '../../../lib/permissions';
 
 interface Role {
     id: string;

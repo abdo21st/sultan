@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { prisma } from "../../../lib/prisma";
+import { auth } from "../../../auth";
 import Link from "next/link";
 import OrderActions from "./OrderActions";
 import { ArrowLeft, Edit } from "lucide-react";

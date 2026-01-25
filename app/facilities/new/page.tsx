@@ -28,7 +28,8 @@ export default function NewFacilityPage() {
             });
 
             if (!res.ok) {
-                throw new Error("Failed to create facility");
+                const data = await res.json();
+                throw new Error(data.error || "فشل إضافة المنشأة");
             }
 
             router.push("/"); // Redirect to dashboard

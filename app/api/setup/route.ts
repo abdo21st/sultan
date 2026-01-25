@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from "../../../lib/prisma";
 import bcrypt from 'bcryptjs';
-import { PERMISSIONS } from '@/lib/permissions';
+import { PERMISSIONS } from "../../../lib/permissions";
 
 export async function POST() {
     try {

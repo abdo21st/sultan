@@ -1,6 +1,7 @@
 'use server';
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "../../lib/prisma";
+import { auth } from "../../auth";
 import { revalidatePath } from "next/cache";
 
 export async function updateOrderStatus(id: string, newStatus: string, rejectionReason?: string) {

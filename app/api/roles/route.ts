@@ -1,8 +1,8 @@
 
-import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "../../../auth";
+import { prisma } from "../../../lib/prisma";
 import { NextResponse } from "next/server";
-import { PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS } from "../../../lib/permissions";
 
 export async function GET() {
     const session = await auth();
@@ -25,6 +25,14 @@ export async function GET() {
     }
 }
 
+import { z } from "zod";
+
+const roleSchema = z.object({
+    name: z.string().min(2, "اسم البرمجي للدور يجب أن يكون حرفين على الأقل (مثال: MANAGER)"),
+    displayName: z.string().min(2, "اسم الدور الظاهر يجب أن يكون حرفين على الأقل (مثال: مدير)"),
+    permissions: z.array(z.string()).default([]),
+});
+
 export async function POST(req: Request) {
     const session = await auth();
     if (!session?.user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
@@ -32,7 +40,17 @@ export async function POST(req: Request) {
     }
 
     try {
-        const body = await req.json();
+        const json = await req.json();
+        const result = roleSchema.safeParse(json);
+
+        if (!result.success) {
+            return NextResponse.json(
+                { error: result.error.issues[0].message },
+                { status: 400 }
+            );
+        }
+
+        const body = result.data;
         const { name, displayName, permissions } = body;
 
         const role = await prisma.customRole.create({

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import { PERMISSIONS } from '../lib/permissions';
 import { prisma } from '../lib/prisma';
@@ -46,7 +47,7 @@ async function main() {
         },
     });
 
-    const managerRole = await prisma.customRole.upsert({
+    await prisma.customRole.upsert({
         where: { name: 'MANAGER' },
         update: {},
         create: {
@@ -73,7 +74,7 @@ async function main() {
 
     const hashedPassword = await bcrypt.hash('admin123', 10);
 
-    const adminUser = await prisma.user.upsert({
+    await prisma.user.upsert({
         where: { username: 'admin' },
         update: {},
         create: {
@@ -89,7 +90,7 @@ async function main() {
         },
     });
 
-    const accountantUser = await prisma.user.upsert({
+    await prisma.user.upsert({
         where: { username: 'accountant' },
         update: {},
         create: {
@@ -105,7 +106,7 @@ async function main() {
         },
     });
 
-    const receptionistUser = await prisma.user.upsert({
+    await prisma.user.upsert({
         where: { username: 'receptionist' },
         update: {},
         create: {
@@ -121,7 +122,7 @@ async function main() {
         },
     });
 
-    const multiRoleUser = await prisma.user.upsert({
+    await prisma.user.upsert({
         where: { username: 'multi' },
         update: {},
         create: {
@@ -142,21 +143,69 @@ async function main() {
 
     console.log('✅ Users created successfully');
 
+    // 3. Create Facilities
+    console.log('🏭 Creating facilities...');
+    const mainFactory = await prisma.facility.upsert({
+        where: { id: 'factory-1' },
+        update: {},
+        create: {
+            id: 'factory-1',
+            name: 'المصنع الرئيسي',
+            type: 'FACTORY',
+            location: 'المنطقة الصناعية',
+        },
+    });
+
+    const centralShop = await prisma.facility.upsert({
+        where: { id: 'shop-1' },
+        update: {},
+        create: {
+            id: 'shop-1',
+            name: 'معرض المدينة',
+            type: 'SHOP',
+            location: 'وسط المدينة',
+        },
+    });
+
+    // 4. Create Sample Orders
+    console.log('📦 Creating sample orders...');
+
+    // Order 1: Registered by Admin
+    await prisma.order.create({
+        data: {
+            customerName: 'محمد علي',
+            customerPhone: '0912345600',
+            description: 'طقم جلوس كلاسيك',
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            totalAmount: 50000,
+            paidAmount: 20000,
+            remainingAmount: 30000,
+            factoryId: mainFactory.id,
+            shopId: centralShop.id,
+            status: 'REGISTERED',
+        },
+    });
+
+    // Order 2: In Production
+    await prisma.order.create({
+        data: {
+            customerName: 'سارة أحمد',
+            customerPhone: '0912345601',
+            description: 'مطبخ ألمنيوم حديث',
+            dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+            totalAmount: 120000,
+            paidAmount: 80000,
+            remainingAmount: 40000,
+            factoryId: mainFactory.id,
+            shopId: centralShop.id,
+            status: 'IN_PRODUCTION',
+        },
+    });
+
+    console.log('✅ Sample data added successfully');
+
     console.log('\n🎉 Seed completed successfully!');
-    console.log('\n📝 Test Users Created:');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('👤 Username: admin       | Password: admin123');
-    console.log('   Role: مدير النظام (All Permissions)');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('👤 Username: accountant  | Password: acc123');
-    console.log('   Role: محاسب (View Orders & Transactions)');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('👤 Username: receptionist| Password: rec123');
-    console.log('   Role: موظف استقبال (View & Add Orders)');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('👤 Username: multi       | Password: multi123');
-    console.log('   Roles: محاسب + موظف استقبال (Combined)');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    // ... rest of console logs
 }
 
 main()

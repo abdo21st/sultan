@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import NavBar from '@/app/components/NavBar';
+import NavBar from "../../components/NavBar";
 import { Save, Download, Trash2, RefreshCw, AlertTriangle, Building2, Plus, X } from 'lucide-react';
 
 export default function SettingsPage() {

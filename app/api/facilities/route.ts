@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "../../../lib/prisma";
 
 export async function GET() {
     try {
@@ -13,20 +13,38 @@ export async function GET() {
     }
 }
 
+import { z } from "zod";
+
+const facilitySchema = z.object({
+    name: z.string().min(2, "اسم المنشأة يجب أن يكون حرفين على الأقل"),
+    type: z.enum(["FACTORY", "SHOP"]),
+    location: z.string().min(2, "الموقع يجب أن يكون حرفين على الأقل"),
+});
+
 export async function POST(request: Request) {
     try {
-        const body = await request.json();
+        const json = await request.json();
+        const result = facilitySchema.safeParse(json);
+
+        if (!result.success) {
+            return NextResponse.json(
+                { error: result.error.issues[0].message },
+                { status: 400 }
+            );
+        }
+
+        const body = result.data;
         const facility = await prisma.facility.create({
             data: {
                 name: body.name,
-                type: body.type, // 'FACTORY' or 'SHOP'
+                type: body.type,
                 location: body.location,
             },
         });
         return NextResponse.json(facility);
-    } catch (error) {
+    } catch {
         return NextResponse.json(
-            { error: "Failed to create facility" },
+            { error: "فشل إضافة المنشأة" },
             { status: 500 }
         );
     }

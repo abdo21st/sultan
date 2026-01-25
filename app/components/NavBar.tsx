@@ -1,6 +1,6 @@
 'use client';
 
-import { PERMISSIONS } from '@/lib/permissions';
+import { PERMISSIONS } from '../../lib/permissions';
 
 import Link from 'next/link';
 import { Search, LogOut, User, Settings } from 'lucide-react';

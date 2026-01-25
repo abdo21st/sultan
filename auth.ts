@@ -8,7 +8,7 @@ import { z } from 'zod';
 // Assuming we can use the one from lib/prisma.ts tailored for edge if needed, 
 // but for credentials usually we need standard node prisma.
 // Since we are in app router, let's just make a new client or use the lib one.
-import { prisma } from '@/lib/prisma'; // Ensure this path is correct
+import { prisma } from './lib/prisma'; // Ensure this path is correct
 
 async function getUser(username: string) {
     try {

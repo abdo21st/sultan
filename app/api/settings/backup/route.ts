@@ -1,7 +1,7 @@
 
-import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { PERMISSIONS } from "@/lib/permissions";
+import { auth } from "../../../../auth";
+import { prisma } from "../../../../lib/prisma";
+import { PERMISSIONS } from "../../../../lib/permissions";
 import { NextResponse } from "next/server";
 
 export async function GET() {
