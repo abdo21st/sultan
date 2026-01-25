@@ -6,7 +6,12 @@ import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET() {
     const session = await auth();
-    if (!session?.user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
+
+    // Bootstrap mode: Allow access if no roles exist yet
+    const roleCount = await prisma.customRole.count();
+    const isBootstrap = roleCount === 0;
+
+    if (!isBootstrap && !session?.user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
