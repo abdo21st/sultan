@@ -29,6 +29,8 @@ export const PERMISSIONS = {
     // Roles (Admin)
     ROLES_MANAGE: 'roles:manage',
     SETTINGS_MANAGE: 'settings:manage',
+    ALERTS_MANAGE: 'alerts:manage',
+    BOOKING_MANAGE: 'booking:manage',
 } as const;
 
 export const PERMISSION_LABELS: Record<string, string> = {
@@ -54,6 +56,8 @@ export const PERMISSION_LABELS: Record<string, string> = {
 
     [PERMISSIONS.ROLES_MANAGE]: 'إدارة الأدوار والصلاحيات',
     [PERMISSIONS.SETTINGS_MANAGE]: 'إدارة إعدادات النظام',
+    [PERMISSIONS.ALERTS_MANAGE]: 'إدارة نظام التنبيهات',
+    [PERMISSIONS.BOOKING_MANAGE]: 'إدارة طاقة الحجز',
 };
 
 export const DEFAULT_ROLES = {
