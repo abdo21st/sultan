@@ -6,9 +6,7 @@ import OrderList from "./components/OrderList";
 import {
   Banknote,
   ClipboardList,
-  Clock,
   PlusCircle,
-  Search,
   TrendingUp
 } from "lucide-react";
 import NavBar from "./components/NavBar";
@@ -100,25 +98,13 @@ export default function Home() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Link href="/orders/new" className="flex flex-col items-center justify-center p-6 bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-primary/5 transition-all group cursor-pointer">
+        <div className="flex gap-4">
+          <Link href="/orders/new" className="flex flex-col items-center justify-center p-6 bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-primary/5 transition-all group cursor-pointer min-w-[150px]">
             <div className="p-3 bg-primary/10 rounded-full text-primary mb-3 group-hover:scale-110 transition-transform">
               <PlusCircle className="w-6 h-6" />
             </div>
             <span className="font-medium text-foreground">طلب جديد</span>
           </Link>
-
-          <Link href="/facilities/new" className="flex flex-col items-center justify-center p-6 bg-card border border-border rounded-xl hover:border-primary/50 hover:bg-primary/5 transition-all group cursor-pointer">
-            <div className="p-3 bg-primary/10 rounded-full text-primary mb-3 group-hover:scale-110 transition-transform">
-              <PlusCircle className="w-6 h-6" />
-            </div>
-            <span className="font-medium text-foreground">إضافة منشأة</span>
-          </Link>
-
-          {/* Placeholder for future features */}
-          <div className="flex flex-col items-center justify-center p-6 bg-card border border-border border-dashed rounded-xl opacity-50 cursor-not-allowed">
-            <span className="font-medium text-muted-foreground">تسجيل معاملة (قريباً)</span>
-          </div>
         </div>
 
         {/* Recent Orders Section */}
