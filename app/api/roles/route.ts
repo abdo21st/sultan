@@ -6,7 +6,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET() {
     const session = await auth();
-    if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
+    if (!session?.user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -15,14 +15,14 @@ export async function GET() {
             orderBy: { name: 'asc' }
         });
         return NextResponse.json(roles);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to fetch roles" }, { status: 500 });
     }
 }
 
 export async function POST(req: Request) {
     const session = await auth();
-    if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
+    if (!session?.user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

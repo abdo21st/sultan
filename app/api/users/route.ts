@@ -6,12 +6,12 @@ import { PERMISSIONS } from "@/lib/permissions";
 export async function GET() {
     try {
         const session = await auth();
-        if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.USERS_VIEW)) {
+        if (!session?.user?.permissions?.includes(PERMISSIONS.USERS_VIEW)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
         const users = await prisma.user.findMany();
         return NextResponse.json(users);
-    } catch (_error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to fetch users" },
             { status: 500 }
@@ -24,7 +24,7 @@ import bcrypt from "bcryptjs";
 export async function POST(request: Request) {
     try {
         const session = await auth();
-        if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.USERS_ADD)) {
+        if (!session?.user?.permissions?.includes(PERMISSIONS.USERS_ADD)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
         const body = await request.json();
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
             include: { roles: true }
         });
         return NextResponse.json(user);
-    } catch (_error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to create user" },
             { status: 500 }
