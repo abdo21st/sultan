@@ -37,6 +37,7 @@ export async function PATCH(
         if (body.totalAmount) dataToUpdate.totalAmount = parseFloat(body.totalAmount);
         if (body.paidAmount) dataToUpdate.paidAmount = parseFloat(body.paidAmount);
         if (body.remainingAmount) dataToUpdate.remainingAmount = parseFloat(body.remainingAmount);
+        if (body.dueDate) dataToUpdate.dueDate = new Date(body.dueDate);
 
         const order = await prisma.order.update({
             where: { id },

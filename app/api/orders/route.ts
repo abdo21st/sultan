@@ -3,14 +3,41 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { Prisma } from "@prisma/client";
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const factoryId = searchParams.get('factoryId');
+        const shopId = searchParams.get('shopId');
+        const status = searchParams.get('status');
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
+        const customerName = searchParams.get('customerName');
+
+        const where: Prisma.OrderWhereInput = {};
+        if (factoryId) where.factoryId = factoryId;
+        if (shopId) where.shopId = shopId;
+        if (status) where.status = { in: status.split(',') };
+        if (customerName) where.customerName = { contains: customerName, mode: 'insensitive' };
+
+        if (startDate || endDate) {
+            where.dueDate = {};
+            if (startDate) where.dueDate.gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                where.dueDate.lte = end;
+            }
+        }
+
         const orders = await prisma.order.findMany({
+            where,
             orderBy: { createdAt: "desc" },
         });
         return NextResponse.json(orders);
     } catch (error) {
+        console.error("Fetch orders error:", error);
         return NextResponse.json(
             { error: "Failed to fetch orders" },
             { status: 500 }
@@ -60,7 +87,7 @@ export async function POST(request: Request) {
             const currentOrdersCount = await prisma.order.count({
                 where: {
                     factoryId: factoryId,
-                    dueDate: dueDate
+                    dueDate: dueDateObj
                 }
             });
 
@@ -102,7 +129,7 @@ export async function POST(request: Request) {
                 customerName,
                 customerPhone,
                 description,
-                dueDate,
+                dueDate: dueDateObj,
                 totalAmount,
                 paidAmount,
                 remainingAmount,

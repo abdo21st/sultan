@@ -34,22 +34,21 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 interface OrderListProps {
-    statusFilter?: { status?: string[] };
+    queryParams?: string;
 }
 
-export default function OrderList({ statusFilter }: OrderListProps) {
+export default function OrderList({ queryParams }: OrderListProps) {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         async function fetchOrders() {
+            setLoading(true);
             try {
-                const res = await fetch("/api/orders");
+                const url = queryParams ? `/api/orders?${queryParams}` : "/api/orders";
+                const res = await fetch(url);
                 if (res.ok) {
-                    let data = await res.json();
-                    if (statusFilter?.status && statusFilter.status.length > 0) {
-                        data = data.filter((o: Order) => statusFilter.status!.includes(o.status));
-                    }
+                    const data = await res.json();
                     setOrders(data);
                 }
             } catch (error) {
@@ -59,7 +58,7 @@ export default function OrderList({ statusFilter }: OrderListProps) {
             }
         }
         fetchOrders();
-    }, [statusFilter]);
+    }, [queryParams]);
 
     if (loading) {
         return <div className="text-center p-4 text-zinc-500">جاري تحميل الطلبات...</div>;
