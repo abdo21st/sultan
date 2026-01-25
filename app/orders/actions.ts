@@ -72,17 +72,37 @@ export async function updateOrderStatus(id: string, newStatus: string, rejection
 
 export async function completeOrder(id: string, paymentNote?: string) {
     try {
+        const order = await prisma.order.findUnique({
+            where: { id },
+            select: { images: true }
+        });
+
+        if (order?.images) {
+            const fs = await import("fs/promises");
+            const path = await import("path");
+            for (const imgPath of (order.images as string[])) {
+                try {
+                    const fullPath = path.join(process.cwd(), "public", imgPath);
+                    await fs.unlink(fullPath);
+                } catch (err) {
+                    console.error(`Failed to delete image ${imgPath}`, err);
+                }
+            }
+        }
+
         await prisma.order.update({
             where: { id },
             data: {
                 status: 'COMPLETED',
-                paymentNote: paymentNote || null
+                paymentNote: paymentNote || null,
+                images: [] // Clear image paths from DB
             }
         });
         revalidatePath(`/orders/${id}`);
         revalidatePath('/orders');
         return { success: true };
     } catch (e) {
+        console.error(e);
         return { success: false, error: 'Failed to complete order' };
     }
 }

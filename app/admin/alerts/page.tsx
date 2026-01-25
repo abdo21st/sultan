@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import NavBar from "../../components/NavBar";
 import {
     Bell,
@@ -55,11 +55,7 @@ export default function AlertsPage() {
         phone: ""
     });
 
-    useEffect(() => {
-        fetchData();
-    }, [activeTab]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch('/api/admin/alerts');
@@ -69,18 +65,22 @@ export default function AlertsPage() {
             if (activeTab === 'current') {
                 // Fetch orders that need attention (e.g., due today or tomorrow)
                 const ordersRes = await fetch('/api/orders');
-                const ordersData = await ordersRes.json();
+                const ordersData: Order[] = await ordersRes.json();
                 // Simple logic: show orders due today or tomorrow
                 const today = new Date().toISOString().split('T')[0];
                 const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-                setMatchingOrders(ordersData.filter((o: any) => o.dueDate === today || o.dueDate === tomorrow));
+                setMatchingOrders(ordersData.filter(o => o.dueDate === today || o.dueDate === tomorrow));
             }
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeTab]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const handleAddSetting = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -264,7 +264,7 @@ export default function AlertsPage() {
                                             {s.whatsappEnabled && <p className="text-xs text-green-600 font-bold mt-1 inline-flex items-center gap-1"><MessageSquare className="w-3 h-3" /> واتساب مفعل لـ {s.recipientPhones.length} رقم</p>}
                                         </div>
                                     </div>
-                                    <button className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-5 h-5" /></button>
+                                    <button title="حذف القاعدة" className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-5 h-5" /></button>
                                 </div>
                             ))}
                         </div>

@@ -24,6 +24,7 @@ interface CapacityRule {
 interface Facility {
     id: string;
     name: string;
+    type: string;
 }
 
 const DAYS_OF_WEEK = [
@@ -57,7 +58,7 @@ export default function BookingPage() {
                 facilitiesRes.json()
             ]);
             setRules(rulesData);
-            setFacilities(facilitiesData.filter((f: any) => f.type === 'FACTORY' || f.type === 'ورشة'));
+            setFacilities(facilitiesData.filter((f: Facility) => f.type === 'FACTORY' || f.type === 'ورشة'));
         } catch (error) {
             console.error(error);
         } finally {
@@ -169,6 +170,8 @@ export default function BookingPage() {
                                         <label className="block text-sm font-medium mb-1">التاريخ</label>
                                         <input
                                             type="date"
+                                            title="التاريخ المحدد"
+                                            placeholder="اختر التاريخ"
                                             className="w-full p-2 bg-background border border-border rounded-lg text-sm"
                                             value={form.specificDate}
                                             onChange={(e) => setForm({ ...form, specificDate: e.target.value })}
@@ -181,6 +184,8 @@ export default function BookingPage() {
                                     <label className="block text-sm font-medium mb-1">أقصى كمية حجز</label>
                                     <input
                                         type="number"
+                                        title="أقصى كمية حجز"
+                                        placeholder="مثلاً: 10"
                                         className="w-full p-2 bg-background border border-border rounded-lg text-sm"
                                         value={form.maxCapacity}
                                         onChange={(e) => setForm({ ...form, maxCapacity: parseInt(e.target.value) })}

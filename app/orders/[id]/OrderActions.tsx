@@ -79,6 +79,15 @@ export default function OrderActions({ order, currentUser }: { order: any, curre
             <h3 className="font-semibold mb-4 text-foreground border-b border-border pb-2">الإجراءات</h3>
 
             <div className="flex flex-col gap-3">
+                <Link
+                    href={`/orders/print/${order.id}`}
+                    target="_blank"
+                    className="w-full py-2 bg-zinc-100 text-zinc-900 rounded-lg font-bold hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2 mb-2"
+                >
+                    <Printer className="w-4 h-4" />
+                    طباعة تقرير الطلب
+                </Link>
+
                 {/* Factory Actions */}
                 {(order.status === 'REGISTERED' || order.status === 'TRANSFERRED_TO_FACTORY') && isFactoryWorker && (
                     <>

@@ -54,6 +54,9 @@ model Facility {
   name     String
   type     String
   location String?
+
+  factoryOrders Order[] @relation("FactoryOrders")
+  shopOrders    Order[] @relation("ShopOrders")
 }
 
 model Order {
@@ -62,14 +65,16 @@ model Order {
   customerName    String
   customerPhone   String
   description     String
-  dueDate         String
+  dueDate         DateTime
   status          String   @default("REGISTERED")
   totalAmount     Float
   paidAmount      Float
   remainingAmount Float    @default(0)
   images          String[]
   factoryId       String
+  factory         Facility @relation("FactoryOrders", fields: [factoryId], references: [id])
   shopId          String
+  shop            Facility @relation("ShopOrders", fields: [shopId], references: [id])
   rejectionReason String?
   paymentNote     String?
   history         Json[]

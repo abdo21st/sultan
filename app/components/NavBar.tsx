@@ -67,6 +67,12 @@ export default function NavBar() {
                             {user && (user.permissions?.includes(PERMISSIONS.SETTINGS_MANAGE) || user.role === 'ADMIN') && (
                                 <>
                                     <Link
+                                        href="/admin/analytics"
+                                        className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/analytics') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                                    >
+                                        التقارير
+                                    </Link>
+                                    <Link
                                         href="/admin/booking"
                                         className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/booking') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
                                     >
