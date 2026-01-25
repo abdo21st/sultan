@@ -9,7 +9,8 @@ import {
     Factory,
     ShieldAlert,
     Loader2,
-    CalendarDays
+    CalendarDays,
+    Clock
 } from "lucide-react";
 
 interface CapacityRule {
