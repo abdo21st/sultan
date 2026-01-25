@@ -28,7 +28,7 @@ interface User {
     phoneNumber?: string;
 }
 
-export default function OrderActions({ order, currentUser }: { order: Order, currentUser: User }) {
+export default function OrderActions({ order, currentUser }: { order: Order, currentUser?: User | null }) {
     const [loading, setLoading] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
