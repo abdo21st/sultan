@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import NavBar from '../../components/NavBar'; // Updated import path
+import NavBar from '@/app/components/NavBar';
 
 // Define available permissions
 const AVAILABLE_PERMISSIONS = [
@@ -19,9 +19,21 @@ export default function NewUserPage() {
         username: '',
         password: '',
         displayName: '',
+        phoneNumber: '',
         role: 'USER',
+        facilityId: '',
         permissions: [] as string[]
     });
+    const [facilities, setFacilities] = useState<{ id: string, name: string, type: string }[]>([]);
+
+    useEffect(() => {
+        fetch('/api/facilities')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setFacilities(data);
+            })
+            .catch(console.error);
+    }, []);
 
     const [error, setError] = useState('');
 
@@ -77,6 +89,7 @@ export default function NewUserPage() {
                             <label className="text-sm font-medium text-muted-foreground">اسم المستخدم</label>
                             <input
                                 required
+                                name="username"
                                 type="text"
                                 value={formData.username}
                                 onChange={e => setFormData({ ...formData, username: e.target.value })}
@@ -88,6 +101,7 @@ export default function NewUserPage() {
                             <label className="text-sm font-medium text-muted-foreground">الاسم الظاهر (للموظفين)</label>
                             <input
                                 required
+                                name="displayName"
                                 type="text"
                                 value={formData.displayName}
                                 onChange={e => setFormData({ ...formData, displayName: e.target.value })}
@@ -97,9 +111,23 @@ export default function NewUserPage() {
                     </div>
 
                     <div className="space-y-2">
+                        <label className="text-sm font-medium text-muted-foreground">رقم الهاتف (للتنبيهات)</label>
+                        <input
+                            name="phoneNumber"
+                            type="tel"
+                            dir="ltr"
+                            value={formData.phoneNumber}
+                            onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
+                            className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                            placeholder="مثال: 2189xxxxxxx"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground">كلمة المرور</label>
                         <input
                             required
+                            name="password"
                             type="password"
                             value={formData.password}
                             onChange={e => setFormData({ ...formData, password: e.target.value })}
@@ -111,6 +139,7 @@ export default function NewUserPage() {
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground">الدور الوظيفي</label>
                         <select
+                            name="role"
                             value={formData.role}
                             onChange={e => setFormData({ ...formData, role: e.target.value })}
                             className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -120,6 +149,26 @@ export default function NewUserPage() {
                             <option value="MANAGER">مشرف (Manager)</option>
                             <option value="ADMIN">مدير نظام (Admin)</option>
                         </select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-muted-foreground">المنشأة (المكان الذي يعمل فيه)</label>
+                        <select
+                            name="facilityId"
+                            value={formData.facilityId}
+                            onChange={e => setFormData({ ...formData, facilityId: e.target.value })}
+                            className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                        >
+                            <option value="">-- بدون تعيين --</option>
+                            {facilities.map(f => (
+                                <option key={f.id} value={f.id}>
+                                    {f.name} ({f.type === 'FACTORY' ? 'مصنع' : 'معرض'})
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-muted-foreground">
+                            تحديد المنشأة يقيد الموظف بالعمل ضمن نطاقها فقط.
+                        </p>
                     </div>
 
                     {/* Advanced Permissions Section */}

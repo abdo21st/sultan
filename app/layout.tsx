@@ -13,18 +13,26 @@ export const metadata: Metadata = {
   description: "نظام إدارة الطلبات والمعاملات",
 };
 
-export default function RootLayout({
+import { auth } from "@/auth";
+import { Providers } from "./providers";
+
+// ...
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body
         suppressHydrationWarning
         className={`${cairo.variable} font-sans antialiased`}
       >
-        {children}
+        <Providers session={session}>
+          {children}
+        </Providers>
       </body>
     </html>
   );

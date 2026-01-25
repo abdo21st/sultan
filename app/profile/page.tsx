@@ -47,9 +47,12 @@ export default function ProfilePage() {
                                 </div>
                             </div>
                             <span className={`px-4 py-1.5 rounded-full text-sm font-bold border ${user.role === 'ADMIN' ? 'bg-red-500/10 text-red-600 border-red-500/20' :
-                                    'bg-primary/10 text-primary border-primary/20'
+                                'bg-primary/10 text-primary border-primary/20'
                                 }`}>
-                                {user.role}
+                                {user.role === 'ADMIN' ? 'مدير النظام' :
+                                    user.role === 'MANAGER' ? 'مدير' :
+                                        user.role === 'ACCOUNTANT' ? 'محاسب' :
+                                            user.role}
                             </span>
                         </div>
 

@@ -3,11 +3,12 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const order = await prisma.order.findUnique({
-            where: { id: params.id },
+            where: { id },
         });
 
         if (!order) {
@@ -25,9 +26,10 @@ export async function GET(
 
 export async function PATCH(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const body = await request.json();
 
         // Ensure numeric fields are parsed correctly
@@ -37,7 +39,7 @@ export async function PATCH(
         if (body.remainingAmount) dataToUpdate.remainingAmount = parseFloat(body.remainingAmount);
 
         const order = await prisma.order.update({
-            where: { id: params.id },
+            where: { id },
             data: dataToUpdate,
         });
 
@@ -52,11 +54,12 @@ export async function PATCH(
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         await prisma.order.delete({
-            where: { id: params.id },
+            where: { id },
         });
 
         return NextResponse.json({ message: "Order deleted successfully" });

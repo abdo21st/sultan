@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
 export async function GET() {
     try {
@@ -17,21 +20,72 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const body = await request.json();
+        const session = await auth();
+        const formData = await request.formData();
+
+        const customerName = formData.get("customerName") as string;
+        const customerPhone = formData.get("customerPhone") as string;
+        const description = formData.get("description") as string;
+        const dueDate = formData.get("dueDate") as string;
+        const totalAmount = parseFloat(formData.get("totalAmount") as string);
+        const paidAmount = parseFloat((formData.get("paidAmount") as string) || "0");
+        const remainingAmount = totalAmount - paidAmount;
+        const factoryId = formData.get("factoryId") as string;
+
+        // Trust shopId from form (which might be auto-filled for restricted users) or fallback to session
+        let shopId = formData.get("shopId") as string;
+        if (!shopId && session?.user?.facilityId) {
+            shopId = session.user.facilityId;
+        }
+
+        // Handle Images
+        const imageFiles = formData.getAll("images") as File[];
+        const imagePaths: string[] = [];
+
+        if (imageFiles.length > 0) {
+            const uploadDir = path.join(process.cwd(), "public", "uploads");
+            await mkdir(uploadDir, { recursive: true });
+
+            for (const file of imageFiles) {
+                if (file.size > 0) {
+                    const buffer = Buffer.from(await file.arrayBuffer());
+                    const filename = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
+                    await writeFile(path.join(uploadDir, filename), buffer);
+                    imagePaths.push(`/uploads/${filename}`);
+                }
+            }
+        }
+
+        // Create Order
         const order = await prisma.order.create({
             data: {
-                customerName: body.customerName,
-                customerPhone: body.customerPhone,
-                description: body.description,
-                dueDate: body.dueDate,
-                totalAmount: parseFloat(body.totalAmount),
-                paidAmount: parseFloat(body.paidAmount || 0),
-                remainingAmount: parseFloat(body.remainingAmount || 0),
-                factoryId: body.factoryId,
-                shopId: body.shopId,
-                status: "REGISTERED",
+                customerName,
+                customerPhone,
+                description,
+                dueDate,
+                totalAmount,
+                paidAmount,
+                remainingAmount,
+                factoryId,
+                shopId,
+                status: "REGISTERED", // Start as Registered
+                images: imagePaths,
             },
         });
+
+        // Create Transaction if paidAmount > 0
+        if (paidAmount > 0) {
+            await prisma.transaction.create({
+                data: {
+                    type: 'INCOME',
+                    amount: paidAmount,
+                    category: 'SALES',
+                    description: `دفعة مقدمة - طلب #${order.serialNumber} - ${customerName}`,
+                    createdBy: session?.user?.id,
+                }
+            });
+        }
+
         return NextResponse.json(order);
     } catch (error) {
         console.error("Error creating order:", error);

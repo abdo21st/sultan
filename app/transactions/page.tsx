@@ -1,8 +1,11 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, ArrowUpCircle, ArrowDownCircle, Search } from 'lucide-react';
+import { Plus, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import NavBar from '../components/NavBar';
+import { usePermission } from '@/lib/usePermission';
+import { PERMISSIONS } from '@/lib/permissions';
 
 interface Transaction {
     id: string;
@@ -14,6 +17,7 @@ interface Transaction {
 }
 
 export default function TransactionsPage() {
+    const { hasPermission } = usePermission();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -69,13 +73,15 @@ export default function TransactionsPage() {
             <main className="max-w-7xl mx-auto px-4 py-8">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold text-foreground">المعاملات المالية</h1>
-                    <button
-                        onClick={() => setShowForm(!showForm)}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-amber-600 transition-colors"
-                    >
-                        <Plus className="w-5 h-5" />
-                        <span>تسجيل حركة</span>
-                    </button>
+                    {hasPermission(PERMISSIONS.TRANSACTIONS_ADD) && (
+                        <button
+                            onClick={() => setShowForm(!showForm)}
+                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-amber-600 transition-colors"
+                        >
+                            <Plus className="w-5 h-5" />
+                            <span>تسجيل حركة</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Add Transaction Form */}
@@ -190,13 +196,21 @@ export default function TransactionsPage() {
                                         {tx.type === 'INCOME' ? <ArrowUpCircle className="w-6 h-6" /> : <ArrowDownCircle className="w-6 h-6" />}
                                     </div>
                                     <div>
-                                        <h4 className="font-semibold text-foreground">{tx.category}</h4>
+                                        <h4 className="font-semibold text-foreground">
+                                            {tx.category === 'SALES' ? 'مبيعات' :
+                                                tx.category === 'SALARY' ? 'رواتب' :
+                                                    tx.category === 'RENT' ? 'إيجار' :
+                                                        tx.category === 'RAW_MATERIALS' ? 'مواد خام' :
+                                                            tx.category === 'UTILITIES' ? 'فواتير وخدمات' :
+                                                                tx.category === 'OTHER' ? 'أخرى' :
+                                                                    tx.category}
+                                        </h4>
                                         <p className="text-xs text-muted-foreground">{tx.description || '-'}</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <p className={`font-bold font-mono ${tx.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`} dir="ltr">
-                                        {tx.type === 'INCOME' ? '+' : '-'}{tx.amount.toLocaleString()}
+                                        {tx.type === 'INCOME' ? '+' : '-'}{tx.amount.toLocaleString()} د.ل
                                     </p>
                                     <p className="text-xs text-muted-foreground">{new Date(tx.date).toLocaleDateString()}</p>
                                 </div>

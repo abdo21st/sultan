@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import OrderList from "./components/OrderList";
@@ -49,7 +51,7 @@ export default function Home() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">إجمالي المبيعات (شهري)</p>
                 <h3 className="text-3xl font-bold text-foreground mt-1" dir="ltr">
-                  ${stats.totalSales.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">ر.س</span>
+                  {stats.totalSales.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">د.ل</span>
                 </h3>
               </div>
               <div className="p-2 bg-primary/10 rounded-lg text-primary">
@@ -84,7 +86,7 @@ export default function Home() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">الديون المستحقة</p>
                 <h3 className="text-3xl font-bold text-foreground mt-1" dir="ltr">
-                  ${stats.totalDebts.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">ر.س</span>
+                  {stats.totalDebts.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">د.ل</span>
                 </h3>
               </div>
               <div className="p-2 bg-red-500/10 rounded-lg text-red-500">

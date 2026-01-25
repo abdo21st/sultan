@@ -32,6 +32,12 @@ export const authConfig = {
         async session({ session, token }) {
             if (session.user && token.sub) {
                 session.user.id = token.sub;
+                // @ts-ignore
+                session.user.role = token.role;
+                // @ts-ignore
+                session.user.facilityId = token.facilityId;
+                // @ts-ignore
+                session.user.permissions = token.permissions;
             }
             return session;
         },
@@ -39,6 +45,8 @@ export const authConfig = {
             if (user) {
                 token.sub = user.id;
                 token.role = (user as any).role;
+                token.facilityId = (user as any).facilityId;
+                token.permissions = (user as any).permissions;
             }
             return token;
         }

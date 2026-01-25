@@ -4,20 +4,29 @@ import bcrypt from "bcryptjs";
 
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const user = await prisma.user.findUnique({
-            where: { id: params.id },
+            where: { id },
+            select: {
+                id: true,
+                username: true,
+                displayName: true,
+                phoneNumber: true,
+                role: true,
+                facilityId: true,
+                createdAt: true,
+                // Exclude password
+            }
         });
 
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
-        // Remove password from response
-        const { password, ...userWithoutPassword } = user;
-        return NextResponse.json(userWithoutPassword);
+        return NextResponse.json(user);
     } catch (error) {
         return NextResponse.json(
             { error: "Failed to fetch user" },
@@ -28,27 +37,39 @@ export async function GET(
 
 export async function PATCH(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const body = await request.json();
-        const dataToUpdate: any = { ...body };
 
-        // If password is provided, hash it
+        const updateData: any = {
+            username: body.username,
+            displayName: body.displayName,
+            phoneNumber: body.phoneNumber || null,
+            role: body.role,
+            facilityId: body.facilityId || null,
+        };
+
         if (body.password) {
-            dataToUpdate.password = await bcrypt.hash(body.password, 10);
-        } else {
-            delete dataToUpdate.password;
+            updateData.password = await bcrypt.hash(body.password, 10);
         }
 
         const user = await prisma.user.update({
-            where: { id: params.id },
-            data: dataToUpdate,
+            where: { id },
+            data: updateData,
+            select: {
+                id: true,
+                username: true,
+                displayName: true,
+                role: true,
+                facilityId: true,
+            }
         });
 
-        const { password, ...userWithoutPassword } = user;
-        return NextResponse.json(userWithoutPassword);
+        return NextResponse.json(user);
     } catch (error) {
+        console.error("Error updating user:", error);
         return NextResponse.json(
             { error: "Failed to update user" },
             { status: 500 }
@@ -58,11 +79,12 @@ export async function PATCH(
 
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         await prisma.user.delete({
-            where: { id: params.id },
+            where: { id },
         });
 
         return NextResponse.json({ message: "User deleted successfully" });
