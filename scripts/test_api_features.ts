@@ -71,7 +71,8 @@ async function testNewFeatures() {
         console.log('   للاختبار الكامل، استخدم المتصفح وقم بتسجيل الدخول');
 
     } catch (error) {
-        console.error('\n❌ خطأ في الاختبار:', error.message);
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('\n❌ خطأ في الاختبار:', message);
         console.log('\n💡 تأكد من أن الخادم يعمل على http://localhost:3000');
         console.log('   قم بتشغيل: npm run dev');
     }
@@ -84,6 +85,7 @@ testNewFeatures()
         process.exit(0);
     })
     .catch((error) => {
-        console.error('\n💥 فشل الاختبار:', error.message);
+        const message = error instanceof Error ? error.message : String(error);
+        console.error('\n💥 فشل الاختبار:', message);
         process.exit(1);
     });
