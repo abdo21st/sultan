@@ -32,9 +32,11 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                             <span className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString("ar-EG")}</span>
                         </div>
                     </div>
-                    <Link href={`/orders/${id}/edit`} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-primary">
-                        <Edit className="w-5 h-5" />
-                    </Link>
+                    {(session?.user as any)?.permissions?.includes('orders:edit') && (
+                        <Link href={`/orders/${id}/edit`} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-primary">
+                            <Edit className="w-5 h-5" />
+                        </Link>
+                    )}
                 </div>
             </header>
 

@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { Prisma } from "@prisma/client";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET(request: Request) {
     try {
@@ -48,6 +49,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const session = await auth();
+        if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.ORDERS_ADD)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const formData = await request.formData();
 
         const customerName = formData.get("customerName") as string;

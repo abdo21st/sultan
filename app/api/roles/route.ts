@@ -2,11 +2,13 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET() {
     const session = await auth();
-    // In a real app, check PERMISSIONS.ROLES_MANAGE here
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
 
     try {
         const roles = await prisma.customRole.findMany({
@@ -20,8 +22,9 @@ export async function GET() {
 
 export async function POST(req: Request) {
     const session = await auth();
-    // Check permission
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!(session?.user as any)?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
 
     try {
         const body = await req.json();
