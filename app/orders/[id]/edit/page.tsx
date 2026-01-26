@@ -139,8 +139,9 @@ export default function EditOrderPage() {
 
             router.push('/');
             router.refresh();
-        } catch (err: any) {
-            setError(err.message || 'فشل تحديث الطلب');
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'فشل تحديث الطلب';
+            setError(message);
             setSaving(false);
         }
     }

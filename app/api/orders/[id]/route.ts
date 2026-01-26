@@ -58,7 +58,7 @@ export async function PATCH(
 
         // Handle images
         const existingImagesJson = formData.get("existingImages") as string;
-        let images: string[] = existingImagesJson ? JSON.parse(existingImagesJson) : [];
+        const images: string[] = existingImagesJson ? JSON.parse(existingImagesJson) : [];
 
         const newImageFiles = formData.getAll("newImages") as File[];
         if (newImageFiles.length > 0) {
@@ -87,8 +87,8 @@ export async function PATCH(
                 paidAmount,
                 remainingAmount: totalAmount - paidAmount,
                 dueDate,
-                factoryId: factoryId || null,
-                shopId: shopId || null,
+                factoryId: factoryId || undefined,
+                shopId: shopId || undefined,
                 images: images,
             },
         });
