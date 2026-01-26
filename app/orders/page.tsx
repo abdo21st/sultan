@@ -5,8 +5,10 @@ import NavBar from '../components/NavBar';
 import OrderList from '../components/OrderList';
 import Link from 'next/link';
 import { Plus, Filter, Search, Calendar, Factory as FactoryIcon, ChevronDown, ChevronUp } from 'lucide-react';
-import { usePermission } from '../../lib/usePermission';
-import { PERMISSIONS } from '../../lib/permissions';
+import { usePermission } from '@/lib/usePermission';
+import { PERMISSIONS } from '@/lib/permissions';
+import { ORDER_STATUS } from '@/lib/constants';
+import { FACILITY_TYPE } from '@/lib/constants';
 
 interface Facility {
     id: string;
@@ -35,9 +37,9 @@ export default function OrdersPage() {
 
     const getStatusQuery = (tab: string) => {
         switch (tab) {
-            case 'FACTORY_INBOX': return 'TRANSFERRED_TO_FACTORY,PROCESSING';
-            case 'SHOP_INBOX': return 'TRANSFERRED_TO_SHOP,DELIVERING,REVIEW_NEEDED';
-            case 'COMPLETED': return 'COMPLETED';
+            case 'FACTORY_INBOX': return `${ORDER_STATUS.TRANSFERRED_TO_FACTORY},${ORDER_STATUS.PROCESSING}`;
+            case 'SHOP_INBOX': return `${ORDER_STATUS.TRANSFERRED_TO_SHOP},${ORDER_STATUS.DELIVERING},${ORDER_STATUS.REVIEW_NEEDED}`;
+            case 'COMPLETED': return ORDER_STATUS.COMPLETED;
             default: return '';
         }
     };
