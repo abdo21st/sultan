@@ -2,15 +2,14 @@ import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
-const createPrismaClient = () => {
-    const url = process.env.DATABASE_URL
+// During Vercel build, the environment variables might not be fully loaded.
+// Prisma 7 requires a non-empty connection string to initialize.
+if (!process.env.DATABASE_URL) {
+    process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/postgres";
+}
 
-    // In Prisma 7, the constructor property is 'datasourceUrl'.
-    // We provide a fallback to avoid "Initialization Error" during Vercel builds.
-    return new PrismaClient({
-        // @ts-expect-error - 'datasourceUrl' is the correct Prisma 7 property
-        datasourceUrl: url || "postgresql://postgres:postgres@localhost:5432/postgres"
-    })
+const createPrismaClient = () => {
+    return new PrismaClient()
 }
 
 export const prisma = globalForPrisma.prisma || createPrismaClient()
