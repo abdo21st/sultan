@@ -36,13 +36,30 @@ async function main() {
     const hashedPassword = await bcrypt.hash('admin123', 10)
     const adminUser = await prisma.user.upsert({
         where: { username: 'admin' },
-        update: {},
+        update: {
+            role: 'ADMIN',
+            permissions: [
+                'users:view', 'users:add', 'users:edit', 'users:delete',
+                'facilities:view', 'facilities:add', 'facilities:edit', 'facilities:delete',
+                'orders:view', 'orders:add', 'orders:edit', 'orders:delete',
+                'orders:change_status', 'orders:view_financials',
+                'transactions:view', 'transactions:add',
+                'roles:manage', 'settings:manage', 'alerts:manage', 'booking:manage'
+            ]
+        },
         create: {
             username: 'admin',
             password: hashedPassword,
             displayName: 'المدير العام',
             role: 'ADMIN',
-            permissions: [],
+            permissions: [
+                'users:view', 'users:add', 'users:edit', 'users:delete',
+                'facilities:view', 'facilities:add', 'facilities:edit', 'facilities:delete',
+                'orders:view', 'orders:add', 'orders:edit', 'orders:delete',
+                'orders:change_status', 'orders:view_financials',
+                'transactions:view', 'transactions:add',
+                'roles:manage', 'settings:manage', 'alerts:manage', 'booking:manage'
+            ],
             roles: {
                 connect: { id: adminRole.id }
             }
