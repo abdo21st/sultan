@@ -5,7 +5,7 @@ import { updateOrderStatus, completeOrder } from '@/lib/actions/orders';
 import { Printer, XCircle, CheckCircle, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { ORDER_STATUS } from '@/lib/constants';
-import { getStatusInfo } from '@/lib/utils';
+/* formatCurrency and formatDate are not used in this component */
 
 interface Order {
     id: string;

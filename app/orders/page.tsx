@@ -8,7 +8,7 @@ import { Plus, Filter, Search, Calendar, Factory as FactoryIcon, ChevronDown, Ch
 import { usePermission } from '@/lib/usePermission';
 import { PERMISSIONS } from '@/lib/permissions';
 import { ORDER_STATUS } from '@/lib/constants';
-import { FACILITY_TYPE } from '@/lib/constants';
+/* FACILITY_TYPE was not used directly here */
 
 interface Facility {
     id: string;
