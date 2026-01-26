@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
-import { auth } from "../../../../auth";
-import { PERMISSIONS } from "../../../../lib/permissions";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function GET() {
     try {
@@ -29,7 +28,7 @@ export async function GET() {
         const monthlySales: Record<string, { month: string, total: number, paid: number }> = {};
         const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 
-        orders.forEach(order => {
+        orders.forEach((order: { createdAt: Date | string | number; totalAmount: number; paidAmount: number }) => {
             const date = new Date(order.createdAt);
             const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
             if (!monthlySales[monthKey]) {
@@ -48,18 +47,18 @@ export async function GET() {
             where: { type: 'FACTORY' }
         });
 
-        const factoryStats = factories.map(f => {
-            const factoryOrders = orders.filter(o => o.factoryId === f.id);
+        const factoryStats = factories.map((f: { id: string; name: string }) => {
+            const factoryOrders = orders.filter((o: { factoryId: string | null }) => o.factoryId === f.id);
             return {
                 name: f.name,
                 count: factoryOrders.length,
-                value: factoryOrders.reduce((sum, o) => sum + o.totalAmount, 0)
+                value: factoryOrders.reduce((sum: number, o: { totalAmount: number }) => sum + o.totalAmount, 0)
             };
         });
 
         // 3. Status Distribution
         const statusCounts: Record<string, number> = {};
-        orders.forEach(o => {
+        orders.forEach((o: { status: string }) => {
             statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
         });
 
@@ -69,8 +68,8 @@ export async function GET() {
             statusCounts,
             summary: {
                 totalOrders: orders.length,
-                totalRevenue: orders.reduce((sum, o) => sum + o.totalAmount, 0),
-                totalCollected: orders.reduce((sum, o) => sum + o.paidAmount, 0)
+                totalRevenue: orders.reduce((sum: number, o: { totalAmount: number }) => sum + o.totalAmount, 0),
+                totalCollected: orders.reduce((sum: number, o: { paidAmount: number }) => sum + o.paidAmount, 0)
             }
         });
 
