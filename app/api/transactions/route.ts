@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
+import { auth } from "../../../auth";
+import { PERMISSIONS } from "../../../lib/permissions";
 
 export async function GET() {
     try {
+        const session = await auth();
+        if (!session?.user?.permissions?.includes(PERMISSIONS.TRANSACTIONS_VIEW)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const transactions = await prisma.transaction.findMany({
             orderBy: { date: "desc" },
         });
@@ -27,11 +33,12 @@ const transactionSchema = z.object({
     }),
 });
 
-import { auth } from "../../../auth";
-
 export async function POST(request: Request) {
     try {
         const session = await auth();
+        if (!session?.user?.permissions?.includes(PERMISSIONS.TRANSACTIONS_ADD)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const json = await request.json();
         const result = transactionSchema.safeParse(json);
 
@@ -51,7 +58,7 @@ export async function POST(request: Request) {
                 category: body.category,
                 description: body.description,
                 date: body.date ? new Date(body.date) : new Date(),
-                createdBy: session?.user?.email || session?.user?.name || "System",
+                createdBy: session?.user?.id || "System",
             },
         });
 

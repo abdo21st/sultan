@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import bcrypt from "bcryptjs";
+import { auth } from "../../../../auth";
+import { PERMISSIONS } from "../../../../lib/permissions";
 
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user?.permissions?.includes(PERMISSIONS.USERS_VIEW)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const { id } = await params;
         const user = await prisma.user.findUnique({
             where: { id },
@@ -41,6 +47,10 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user?.permissions?.includes(PERMISSIONS.USERS_EDIT)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const { id } = await params;
         const body = await request.json();
 
@@ -87,6 +97,10 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user?.permissions?.includes(PERMISSIONS.USERS_DELETE)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const { id } = await params;
         await prisma.user.delete({
             where: { id },

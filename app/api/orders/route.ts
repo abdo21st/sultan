@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { auth } from "../../../auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { Prisma } from "@prisma/client";
 import { PERMISSIONS } from "../../../lib/permissions";
+import { saveFile } from "../../../lib/upload";
 
 export async function GET(request: Request) {
     try {
+        const session = await auth();
+        if (!session?.user?.permissions?.includes(PERMISSIONS.ORDERS_VIEW)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const { searchParams } = new URL(request.url);
         const factoryId = searchParams.get('factoryId');
         const shopId = searchParams.get('shopId');
@@ -134,16 +137,9 @@ export async function POST(request: Request) {
         const imagePaths: string[] = [];
 
         if (imageFiles.length > 0) {
-            const uploadDir = path.join(process.cwd(), "public", "uploads");
-            await mkdir(uploadDir, { recursive: true });
-
             for (const file of imageFiles) {
-                if (file.size > 0) {
-                    const buffer = Buffer.from(await file.arrayBuffer());
-                    const filename = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
-                    await writeFile(path.join(uploadDir, filename), buffer);
-                    imagePaths.push(`/uploads/${filename}`);
-                }
+                const path = await saveFile(file, "order");
+                if (path) imagePaths.push(path);
             }
         }
 
