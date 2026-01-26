@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
-import { prisma } from "../../../lib/prisma";
-import { auth } from "../../../auth";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import Link from "next/link";
 import OrderActions from "./OrderActions";
 import { ArrowLeft, Edit } from "lucide-react";
 import Image from "next/image";
+import { getStatusInfo, formatCurrency, formatDate } from "@/lib/utils";
 
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -15,6 +16,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
     });
 
     if (!order) notFound();
+
+    const statusInfo = getStatusInfo(order.status);
 
     // Fetch facility names
     const factory = order.factoryId ? await prisma.facility.findUnique({ where: { id: order.factoryId } }) : null;
@@ -30,7 +33,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         </Link>
                         <div>
                             <h1 className="text-xl font-bold text-foreground">الطلب #{order.serialNumber}</h1>
-                            <span className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleDateString("ar-EG")}</span>
+                            <span className="text-xs text-muted-foreground">{formatDate(order.createdAt)}</span>
                         </div>
                     </div>
                     {session?.user?.permissions?.includes('orders:edit') && (
@@ -46,15 +49,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                 <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-sm border border-zinc-200 dark:border-zinc-800 flex flex-wrap gap-2 items-center justify-between">
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-muted-foreground">الحالة الحالية:</span>
-                        <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-bold">
-                            {/* Map status to Arabic - duplicated logic, ideally utility */}
-                            {order.status === 'REGISTERED' ? 'قيد التسجيل' :
-                                order.status === 'TRANSFERRED_TO_FACTORY' ? 'قيد التحويل للمصنع' :
-                                    order.status === 'PROCESSING' ? 'قيد التجهيز' :
-                                        order.status === 'TRANSFERRED_TO_SHOP' ? 'جاهز للاستلام' :
-                                            order.status === 'DELIVERING' ? 'قيد التسليم' :
-                                                order.status === 'COMPLETED' ? 'مكتمل' :
-                                                    order.status === 'REVIEW_NEEDED' ? 'مراجعة مطلوبة' : order.status}
+                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${statusInfo.color}`}>
+                            {statusInfo.label}
                         </span>
                     </div>
                 </div>
@@ -95,11 +91,11 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         </div>
 
                         {/* Images */}
-                        {order.images && order.images.length > 0 && (
+                        {order.images && (order.images as string[]).length > 0 && (
                             <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200 dark:border-zinc-800">
                                 <h3 className="font-semibold mb-4 text-foreground border-b border-border pb-2">المرفقات</h3>
                                 <div className="grid grid-cols-3 gap-2">
-                                    {order.images.map((img, idx) => (
+                                    {(order.images as string[]).map((img: string, idx: number) => (
                                         <a key={idx} href={img} target="_blank" rel="noopener noreferrer" title={`عرض الصورة ${idx + 1}`} className="relative group block w-full h-32 rounded-lg overflow-hidden border border-border">
                                             <Image
                                                 src={img}
@@ -121,16 +117,16 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                             <div className="space-y-3">
                                 <div className="flex justify-between">
                                     <span className="text-sm text-muted-foreground">الإجمالي</span>
-                                    <span className="font-bold font-mono" dir="ltr">{order.totalAmount.toLocaleString()} د.ل</span>
+                                    <span className="font-bold font-mono" dir="ltr">{formatCurrency(order.totalAmount)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-sm text-muted-foreground">المدفوع</span>
-                                    <span className="font-bold text-green-600 font-mono" dir="ltr">{order.paidAmount.toLocaleString()} د.ل</span>
+                                    <span className="font-bold text-green-600 font-mono" dir="ltr">{formatCurrency(order.paidAmount)}</span>
                                 </div>
                                 <div className="flex justify-between border-t border-dashed border-border pt-2">
                                     <span className="text-sm font-medium">المتبقي</span>
                                     <span className={`font-bold font-mono ${order.remainingAmount > 0 ? 'text-red-500' : 'text-zinc-500'}`} dir="ltr">
-                                        {order.remainingAmount.toLocaleString()} د.ل
+                                        {formatCurrency(order.remainingAmount)}
                                     </span>
                                 </div>
                             </div>
