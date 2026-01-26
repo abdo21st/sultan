@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { auth } from "../../../../auth";
 import { PERMISSIONS } from "../../../../lib/permissions";
+import { saveFile } from "../../../../lib/upload";
 
 export async function GET(
     request: Request,
@@ -30,8 +31,6 @@ export async function GET(
     }
 }
 
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
 export async function PATCH(
     request: Request,
@@ -62,17 +61,9 @@ export async function PATCH(
 
         const newImageFiles = formData.getAll("newImages") as File[];
         if (newImageFiles.length > 0) {
-            const uploadDir = path.join(process.cwd(), "public", "uploads");
-            await mkdir(uploadDir, { recursive: true });
-
             for (const file of newImageFiles) {
-                if (file.size > 0) {
-                    const buffer = Buffer.from(await file.arrayBuffer());
-                    const ext = path.extname(file.name) || ".jpg";
-                    const filename = `order-${Date.now()}-${Math.random().toString(36).slice(2, 7)}${ext}`;
-                    await writeFile(path.join(uploadDir, filename), buffer);
-                    images.push(`/uploads/${filename}`);
-                }
+                const path = await saveFile(file, "order");
+                if (path) images.push(path);
             }
         }
 

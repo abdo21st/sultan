@@ -12,6 +12,8 @@ declare module "next-auth" {
             facilityId?: string | null
             /** The user's permissions. */
             permissions: string[]
+            /** The user's username. */
+            username?: string | null
             id: string
         } & DefaultSession["user"]
     }
@@ -20,6 +22,7 @@ declare module "next-auth" {
         role: string
         facilityId?: string | null
         permissions: string[]
+        username?: string | null
     }
 }
 
@@ -28,5 +31,6 @@ declare module "next-auth/jwt" {
         role: string
         facilityId?: string | null
         permissions: string[]
+        username?: string | null
     }
 }

@@ -7,7 +7,6 @@ export const authConfig = {
     callbacks: {
         authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user;
-            const isOnDashboard = nextUrl.pathname.startsWith('/');
             const isOnLogin = nextUrl.pathname.startsWith('/login');
 
             // Allow access to public assets and api routes that don't need auth (like seed)
@@ -32,24 +31,20 @@ export const authConfig = {
         async session({ session, token }) {
             if (session.user && token.sub) {
                 session.user.id = token.sub;
-                // @ts-ignore
-                session.user.role = token.role;
-                // @ts-ignore
-                session.user.facilityId = token.facilityId;
-                // @ts-ignore
-                session.user.permissions = token.permissions;
-                // @ts-ignore
-                session.user.username = token.username;
+                session.user.role = token.role as string;
+                session.user.facilityId = token.facilityId as string | null;
+                session.user.permissions = token.permissions as string[];
+                session.user.username = token.username as string | null;
             }
             return session;
         },
         async jwt({ token, user }) {
             if (user) {
                 token.sub = user.id;
-                token.role = (user as any).role;
-                token.facilityId = (user as any).facilityId;
-                token.permissions = (user as any).permissions;
-                token.username = (user as any).username;
+                token.role = user.role;
+                token.facilityId = user.facilityId;
+                token.permissions = user.permissions;
+                token.username = user.username;
             }
             return token;
         }

@@ -5,7 +5,9 @@ import { auth } from "@/auth";
 export async function GET() {
     try {
         const session = await auth();
-        if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        if (!session?.user || session.user.role !== "ADMIN") {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
 
         // 1. Sales over time (last 6 months)
         const sixMonthsAgo = new Date();

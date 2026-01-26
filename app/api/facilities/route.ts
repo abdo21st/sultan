@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
+import { auth } from "../../../auth";
+import { PERMISSIONS } from "../../../lib/permissions";
 
 export async function GET() {
     try {
+        const session = await auth();
+        if (!session?.user?.permissions?.includes(PERMISSIONS.FACILITIES_VIEW)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const facilities = await prisma.facility.findMany();
         return NextResponse.json(facilities);
     } catch {
@@ -23,6 +29,10 @@ const facilitySchema = z.object({
 
 export async function POST(request: Request) {
     try {
+        const session = await auth();
+        if (!session?.user?.permissions?.includes(PERMISSIONS.FACILITIES_ADD)) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        }
         const json = await request.json();
         const result = facilitySchema.safeParse(json);
 

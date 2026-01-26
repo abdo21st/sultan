@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 import { auth } from "../../../auth";
@@ -6,6 +5,11 @@ import { PERMISSIONS } from "../../../lib/permissions";
 
 export async function GET() {
     try {
+        const session = await auth();
+        if (!session) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         let settings = await prisma.systemSettings.findFirst();
 
         if (!settings) {
@@ -17,7 +21,6 @@ export async function GET() {
             });
         }
 
-        return NextResponse.json(settings);
         return NextResponse.json(settings);
     } catch {
         return NextResponse.json(
