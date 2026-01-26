@@ -24,10 +24,11 @@ interface Order {
 
 interface User {
     id: string;
-    displayName: string;
+    displayName?: string;
     role: string;
-    facilityId?: string;
+    facilityId?: string | null;
     phoneNumber?: string;
+    permissions?: string[];
 }
 
 export default function OrderActions({ order, currentUser }: { order: Order, currentUser?: User | null }) {
