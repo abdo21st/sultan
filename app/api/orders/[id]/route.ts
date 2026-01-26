@@ -68,7 +68,8 @@ export async function PATCH(
             for (const file of newImageFiles) {
                 if (file.size > 0) {
                     const buffer = Buffer.from(await file.arrayBuffer());
-                    const filename = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
+                    const ext = path.extname(file.name) || ".jpg";
+                    const filename = `order-${Date.now()}-${Math.random().toString(36).slice(2, 7)}${ext}`;
                     await writeFile(path.join(uploadDir, filename), buffer);
                     images.push(`/uploads/${filename}`);
                 }
