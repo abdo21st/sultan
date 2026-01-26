@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# منظومة سلطان للأثاث والمفروشات 🏆
 
-## Getting Started
+منصة رقمية متكاملة لإدارة طلبيات الأثاث والمفروشات، تربط بين المعارض والمصانع لتوفير تجربة تتبع دقيقة وشفافة للعمليات المالية والإنتاجية.
 
-First, run the development server:
+## 🚀 المميزات الرئيسية
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **إدارة الطلبات**: تتبع كامل لمراحل الطلب من "قيد التسجيل" حتى "التسليم".
+- **نظام محاسبي**: إدارة الإجمالي، المدفوع، والمتبقي مع سجل معاملات دقيق.
+- **تنسيق المعارض والمصانع**: توزيع المهام على المراكز الإنتاجية المختلفة بصورة آلية.
+- **نظام إشعارات ذكي**: تنبيهات فورية عند تحديث حالة الطلبات أو المواعيد.
+- **تحليلات متقدمة**: لوحة بيانات تفاعلية تعرض أداء المبيعات والديون المتبقية.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ التقنيات المستخدمة
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Framework**: Next.js 16 (App Router & Turbopack)
+- **Database**: PostgreSQL with Prisma ORM 7
+- **Logic**: TypeScript & React 19
+- **Aesthetics**: Vanilla CSS (Premium Custom Design)
+- **Security**: Next-Auth (v5 Beta)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📦 البدء في التشغيل
 
-## Learn More
+1. قم بتثبيت التبعيات:
 
-To learn more about Next.js, take a look at the following resources:
+   ```bash
+   npm install
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. قم بإعداد متغيرات البيئة في ملف `.env`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```env
+   DATABASE_URL="..."
+   AUTH_SECRET="..."
+   ```
 
-## Deploy on Vercel
+3. تشغيل وضع التطوير:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   ```bash
+   npm run dev
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📄 الترخيص
+
+حقوق الطبع والنشر محفوظة لمنظومة سلطان © 2026.
