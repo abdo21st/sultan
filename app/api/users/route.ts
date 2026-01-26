@@ -11,10 +11,7 @@ export async function GET() {
         const userCount = await prisma.user.count();
         const isBootstrap = userCount === 0;
 
-        const currentUser = session?.user as any;
-        const isMaster = currentUser?.username === 'master';
-
-        if (!isBootstrap && !isMaster && !currentUser?.permissions?.includes(PERMISSIONS.USERS_VIEW)) {
+        if (!isBootstrap && !session?.user?.permissions?.includes(PERMISSIONS.USERS_VIEW)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
@@ -50,10 +47,7 @@ const userSchema = z.object({
 export async function POST(request: Request) {
     try {
         const session = await auth();
-        const sessionUser = session?.user as any;
-        const isMaster = sessionUser?.username === 'master';
-
-        if (!isMaster && !sessionUser?.permissions?.includes(PERMISSIONS.USERS_ADD)) {
+        if (!session?.user?.permissions?.includes(PERMISSIONS.USERS_ADD)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 

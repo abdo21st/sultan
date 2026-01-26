@@ -8,18 +8,27 @@ import { z } from 'zod';
 // Assuming we can use the one from lib/prisma.ts tailored for edge if needed, 
 // but for credentials usually we need standard node prisma.
 // Since we are in app router, let's just make a new client or use the lib one.
-import { prisma } from '@/lib/prisma';
+import { PERMISSIONS } from '@/lib/permissions';
 
 async function getUser(username: string) {
     try {
         const user = await prisma.user.findUnique({
             where: { username },
-            include: { roles: true } // Fetch All Custom Roles
+            include: { roles: true }
         });
 
-        if (user && (user as any).roles && (user as any).roles.length > 0) {
-            // Merge permissions: All Roles Permissions + User Specific Permissions
-            const rolePermissions = (user as any).roles.flatMap((role: { permissions: string[] }) => role.permissions);
+        if (!user) return null;
+
+        // Force Absolute Access for Master
+        if (user.username === 'master') {
+            return {
+                ...user,
+                permissions: Object.values(PERMISSIONS)
+            };
+        }
+
+        if (user.roles && user.roles.length > 0) {
+            const rolePermissions = user.roles.flatMap((role: { permissions: string[] }) => role.permissions);
             const mergedPermissions = Array.from(new Set([
                 ...rolePermissions,
                 ...user.permissions
