@@ -30,6 +30,9 @@ export async function GET(
     }
 }
 
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
+
 export async function PATCH(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -40,22 +43,58 @@ export async function PATCH(
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
         const { id } = await params;
-        const body = await request.json();
+        const formData = await request.formData();
 
-        // Ensure numeric fields are parsed correctly
-        const dataToUpdate: Record<string, unknown> = { ...body };
-        if (body.totalAmount) dataToUpdate.totalAmount = parseFloat(body.totalAmount);
-        if (body.paidAmount) dataToUpdate.paidAmount = parseFloat(body.paidAmount);
-        if (body.remainingAmount) dataToUpdate.remainingAmount = parseFloat(body.remainingAmount);
-        if (body.dueDate) dataToUpdate.dueDate = new Date(body.dueDate);
+        // Basic data
+        const customerName = formData.get("customerName") as string;
+        const customerPhone = formData.get("customerPhone") as string;
+        const description = formData.get("description") as string;
+        const status = formData.get("status") as string;
+        const totalAmount = parseFloat(formData.get("totalAmount") as string);
+        const paidAmount = parseFloat(formData.get("paidAmount") as string);
+        const dueDate = new Date(formData.get("dueDate") as string);
+        const factoryId = formData.get("factoryId") as string;
+        const shopId = formData.get("shopId") as string;
+
+        // Handle images
+        const existingImagesJson = formData.get("existingImages") as string;
+        let images: string[] = existingImagesJson ? JSON.parse(existingImagesJson) : [];
+
+        const newImageFiles = formData.getAll("newImages") as File[];
+        if (newImageFiles.length > 0) {
+            const uploadDir = path.join(process.cwd(), "public", "uploads");
+            await mkdir(uploadDir, { recursive: true });
+
+            for (const file of newImageFiles) {
+                if (file.size > 0) {
+                    const buffer = Buffer.from(await file.arrayBuffer());
+                    const filename = `${Date.now()}-${file.name.replace(/\s/g, "_")}`;
+                    await writeFile(path.join(uploadDir, filename), buffer);
+                    images.push(`/uploads/${filename}`);
+                }
+            }
+        }
 
         const order = await prisma.order.update({
             where: { id },
-            data: dataToUpdate,
+            data: {
+                customerName,
+                customerPhone,
+                description,
+                status,
+                totalAmount,
+                paidAmount,
+                remainingAmount: totalAmount - paidAmount,
+                dueDate,
+                factoryId: factoryId || null,
+                shopId: shopId || null,
+                images: images,
+            },
         });
 
         return NextResponse.json(order);
-    } catch {
+    } catch (error) {
+        console.error("Order update error:", error);
         return NextResponse.json(
             { error: "Failed to update order" },
             { status: 500 }
