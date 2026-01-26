@@ -2,18 +2,30 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+// Globalize the connection pool to prevent "too many clients" and improve reuse
+const globalForPrisma = globalThis as unknown as {
+    prisma: PrismaClient | undefined,
+    pool: pg.Pool | undefined
+}
 
 const createPrismaClient = () => {
     const connectionString = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/postgres"
 
-    // Standard PG Pool for the adapter
-    const pool = new pg.Pool({ connectionString })
-    const adapter = new PrismaPg(pool)
+    if (!globalForPrisma.pool) {
+        globalForPrisma.pool = new pg.Pool({
+            connectionString,
+            max: 10,        // Optimization for serverless
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 2000,
+        })
+    }
 
+    const adapter = new PrismaPg(globalForPrisma.pool)
     return new PrismaClient({ adapter })
 }
 
 export const prisma = globalForPrisma.prisma || createPrismaClient()
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+if (process.env.NODE_ENV !== 'production') {
+    globalForPrisma.prisma = prisma
+}
