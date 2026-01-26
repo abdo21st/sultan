@@ -50,10 +50,10 @@ const userSchema = z.object({
 export async function POST(request: Request) {
     try {
         const session = await auth();
-        const user = session?.user as any;
-        const isMaster = user?.username === 'master';
+        const sessionUser = session?.user as any;
+        const isMaster = sessionUser?.username === 'master';
 
-        if (!isMaster && !user?.permissions?.includes(PERMISSIONS.USERS_ADD)) {
+        if (!isMaster && !sessionUser?.permissions?.includes(PERMISSIONS.USERS_ADD)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
