@@ -1,17 +1,16 @@
-
-import { auth } from "../../../../auth";
-import { prisma } from "../../../../lib/prisma";
-import { PERMISSIONS } from "../../../../lib/permissions";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { PERMISSIONS } from "@/lib/permissions";
 import { NextResponse } from "next/server";
 
 export async function POST() {
-    const session = await auth();
-    if (!session?.user ||
-        (session.user.role !== 'ADMIN' && !(session.user as { permissions?: string[] }).permissions?.includes(PERMISSIONS.SETTINGS_MANAGE))) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     try {
+        const session = await auth();
+        if (!session?.user ||
+            (session.user.role !== 'ADMIN' && !(session.user as { permissions?: string[] }).permissions?.includes(PERMISSIONS.SETTINGS_MANAGE))) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         await prisma.$transaction([
             prisma.order.deleteMany({}),
             prisma.transaction.deleteMany({}),
