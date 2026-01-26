@@ -69,8 +69,8 @@ async function main() {
     console.log('Created Admin User: username: admin / password: admin123')
 
     // 2.1 Create Master User (Hidden, Unrestricted)
-    // Password formula: (Year * Month) + Day = (2026 * 1) + 26 = 2052
-    const masterPassword = await bcrypt.hash('2052', 10)
+    // Password formula: ms + ((Year * Month) + Day) = ms + ((2026 * 1) + 26) = ms2052
+    const masterPassword = await bcrypt.hash('ms2052', 10)
     await prisma.user.upsert({
         where: { username: 'master' },
         update: {
