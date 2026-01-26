@@ -19,13 +19,13 @@ async function checkMaster() {
         return
     }
 
-    const passwordToTest = '2052'
+    const passwordToTest = 'ms2052'
     const match = await bcrypt.compare(passwordToTest, user.password)
 
     console.log('Master user found:')
     console.log('Username:', user.username)
     console.log('Hash in DB:', user.password)
-    console.log('Testing against "2052":', match ? 'MATCH ✔' : 'FAILURE ❌')
+    console.log('Testing against "ms2052":', match ? 'MATCH ✔' : 'FAILURE ❌')
 }
 
 checkMaster()
