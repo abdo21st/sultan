@@ -109,7 +109,12 @@ export default function EditOrderPage() {
             submitData.append("customerName", formData.customerName);
             submitData.append("customerPhone", formData.customerPhone);
             submitData.append("description", formData.description);
-            submitData.append("status", formData.status);
+            let statusToSubmit = formData.status;
+            if (statusToSubmit === 'REVIEW_NEEDED') {
+                statusToSubmit = 'REGISTERED';
+            }
+
+            submitData.append("status", statusToSubmit);
             submitData.append("totalAmount", formData.totalAmount);
             submitData.append("paidAmount", formData.paidAmount);
             submitData.append("dueDate", formData.dueDate);
