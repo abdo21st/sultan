@@ -11,7 +11,10 @@ export async function GET() {
     const roleCount = await prisma.customRole.count();
     const isBootstrap = roleCount === 0;
 
-    if (!isBootstrap && !session?.user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
+    const user = session?.user as any;
+    const isMaster = user?.username === 'master';
+
+    if (!isBootstrap && !isMaster && !user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -35,7 +38,10 @@ const roleSchema = z.object({
 
 export async function POST(req: Request) {
     const session = await auth();
-    if (!session?.user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
+    const user = session?.user as any;
+    const isMaster = user?.username === 'master';
+
+    if (!isMaster && !user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
