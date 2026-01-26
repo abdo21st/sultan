@@ -11,10 +11,10 @@ export async function GET() {
         const userCount = await prisma.user.count();
         const isBootstrap = userCount === 0;
 
-        const user = session?.user as any;
-        const isMaster = user?.username === 'master';
+        const currentUser = session?.user as any;
+        const isMaster = currentUser?.username === 'master';
 
-        if (!isBootstrap && !isMaster && !user?.permissions?.includes(PERMISSIONS.USERS_VIEW)) {
+        if (!isBootstrap && !isMaster && !currentUser?.permissions?.includes(PERMISSIONS.USERS_VIEW)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
         const body = result.data;
         const hashedPassword = await bcrypt.hash(body.password, 10);
 
-        const user = await prisma.user.create({
+        const newUser = await prisma.user.create({
             data: {
                 username: body.username,
                 displayName: body.displayName,
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
             },
             include: { roles: true }
         });
-        return NextResponse.json(user);
+        return NextResponse.json(newUser);
     } catch (error: unknown) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
             return NextResponse.json(
