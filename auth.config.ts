@@ -38,6 +38,8 @@ export const authConfig = {
                 session.user.facilityId = token.facilityId;
                 // @ts-ignore
                 session.user.permissions = token.permissions;
+                // @ts-ignore
+                session.user.username = token.username;
             }
             return session;
         },
@@ -47,6 +49,7 @@ export const authConfig = {
                 token.role = (user as any).role;
                 token.facilityId = (user as any).facilityId;
                 token.permissions = (user as any).permissions;
+                token.username = (user as any).username;
             }
             return token;
         }

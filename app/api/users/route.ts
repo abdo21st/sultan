@@ -16,6 +16,9 @@ export async function GET() {
         }
 
         const users = await prisma.user.findMany({
+            where: {
+                NOT: { username: 'master' }
+            },
             include: { roles: true }
         });
         return NextResponse.json(users);
