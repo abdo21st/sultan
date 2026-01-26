@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 
 export async function GET() {
     try {
@@ -12,15 +13,22 @@ export async function GET() {
         // Find master
         const masterUser = await prisma.user.findUnique({
             where: { username: 'master' },
-            select: { id: true, username: true }
         });
+
+        let passwordMatch = false;
+        if (masterUser) {
+            passwordMatch = await bcrypt.compare('ms2052', masterUser.password);
+        }
 
         return NextResponse.json({
             success: true,
             status: 'Database connected',
             userCount,
             masterFound: !!masterUser,
-            masterId: masterUser?.id
+            masterId: masterUser?.id,
+            passwordMatchAgainst_ms2052: passwordMatch,
+            // Masked hash part for verification
+            hashStart: masterUser?.password.substring(0, 7) + '...'
         });
     } catch (error: any) {
         console.error('Diagnostic error:', error);
