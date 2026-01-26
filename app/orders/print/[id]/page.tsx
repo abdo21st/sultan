@@ -14,6 +14,8 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
         }
     });
 
+    const settings = await prisma.systemSettings.findFirst();
+
     if (!order) notFound();
 
     return (
@@ -21,10 +23,20 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
             {/* Header */}
             <div className="flex justify-between items-center border-b-2 border-primary pb-4 mb-8">
                 <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-2xl">S</div>
+                    {settings?.logoUrl ? (
+                        <div className="relative w-20 h-20">
+                            <Image src={settings.logoUrl} alt="Logo" fill className="object-contain" />
+                        </div>
+                    ) : (
+                        <div className="w-16 h-16 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-2xl">
+                            {settings?.appName?.[0] || 'S'}
+                        </div>
+                    )}
                     <div>
-                        <h1 className="text-2xl font-bold">مغسلة ومنجرة سلطان</h1>
-                        <p className="text-sm text-zinc-600">للأثاث والمفروشات الحديثة</p>
+                        <h1 className="text-2xl font-bold">{settings?.appName || "سلطان"}</h1>
+                        {settings?.printHeader && (
+                            <p className="text-sm text-zinc-600 whitespace-pre-line">{settings.printHeader}</p>
+                        )}
                     </div>
                 </div>
                 <div className="text-left font-mono">
@@ -111,8 +123,13 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                     <p className="mt-1">التوقيع: ...............................</p>
                 </div>
                 <div>
-                    <p>شكراً لتعاملكم مع سلطان للأثاث</p>
-                    <p className="mt-1">ليبيا - طرابلس</p>
+                    {settings?.printFooter ? (
+                        <p className="whitespace-pre-line">{settings.printFooter}</p>
+                    ) : (
+                        <>
+                            <p>شكراً لتعاملكم مع سلطان</p>
+                        </>
+                    )}
                 </div>
             </div>
 

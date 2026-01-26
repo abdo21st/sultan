@@ -9,6 +9,7 @@ import { z } from 'zod';
 // but for credentials usually we need standard node prisma.
 // Since we are in app router, let's just make a new client or use the lib one.
 import { PERMISSIONS } from '@/lib/permissions';
+import { prisma } from '@/lib/prisma';
 
 async function getUser(username: string) {
     try {
