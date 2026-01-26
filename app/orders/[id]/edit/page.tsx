@@ -225,6 +225,23 @@ export default function EditOrderPage() {
                         </div>
                     </div>
 
+                    {formData.images && formData.images.length > 0 && (
+                        <div className="space-y-3">
+                            <label className="text-sm font-medium text-muted-foreground">الصور المرفقة حالياً</label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {formData.images.map((img, idx) => (
+                                    <div key={idx} className="relative aspect-video rounded-lg border border-border overflow-hidden bg-muted">
+                                        <img
+                                            src={img}
+                                            alt={`Order photo ${idx + 1}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex justify-end gap-3 pt-6 border-t border-border">
                         <button
                             type="button"
