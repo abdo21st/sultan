@@ -35,6 +35,7 @@ export const authConfig = {
                 session.user.facilityId = token.facilityId as string | null;
                 session.user.permissions = token.permissions as string[];
                 session.user.username = token.username as string | null;
+                session.user.displayName = token.displayName as string | null;
             }
             return session;
         },
@@ -45,6 +46,7 @@ export const authConfig = {
                 token.facilityId = user.facilityId;
                 token.permissions = user.permissions;
                 token.username = user.username;
+                token.displayName = user.displayName;
             }
             return token;
         }
