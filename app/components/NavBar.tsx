@@ -4,8 +4,9 @@ import { PERMISSIONS } from '../../lib/permissions';
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import Notifications from './Notifications';
 
@@ -25,6 +26,7 @@ interface SystemSettings {
 export default function NavBar() {
     const [user, setUser] = useState<User | null>(null);
     const [settings, setSettings] = useState<SystemSettings | null>(null);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const pathname = usePathname();
 
     useEffect(() => {
@@ -56,66 +58,133 @@ export default function NavBar() {
                             )}
                             <span>{settings?.appName || 'سلطان'}</span>
                         </Link>
-                        <div className="hidden md:flex gap-6 items-center">
-
-                            <Link
-                                href="/transactions"
-                                className={`text-sm font-medium transition-colors ${pathname === '/transactions' ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                        <div className="flex items-center gap-4">
+                            {/* Mobile Menu Button */}
+                            <button
+                                onClick={() => setIsMenuOpen(true)}
+                                className="p-2 -ml-2 rounded-md text-foreground hover:bg-muted focus:outline-none"
+                                aria-label="Open menu"
                             >
-                                المعاملات
-                            </Link>
-
-                            {/* Check USERS_VIEW permission */}
-                            {user && (user.permissions?.includes(PERMISSIONS.USERS_VIEW) || user.role === 'ADMIN') && (
-                                <Link
-                                    href="/admin/users"
-                                    className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/users') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                                >
-                                    المستخدمين
-                                </Link>
-                            )}
-
-                            {/* Check ROLES_MANAGE permission */}
-                            {user && (user.permissions?.includes(PERMISSIONS.ROLES_MANAGE) || user.role === 'ADMIN') && (
-                                <Link
-                                    href="/admin/roles"
-                                    className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/roles') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                                >
-                                    الأدوار
-                                </Link>
-                            )}
-
-                            {/* Check SETTINGS_MANAGE permission */}
-                            {user && (user.permissions?.includes(PERMISSIONS.SETTINGS_MANAGE) || user.role === 'ADMIN') && (
-                                <>
-                                    <Link
-                                        href="/admin/analytics"
-                                        className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/analytics') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                                    >
-                                        التقارير
-                                    </Link>
-                                    <Link
-                                        href="/admin/booking"
-                                        className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/booking') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                                    >
-                                        الحجز
-                                    </Link>
-                                    <Link
-                                        href="/admin/alerts"
-                                        className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/alerts') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                                    >
-                                        التنبيهات
-                                    </Link>
-                                    <Link
-                                        href="/admin/settings"
-                                        className={`text-sm font-medium transition-colors ${pathname.startsWith('/admin/settings') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                                    >
-                                        الإعدادات
-                                    </Link>
-                                </>
-                            )}
+                                <Menu className="w-6 h-6" />
+                            </button>
                         </div>
                     </div>
+
+                    {/* Drawer Overlay */}
+                    {/* Drawer Overlay */}
+                    {isMenuOpen && typeof document !== 'undefined' && createPortal(
+                        <div className="fixed inset-0 z-[100] flex justify-start">
+                            {/* Backdrop */}
+                            <div
+                                className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
+                                onClick={() => setIsMenuOpen(false)}
+                            />
+
+                            {/* Drawer Content */}
+                            <div className="relative w-80 h-full bg-white dark:bg-zinc-900 shadow-2xl animate-in slide-in-from-right duration-300 overflow-y-auto border-l border-zinc-200 dark:border-zinc-800">
+                                <div className="p-6">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <h2 className="text-xl font-bold text-foreground">القائمة الرئيسية</h2>
+                                        <button
+                                            onClick={() => setIsMenuOpen(false)}
+                                            className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                            aria-label="Close menu"
+                                        >
+                                            <X className="w-6 h-6" />
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Link
+                                            href="/transactions"
+                                            onClick={() => setIsMenuOpen(false)}
+                                            className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname === '/transactions'
+                                                ? 'bg-primary/10 text-primary border-r-4 border-primary'
+                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                }`}
+                                        >
+                                            المعاملات
+                                        </Link>
+
+                                        {/* Check USERS_VIEW permission */}
+                                        {user && (user.permissions?.includes(PERMISSIONS.USERS_VIEW) || user.role === 'ADMIN') && (
+                                            <Link
+                                                href="/admin/users"
+                                                onClick={() => setIsMenuOpen(false)}
+                                                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/users')
+                                                    ? 'bg-primary/10 text-primary border-r-4 border-primary'
+                                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                    }`}
+                                            >
+                                                المستخدمين
+                                            </Link>
+                                        )}
+
+                                        {/* Check ROLES_MANAGE permission */}
+                                        {user && (user.permissions?.includes(PERMISSIONS.ROLES_MANAGE) || user.role === 'ADMIN') && (
+                                            <Link
+                                                href="/admin/roles"
+                                                onClick={() => setIsMenuOpen(false)}
+                                                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/roles')
+                                                    ? 'bg-primary/10 text-primary border-r-4 border-primary'
+                                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                    }`}
+                                            >
+                                                الأدوار
+                                            </Link>
+                                        )}
+
+                                        {/* Check SETTINGS_MANAGE permission */}
+                                        {user && (user.permissions?.includes(PERMISSIONS.SETTINGS_MANAGE) || user.role === 'ADMIN') && (
+                                            <>
+                                                <Link
+                                                    href="/admin/analytics"
+                                                    onClick={() => setIsMenuOpen(false)}
+                                                    className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/analytics')
+                                                        ? 'bg-primary/10 text-primary border-r-4 border-primary'
+                                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                        }`}
+                                                >
+                                                    التقارير
+                                                </Link>
+                                                <Link
+                                                    href="/admin/booking"
+                                                    onClick={() => setIsMenuOpen(false)}
+                                                    className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/booking')
+                                                        ? 'bg-primary/10 text-primary border-r-4 border-primary'
+                                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                        }`}
+                                                >
+                                                    الحجز
+                                                </Link>
+                                                <Link
+                                                    href="/admin/alerts"
+                                                    onClick={() => setIsMenuOpen(false)}
+                                                    className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/alerts')
+                                                        ? 'bg-primary/10 text-primary border-r-4 border-primary'
+                                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                        }`}
+                                                >
+                                                    التنبيهات
+                                                </Link>
+                                                <Link
+                                                    href="/admin/settings"
+                                                    onClick={() => setIsMenuOpen(false)}
+                                                    className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/settings')
+                                                        ? 'bg-primary/10 text-primary border-r-4 border-primary'
+                                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                        }`}
+                                                >
+                                                    الإعدادات
+                                                </Link>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>,
+                        document.body
+                    )}
 
                     <div className="flex items-center gap-4 relative">
                         {user && <Notifications />}

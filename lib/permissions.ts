@@ -31,6 +31,13 @@ export const PERMISSIONS = {
     SETTINGS_MANAGE: 'settings:manage',
     ALERTS_MANAGE: 'alerts:manage',
     BOOKING_MANAGE: 'booking:manage',
+
+    // Status Transitions
+    STATUS_DELIVERING_TO_FACTORY: 'orders:status:delivering_to_factory',
+    STATUS_PROCESSING: 'orders:status:processing',
+    STATUS_SHOP_READY: 'orders:status:shop_ready',
+    STATUS_COMPLETED: 'orders:status:completed',
+    STATUS_REVIEW: 'orders:status:review',
 } as const;
 
 export const PERMISSION_LABELS: Record<string, string> = {
@@ -58,6 +65,13 @@ export const PERMISSION_LABELS: Record<string, string> = {
     [PERMISSIONS.SETTINGS_MANAGE]: 'إدارة إعدادات النظام',
     [PERMISSIONS.ALERTS_MANAGE]: 'إدارة نظام التنبيهات',
     [PERMISSIONS.BOOKING_MANAGE]: 'إدارة طاقة الحجز',
+
+    // Status Permissions
+    [PERMISSIONS.STATUS_DELIVERING_TO_FACTORY]: 'نقل الطلب إلى: قيد التسليم للمصنع',
+    [PERMISSIONS.STATUS_PROCESSING]: 'نقل الطلب إلى: قيد التجهيز',
+    [PERMISSIONS.STATUS_SHOP_READY]: 'نقل الطلب إلى: قيد التسليم للمحل',
+    [PERMISSIONS.STATUS_COMPLETED]: 'نقل الطلب إلى: مكتمل',
+    [PERMISSIONS.STATUS_REVIEW]: 'إعادة الطلب للمراجعة',
 };
 
 export const DEFAULT_ROLES = {
@@ -67,6 +81,7 @@ export const DEFAULT_ROLES = {
     MANAGER: [
         PERMISSIONS.USERS_VIEW,
         PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_ADD, PERMISSIONS.ORDERS_EDIT, PERMISSIONS.ORDERS_CHANGE_STATUS, PERMISSIONS.ORDERS_VIEW_FINANCIALS,
+        PERMISSIONS.STATUS_DELIVERING_TO_FACTORY, PERMISSIONS.STATUS_PROCESSING, PERMISSIONS.STATUS_SHOP_READY, PERMISSIONS.STATUS_COMPLETED, PERMISSIONS.STATUS_REVIEW,
         PERMISSIONS.TRANSACTIONS_VIEW, PERMISSIONS.TRANSACTIONS_ADD,
         PERMISSIONS.FACILITIES_VIEW
     ],

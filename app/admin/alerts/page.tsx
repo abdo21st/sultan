@@ -35,12 +35,7 @@ interface Order {
     status: string;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-    REGISTERED: "مسجل",
-    READY: "جاهز",
-    DELIVERED: "تم الاستلام",
-    REJECTED: "مرفوض"
-};
+import { ORDER_STATUS_LABELS } from "@/lib/constants";
 
 export default function AlertsPage() {
     const [activeTab, setActiveTab] = useState<'current' | 'settings'>('current');
@@ -166,7 +161,7 @@ export default function AlertsPage() {
 
                                         <div className="flex items-center gap-4 py-3 border-y border-border/50 text-sm">
                                             <div className="flex items-center gap-1 text-muted-foreground"><Phone className="w-4 h-4" /> {order.customerPhone}</div>
-                                            <div className="flex items-center gap-1 text-muted-foreground"><Clock className="w-4 h-4" /> {STATUS_LABELS[order.status] || order.status}</div>
+                                            <div className="flex items-center gap-1 text-muted-foreground"><Clock className="w-4 h-4" /> {ORDER_STATUS_LABELS[order.status as keyof typeof ORDER_STATUS_LABELS] || order.status}</div>
                                         </div>
 
                                         <div className="mt-4 flex gap-2">
@@ -210,7 +205,7 @@ export default function AlertsPage() {
                                             value={newSetting.triggerStatus}
                                             onChange={e => setNewSetting({ ...newSetting, triggerStatus: e.target.value })}
                                         >
-                                            {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                                            {Object.entries(ORDER_STATUS_LABELS).map(([val, label]) => (
                                                 <option key={val} value={val}>{label}</option>
                                             ))}
                                         </select>
@@ -260,7 +255,7 @@ export default function AlertsPage() {
                                         <div className="p-3 bg-primary/10 rounded-2xl text-primary"><Bell className="w-6 h-6" /></div>
                                         <div>
                                             <h4 className="font-bold">{s.name}</h4>
-                                            <p className="text-sm text-muted-foreground">عند حالة {STATUS_LABELS[s.triggerStatus]} | موعد {s.timingDays} يوم</p>
+                                            <p className="text-sm text-muted-foreground">عند حالة {ORDER_STATUS_LABELS[s.triggerStatus as keyof typeof ORDER_STATUS_LABELS]} | موعد {s.timingDays} يوم</p>
                                             {s.whatsappEnabled && <p className="text-xs text-green-600 font-bold mt-1 inline-flex items-center gap-1"><MessageSquare className="w-3 h-3" /> واتساب مفعل لـ {s.recipientPhones.length} رقم</p>}
                                         </div>
                                     </div>

@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { updateOrderStatus, completeOrder } from '@/lib/actions/orders';
-import { Printer, XCircle, CheckCircle, Truck } from 'lucide-react';
+import { Printer, XCircle, CheckCircle, Truck, Package, CheckCheck } from 'lucide-react';
 import Link from 'next/link';
 import { ORDER_STATUS } from '@/lib/constants';
+import { PERMISSIONS } from '@/lib/permissions';
 /* formatCurrency and formatDate are not used in this component */
 
 interface Order {
@@ -37,6 +38,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
     const [rejectReason, setRejectReason] = useState('');
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentNote, setPaymentNote] = useState('');
+    const [paymentAmount, setPaymentAmount] = useState(order.remainingAmount?.toString() || '0');
 
     const handleStatusUpdate = async (newStatus: string, reason?: string) => {
         setLoading(true);
@@ -62,7 +64,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
 
     const handleComplete = async () => {
         setLoading(true);
-        const res = await completeOrder(order.id, paymentNote);
+        const res = await completeOrder(order.id, parseFloat(paymentAmount || '0'), paymentNote);
         if (res.success) {
             setShowPaymentModal(false);
         } else {
@@ -90,17 +92,48 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                     طباعة تقرير الطلب
                 </Link>
 
-                {/* Factory Actions */}
-                {(order.status === ORDER_STATUS.REGISTERED || order.status === ORDER_STATUS.TRANSFERRED_TO_FACTORY) && isFactoryWorker && (
-                    <>
+                {/* Factory Actions - Delivering to Factory */}
+                {(order.status === ORDER_STATUS.REGISTERED) &&
+                    (currentUser?.role === 'ADMIN' || currentUser?.permissions?.includes(PERMISSIONS.STATUS_DELIVERING_TO_FACTORY)) && (
                         <button
-                            onClick={() => handleStatusUpdate(ORDER_STATUS.PROCESSING)}
+                            onClick={() => handleStatusUpdate(ORDER_STATUS.DELIVERING_TO_FACTORY)}
                             disabled={loading}
-                            className="w-full py-3 bg-primary text-white rounded-lg font-bold hover:bg-amber-600 transition-colors flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-orange-100 text-orange-700 rounded-lg font-bold hover:bg-orange-200 transition-colors flex items-center justify-center gap-2"
                         >
-                            <CheckCircle className="w-5 h-5" />
-                            بدء التجهيز
+                            <Truck className="w-5 h-5" />
+                            بدء التوصيل للمصنع
                         </button>
+                    )}
+
+                {/* Status: Processing -> Shop Ready */}
+                {(order.status === ORDER_STATUS.PROCESSING) &&
+                    isFactoryWorker && currentUser?.permissions?.includes(PERMISSIONS.STATUS_SHOP_READY) && (
+                        <button
+                            onClick={() => handleStatusUpdate(ORDER_STATUS.TRANSFERRED_TO_SHOP)}
+                            disabled={loading}
+                            className="w-full py-3 bg-indigo-100 text-indigo-700 rounded-lg font-bold hover:bg-indigo-200 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Package className="w-5 h-5" />
+                            تم التجهيز (إرسال للمحل)
+                        </button>
+                    )}
+
+                {/* Status: Shop Ready -> Completed */}
+                {(order.status === ORDER_STATUS.TRANSFERRED_TO_SHOP) &&
+                    isShopWorker && currentUser?.permissions?.includes(PERMISSIONS.STATUS_COMPLETED) && (
+                        <button
+                            onClick={() => handleStatusUpdate(ORDER_STATUS.COMPLETED)}
+                            disabled={loading}
+                            className="w-full py-3 bg-green-100 text-green-700 rounded-lg font-bold hover:bg-green-200 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <CheckCheck className="w-5 h-5" />
+                            تم التسليم للزبون (مكتمل)
+                        </button>
+                    )}
+
+                {/* Rejection - Only available in early stages */}
+                {(order.status === ORDER_STATUS.REGISTERED || order.status === ORDER_STATUS.DELIVERING_TO_FACTORY) &&
+                    isFactoryWorker && currentUser?.permissions?.includes(PERMISSIONS.STATUS_REVIEW) && (
                         <button
                             onClick={() => setShowRejectModal(true)}
                             disabled={loading}
@@ -109,42 +142,35 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                             <XCircle className="w-5 h-5" />
                             إعادة للمراجعة
                         </button>
-                    </>
-                )}
+                    )}
 
-                {order.status === ORDER_STATUS.PROCESSING && isFactoryWorker && (
-                    <button
-                        onClick={handleFinishProcessing}
-                        disabled={loading}
-                        className="w-full py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                        <Printer className="w-5 h-5" />
-                        تم التجهيز وطباعة الملصق
-                    </button>
-                )}
+                {/* Factory Actions - Finish Processing */}
+                {order.status === ORDER_STATUS.PROCESSING &&
+                    isFactoryWorker && currentUser?.permissions?.includes(PERMISSIONS.STATUS_SHOP_READY) && (
+                        <button
+                            onClick={handleFinishProcessing}
+                            disabled={loading}
+                            className="w-full py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Printer className="w-5 h-5" />
+                            تم التجهيز وطباعة الملصق
+                        </button>
+                    )}
 
-                {/* Shop Actions */}
-                {order.status === ORDER_STATUS.TRANSFERRED_TO_SHOP && isShopWorker && (
-                    <button
-                        onClick={() => handleStatusUpdate(ORDER_STATUS.DELIVERING)}
-                        disabled={loading}
-                        className="w-full py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                        <Truck className="w-5 h-5" />
-                        استلام وتسليم للزبون
-                    </button>
-                )}
 
-                {order.status === ORDER_STATUS.DELIVERING && isShopWorker && (
-                    <button
-                        onClick={() => setShowPaymentModal(true)}
-                        disabled={loading}
-                        className="w-full py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                        <CheckCircle className="w-5 h-5" />
-                        إتمام الطلب
-                    </button>
-                )}
+
+                {/* Shop Actions - Complete */}
+                {order.status === ORDER_STATUS.DELIVERING &&
+                    isShopWorker && currentUser?.permissions?.includes(PERMISSIONS.STATUS_COMPLETED) && (
+                        <button
+                            onClick={() => setShowPaymentModal(true)}
+                            disabled={loading}
+                            className="w-full py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <CheckCircle className="w-5 h-5" />
+                            إتمام الطلب
+                        </button>
+                    )}
 
                 {/* Review Actions */}
                 {order.status === ORDER_STATUS.REVIEW_NEEDED && isShopWorker && (
@@ -191,14 +217,29 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
             {showPaymentModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white dark:bg-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-                        <h3 className="text-xl font-bold mb-2">إتمام الطلب والدفع</h3>
-                        <p className="text-sm text-zinc-500 mb-4">تأكد من استلام كامل المبلغ المتبقي من الزبون قبل الإتمام.</p>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold">إتمام الطلب والدفع</h3>
+                            <button onClick={() => setShowPaymentModal(false)} className="text-zinc-500 hover:text-zinc-700">✕</button>
+                        </div>
 
                         <div className="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl mb-4 border border-zinc-100 dark:border-zinc-800">
                             <div className="flex justify-between items-center mb-1">
                                 <span className="text-sm">المبلغ المتبقي:</span>
                                 <span className="text-xl font-bold text-red-500 font-mono" dir="ltr">{order.remainingAmount.toLocaleString()} د.ل</span>
                             </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium mb-1">المبلغ المستلم</label>
+                            <input
+                                type="number"
+                                required
+                                step="0.01"
+                                className="w-full p-3 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-transparent"
+                                placeholder="0.00"
+                                value={paymentAmount}
+                                onChange={(e) => setPaymentAmount(e.target.value)}
+                            />
                         </div>
 
                         <textarea
@@ -213,13 +254,13 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                                 disabled={loading}
                                 className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold disabled:opacity-50"
                             >
-                                إتمام واستلام الدفعة
+                                {loading ? 'جاري الإتمام...' : 'تأكيد واستلام'}
                             </button>
                             <button
                                 onClick={() => setShowPaymentModal(false)}
                                 className="flex-1 py-3 bg-zinc-100 text-zinc-600 rounded-xl font-bold"
                             >
-                                إلغاء
+                                رجوع
                             </button>
                         </div>
                     </div>

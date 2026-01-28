@@ -16,8 +16,9 @@ const createPrismaClient = () => {
             connectionString,
             max: 10,        // Optimization for serverless
             idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 2000,
+            connectionTimeoutMillis: 60000, // Increased for local/test stability
         })
+        console.log("Creating new PG Pool with timeout 60s");
     }
 
     const adapter = new PrismaPg(globalForPrisma.pool)
