@@ -41,7 +41,11 @@ export async function GET() {
                     console.error("SSE Polling Error:", e);
                     clearInterval(poll);
                     clearInterval(timer);
-                    controller.close();
+                    try {
+                        controller.close();
+                    } catch (closeError) {
+                        // Ignore if already closed
+                    }
                 }
             }, 5000); // Poll every 5 seconds for simulation of "real-time"
 

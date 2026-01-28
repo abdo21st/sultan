@@ -173,6 +173,7 @@ export default function EditOrderPage() {
                             <input
                                 required
                                 type="text"
+                                aria-label="اسم العميل"
                                 value={formData.customerName}
                                 onChange={e => setFormData({ ...formData, customerName: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -184,6 +185,7 @@ export default function EditOrderPage() {
                                 required
                                 type="tel"
                                 dir="ltr"
+                                aria-label="رقم الهاتف"
                                 value={formData.customerPhone}
                                 onChange={e => setFormData({ ...formData, customerPhone: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -196,6 +198,7 @@ export default function EditOrderPage() {
                         <textarea
                             required
                             rows={4}
+                            aria-label="الوصف والطلبات"
                             value={formData.description}
                             onChange={e => setFormData({ ...formData, description: e.target.value })}
                             className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
@@ -207,6 +210,7 @@ export default function EditOrderPage() {
                             <label className="text-sm font-medium text-muted-foreground">المعرض (المصدر)</label>
                             <select
                                 value={formData.shopId}
+                                aria-label="المعرض المصدر"
                                 onChange={e => setFormData({ ...formData, shopId: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             >
@@ -218,6 +222,7 @@ export default function EditOrderPage() {
                             <label className="text-sm font-medium text-muted-foreground">المصنع (الهدف)</label>
                             <select
                                 value={formData.factoryId}
+                                aria-label="المصنع الهدف"
                                 onChange={e => setFormData({ ...formData, factoryId: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             >
@@ -232,6 +237,7 @@ export default function EditOrderPage() {
                             <label className="text-sm font-medium text-muted-foreground">حالة الطلب</label>
                             <select
                                 value={formData.status}
+                                aria-label="حالة الطلب"
                                 onChange={e => setFormData({ ...formData, status: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none font-bold text-primary"
                             >
@@ -247,6 +253,7 @@ export default function EditOrderPage() {
                             <input
                                 required
                                 type="date"
+                                aria-label="تاريخ الاستحقاق"
                                 value={formData.dueDate}
                                 onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -262,6 +269,7 @@ export default function EditOrderPage() {
                                 type="number"
                                 step="0.01"
                                 dir="ltr"
+                                aria-label="إجمالي المبلغ"
                                 value={formData.totalAmount}
                                 onChange={e => setFormData({ ...formData, totalAmount: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm font-bold focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -273,6 +281,7 @@ export default function EditOrderPage() {
                                 type="number"
                                 step="0.01"
                                 dir="ltr"
+                                aria-label="المبلغ المدفوع"
                                 value={formData.paidAmount}
                                 onChange={e => setFormData({ ...formData, paidAmount: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm font-bold text-green-600 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -288,7 +297,7 @@ export default function EditOrderPage() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {formData.images.map((img, idx) => (
                                 <div key={`old-${idx}`} className="group relative aspect-video rounded-lg border border-border overflow-hidden bg-muted shadow-sm">
-                                    <img src={img} alt="Order" className="w-full h-full object-cover" />
+                                    <Image src={img} alt="Order" fill className="object-cover" />
                                     <button
                                         type="button"
                                         onClick={() => removeExistingImage(idx)}
@@ -305,7 +314,7 @@ export default function EditOrderPage() {
                             {/* New Previews */}
                             {newImagePreviews.map((preview, idx) => (
                                 <div key={`new-${idx}`} className="group relative aspect-video rounded-lg border border-primary/30 overflow-hidden bg-muted shadow-sm">
-                                    <img src={preview} alt="New Preview" className="w-full h-full object-cover" />
+                                    <Image src={preview} alt="New Preview" fill className="object-cover" />
                                     <button
                                         type="button"
                                         onClick={() => removeNewImage(idx)}
@@ -337,6 +346,7 @@ export default function EditOrderPage() {
                             type="file"
                             multiple
                             accept="image/*"
+                            aria-label="رفع صور جديدة"
                             className="hidden"
                             ref={fileInputRef}
                             onChange={handleFileChange}

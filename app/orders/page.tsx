@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import NavBar from '../components/NavBar';
 import OrderList from '../components/OrderList';
 import Link from 'next/link';
-import { Plus, Filter, Search, Calendar, Factory as FactoryIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Filter, Search, Calendar, Factory as FactoryIcon, ChevronDown, ChevronUp, Menu, X } from 'lucide-react';
 import { usePermission } from '@/lib/usePermission';
 import { PERMISSIONS } from '@/lib/permissions';
 import { ORDER_STATUS } from '@/lib/constants';
@@ -18,6 +18,7 @@ interface Facility {
 
 export default function OrdersPage() {
     const [activeTab, setActiveTab] = useState('ALL');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { hasPermission } = usePermission();
     const [showFilters, setShowFilters] = useState(false);
     const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -32,13 +33,28 @@ export default function OrdersPage() {
     });
 
     useEffect(() => {
-        fetch('/api/facilities').then(res => res.json()).then(data => setFacilities(data));
-    }, []);
+        if (hasPermission(PERMISSIONS.FACILITIES_VIEW)) {
+            fetch('/api/facilities')
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setFacilities(data);
+                    } else {
+                        console.error('Failed to load facilities:', data);
+                        setFacilities([]);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error fetching facilities:', err);
+                    setFacilities([]);
+                });
+        }
+    }, [hasPermission]);
 
     const getStatusQuery = (tab: string) => {
         switch (tab) {
-            case 'FACTORY_INBOX': return `${ORDER_STATUS.TRANSFERRED_TO_FACTORY},${ORDER_STATUS.PROCESSING}`;
-            case 'SHOP_INBOX': return `${ORDER_STATUS.TRANSFERRED_TO_SHOP},${ORDER_STATUS.DELIVERING},${ORDER_STATUS.REVIEW_NEEDED}`;
+            case 'FACTORY_INBOX': return `${ORDER_STATUS.DELIVERING_TO_FACTORY},${ORDER_STATUS.PROCESSING}`;
+            case 'SHOP_INBOX': return `${ORDER_STATUS.TRANSFERRED_TO_SHOP},${ORDER_STATUS.REVIEW_NEEDED}`;
             case 'COMPLETED': return ORDER_STATUS.COMPLETED;
             default: return '';
         }
@@ -65,6 +81,13 @@ export default function OrdersPage() {
                         <p className="text-muted-foreground mt-1">إدارة الطلبات، تتبع الحالات، والبحث المتقدم.</p>
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl transition-all font-medium bg-card text-foreground border border-border hover:bg-muted"
+                        >
+                            <Menu className="w-5 h-5" />
+                            <span>الأقسام</span>
+                        </button>
                         <button
                             onClick={() => setShowFilters(!showFilters)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all font-medium border ${showFilters ? 'bg-primary text-white border-primary' : 'bg-card text-foreground border-border hover:bg-muted'}`}
@@ -153,24 +176,63 @@ export default function OrdersPage() {
                     </div>
                 )}
 
-                <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-                    {[
-                        { id: 'ALL', label: 'الكل' },
-                        { id: 'FACTORY_INBOX', label: 'المصنع (وارد/تجهيز)' },
-                        { id: 'SHOP_INBOX', label: 'المحل (مراجعة/تسليم)' },
-                        { id: 'COMPLETED', label: 'المكتملة' }
-                    ].map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`px-6 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${activeTab === tab.id ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-105' : 'bg-card text-muted-foreground hover:bg-muted border border-border shadow-sm'}`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
 
-                <OrderList queryParams={buildQuery()} />
+                {/* Sidebar Drawer - Overlay */}
+                {isSidebarOpen && (
+                    <div className="fixed inset-0 z-50 flex justify-start">
+                        {/* Backdrop */}
+                        <div
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
+                            onClick={() => setIsSidebarOpen(false)}
+                        />
+
+                        {/* Drawer Content */}
+                        <aside className="relative w-80 h-full bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 p-6 shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
+                            <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
+                                <h3 className="text-xl font-bold text-foreground">أقسام الطلبات</h3>
+                                <button
+                                    onClick={() => setIsSidebarOpen(false)}
+                                    className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground"
+                                    aria-label="إغلاق القائمة"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <nav className="flex flex-col gap-2 overflow-y-auto flex-1">
+                                {[
+                                    { id: 'ALL', label: 'الكل', color: 'bg-zinc-500' },
+                                    { id: 'FACTORY_INBOX', label: 'المصنع (وارد)', color: 'bg-orange-500' },
+                                    { id: 'SHOP_INBOX', label: 'المحل (وارد)', color: 'bg-indigo-500' },
+                                    { id: 'COMPLETED', label: 'المكتملة', color: 'bg-green-500' }
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => {
+                                            setActiveTab(tab.id);
+                                            setIsSidebarOpen(false);
+                                        }}
+                                        className={`w-full text-right px-4 py-3 rounded-lg text-sm font-bold transition-all flex justify-between items-center ${activeTab === tab.id
+                                            ? 'bg-primary/10 text-primary border-r-4 border-primary'
+                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-2 h-2 rounded-full ${tab.color}`} />
+                                            <span>{tab.label}</span>
+                                        </div>
+                                        {activeTab === tab.id && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                                    </button>
+                                ))}
+                            </nav>
+                        </aside>
+                    </div>
+                )}
+
+                {/* Main Content - Full Width */}
+                <div className="w-full">
+                    <OrderList queryParams={buildQuery()} />
+                </div>
             </main>
         </div>
     );

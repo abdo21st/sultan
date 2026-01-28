@@ -15,11 +15,26 @@ interface Transaction {
     date: string;
 }
 
+interface UnpaidOrder {
+    id: string;
+    serialNumber: number;
+    customerName: string;
+    remainingAmount: number;
+}
+
 export default function TransactionsPage() {
     const { hasPermission } = usePermission();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [stats, setStats] = useState({ totalDebt: 0, treasuryBalance: 0, totalIncome: 0, totalExpense: 0 });
+
+    // Payment Modal State
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [unpaidOrders, setUnpaidOrders] = useState<UnpaidOrder[]>([]);
+    const [selectedOrder, setSelectedOrder] = useState<string>('');
+    const [paymentAmount, setPaymentAmount] = useState<string>('');
+
     const [formData, setFormData] = useState({
         type: 'EXPENSE',
         amount: '',
@@ -30,7 +45,17 @@ export default function TransactionsPage() {
 
     useEffect(() => {
         fetchTransactions();
+        fetchStats();
     }, []);
+
+    async function fetchStats() {
+        try {
+            const res = await fetch('/api/finance/stats');
+            if (res.ok) setStats(await res.json());
+        } catch (e) {
+            console.error(e);
+        }
+    }
 
     async function fetchTransactions() {
         try {
@@ -46,6 +71,51 @@ export default function TransactionsPage() {
         }
     }
 
+    async function fetchUnpaidOrders() {
+        try {
+            const res = await fetch('/api/orders?paymentStatus=unpaid');
+            if (res.ok) {
+                setUnpaidOrders(await res.json());
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    // Load unpaid orders when modal opens
+    useEffect(() => {
+        if (showPaymentModal) fetchUnpaidOrders();
+    }, [showPaymentModal]);
+
+    async function handlePaymentSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        try {
+            const res = await fetch('/api/transactions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'INCOME',
+                    amount: parseFloat(paymentAmount),
+                    category: 'SALES', // Or 'DEBT_PAYMENT'
+                    orderId: selectedOrder,
+                    date: new Date().toISOString().split('T')[0]
+                }),
+            });
+
+            if (res.ok) {
+                setShowPaymentModal(false);
+                fetchTransactions();
+                fetchStats();
+                setPaymentAmount('');
+                setSelectedOrder('');
+                alert("تم تسجيل الدفعة بنجاح");
+            } else {
+                const err = await res.json();
+                alert(err.error || 'فشل التسجيل');
+            }
+        } catch {
+            alert('فشل الاتصال');
+        }
+    }
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         try {
@@ -58,6 +128,7 @@ export default function TransactionsPage() {
             if (res.ok) {
                 setShowForm(false);
                 fetchTransactions();
+                fetchStats();
                 setFormData({ ...formData, amount: '', description: '' });
             }
         } catch {
@@ -70,23 +141,110 @@ export default function TransactionsPage() {
             <NavBar />
 
             <main className="max-w-7xl mx-auto px-4 py-8">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
+                        <p className="text-sm text-muted-foreground mb-1">الخزينة (الكاش)</p>
+                        <p className={`text-2xl font-bold font-mono ${stats.treasuryBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {stats.treasuryBalance.toLocaleString()} د.ل
+                        </p>
+                    </div>
+                    <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
+                        <p className="text-sm text-muted-foreground mb-1">ديون العملاء</p>
+                        <p className="text-2xl font-bold font-mono text-orange-600">
+                            {stats.totalDebt.toLocaleString()} د.ل
+                        </p>
+                    </div>
+                    <div className="bg-card border border-border p-4 rounded-xl shadow-sm opacity-75">
+                        <p className="text-sm text-muted-foreground mb-1">إجمالي المقبوضات</p>
+                        <p className="text-xl font-bold font-mono text-foreground">
+                            {stats.totalIncome.toLocaleString()} د.ل
+                        </p>
+                    </div>
+                    <div className="bg-card border border-border p-4 rounded-xl shadow-sm opacity-75">
+                        <p className="text-sm text-muted-foreground mb-1">إجمالي المصروفات</p>
+                        <p className="text-xl font-bold font-mono text-foreground">
+                            {stats.totalExpense.toLocaleString()} د.ل
+                        </p>
+                    </div>
+                </div>
+
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold text-foreground">المعاملات المالية</h1>
-                    {hasPermission(PERMISSIONS.TRANSACTIONS_ADD) && (
-                        <button
-                            onClick={() => setShowForm(!showForm)}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-amber-600 transition-colors"
-                        >
-                            <Plus className="w-5 h-5" />
-                            <span>تسجيل حركة</span>
-                        </button>
-                    )}
+                    <div className="flex gap-2">
+                        {hasPermission(PERMISSIONS.TRANSACTIONS_ADD) && (
+                            <>
+                                <button
+                                    onClick={() => setShowPaymentModal(true)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                                >
+                                    <ArrowUpCircle className="w-5 h-5" />
+                                    <span>استلام دفعة طلب</span>
+                                </button>
+                                <button
+                                    onClick={() => setShowForm(!showForm)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-amber-600 transition-colors shadow-sm"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                    <span>تسجيل حركة عامة</span>
+                                </button>
+                            </>
+                        )}
+                    </div>
                 </div>
+
+                {/* Pay Order Modal */}
+                {showPaymentModal && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                        <div className="bg-card w-full max-w-lg rounded-xl shadow-xl p-6 relative">
+                            <button onClick={() => setShowPaymentModal(false)} className="absolute top-4 left-4 text-muted-foreground hover:text-foreground">✕</button>
+                            <h3 className="text-lg font-bold mb-4">استلام دفعة لطلب</h3>
+                            <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">اختر الطلب</label>
+                                    <select
+                                        required
+                                        className="w-full p-2 border rounded-lg bg-background"
+                                        value={selectedOrder}
+                                        onChange={e => {
+                                            setSelectedOrder(e.target.value);
+                                            const order = unpaidOrders.find(o => o.id === e.target.value);
+                                            if (order) setPaymentAmount(order.remainingAmount.toString());
+                                        }}
+                                        aria-label="اختر الطلب"
+                                    >
+                                        <option value="">اختر الطلب...</option>
+                                        {unpaidOrders.map(o => (
+                                            <option key={o.id} value={o.id}>
+                                                #{o.serialNumber} - {o.customerName} (باقي: {o.remainingAmount})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">المبلغ المستلم</label>
+                                    <input
+                                        type="number"
+                                        required
+                                        step="0.01"
+                                        className="w-full p-2 border rounded-lg bg-background"
+                                        value={paymentAmount}
+                                        onChange={e => setPaymentAmount(e.target.value)}
+                                        aria-label="المبلغ المستلم"
+                                    />
+                                </div>
+                                <button type="submit" className="w-full py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700">
+                                    تأكيد الاستلام
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
 
                 {/* Add Transaction Form */}
                 {showForm && (
                     <div className="mb-8 bg-card border border-border rounded-xl p-6 shadow-sm animate-in slide-in-from-top-4 fade-in duration-300">
-                        <h3 className="text-lg font-semibold mb-4 text-foreground">تسجيل حركة جديدة</h3>
+                        <h3 className="text-lg font-semibold mb-4 text-foreground">تسجيل حركة جديدة (عامة)</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>

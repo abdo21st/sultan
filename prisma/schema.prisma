@@ -92,12 +92,15 @@ model Transaction {
   amount      Float
   category    String
   description String?
+  orderId     String? // Link to specific Order
+  customerId  String? // Link to specific Customer (if we normalize customers later)
   date        DateTime @default(now())
   createdBy   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([date])
+  @@index([orderId])
 }
 
 model Notification {

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { ORDER_STATUS } from "@/lib/constants";
-import { Role } from "@prisma/client";
+import { PERMISSIONS } from "@/lib/permissions";
+// Removed Role import as it is no longer used
 
 interface OrderForNotification {
     id: string;
@@ -14,44 +15,42 @@ export async function createStatusChangeNotification(order: OrderForNotification
     let title = '';
     let message = '';
 
-    const notifyRoles: Role[] = ["MANAGER", "ADMIN"]; // Narrowing roles for notifications
+    const getUsersWithPermission = async (facilityId: string, permission: string) => {
+        return prisma.user.findMany({
+            where: {
+                facilityId,
+                OR: [
+                    { permissions: { has: permission } },
+                    { roles: { some: { permissions: { has: permission } } } }
+                ]
+            },
+            select: { id: true }
+        });
+    };
 
     switch (newStatus) {
-        case ORDER_STATUS.TRANSFERRED_TO_FACTORY:
+        case ORDER_STATUS.DELIVERING_TO_FACTORY:
             if (!order.factoryId) return;
-            targetUsers = await prisma.user.findMany({
-                where: {
-                    facilityId: order.factoryId,
-                    role: { in: notifyRoles }
-                },
-                select: { id: true }
-            });
-            title = 'طلب وارد جديد';
-            message = `طلب رقم ${order.serialNumber} وصل للمصنع للتجهيز.`;
+            // Notify Factory that order is coming
+            targetUsers = await getUsersWithPermission(order.factoryId, PERMISSIONS.STATUS_PROCESSING);
+            title = 'استلام طلب جديد';
+            message = `طلب رقم ${order.serialNumber} في الطريق للمصنع.`;
             break;
+
+
 
         case ORDER_STATUS.TRANSFERRED_TO_SHOP:
             if (!order.shopId) return;
-            targetUsers = await prisma.user.findMany({
-                where: {
-                    facilityId: order.shopId,
-                    role: { in: notifyRoles }
-                },
-                select: { id: true }
-            });
+            // Notify those who can deliver the order (Shop staff)
+            targetUsers = await getUsersWithPermission(order.shopId, PERMISSIONS.STATUS_COMPLETED);
             title = 'طلب جاهز للاستلام';
             message = `طلب رقم ${order.serialNumber} جاهز في المصنع للاستلام.`;
             break;
 
         case ORDER_STATUS.REVIEW_NEEDED:
             if (!order.shopId) return;
-            targetUsers = await prisma.user.findMany({
-                where: {
-                    facilityId: order.shopId,
-                    role: { in: notifyRoles }
-                },
-                select: { id: true }
-            });
+            // Notify those who can edit/fix the order
+            targetUsers = await getUsersWithPermission(order.shopId, PERMISSIONS.ORDERS_EDIT);
             title = 'مراجعة مطلوبة';
             message = `المصنع طلب مراجعة للطلب رقم ${order.serialNumber}: ${rejectionReason}`;
             break;

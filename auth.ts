@@ -8,7 +8,7 @@ import { z } from 'zod';
 // Assuming we can use the one from lib/prisma.ts tailored for edge if needed, 
 // but for credentials usually we need standard node prisma.
 // Since we are in app router, let's just make a new client or use the lib one.
-import { PERMISSIONS } from '@/lib/permissions';
+import { PERMISSIONS, DEFAULT_ROLES } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
 
 async function getUser(username: string) {
@@ -28,16 +28,21 @@ async function getUser(username: string) {
             };
         }
 
+        // Start with permissions stored directly on the user (if any)
+        const allPermissions = new Set<string>(user.permissions || []);
+
+        // Add default permissions based on the user's static role (ADMIN, MANAGER, USER)
+        const defaultRolePermissions = DEFAULT_ROLES[user.role as keyof typeof DEFAULT_ROLES] || [];
+        defaultRolePermissions.forEach(p => allPermissions.add(p));
+
+        // Add permissions from assigned Custom Roles
         if (user.roles && user.roles.length > 0) {
-            const rolePermissions = user.roles.flatMap((role: { permissions: string[] }) => role.permissions);
-            const mergedPermissions = Array.from(new Set([
-                ...rolePermissions,
-                ...user.permissions
-            ]));
-            return { ...user, permissions: mergedPermissions };
+            user.roles.forEach((role: { permissions: string[] }) => {
+                role.permissions.forEach(p => allPermissions.add(p));
+            });
         }
 
-        return user;
+        return { ...user, permissions: Array.from(allPermissions) };
     } catch (error) {
         console.error('Failed to fetch user:', error);
         throw new Error('Failed to fetch user.');
