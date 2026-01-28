@@ -25,7 +25,7 @@ interface Order {
 
 interface User {
     id: string;
-    displayName?: string;
+    displayName?: string | null;
     role: string;
     facilityId?: string | null;
     phoneNumber?: string;
