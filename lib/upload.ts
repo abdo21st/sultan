@@ -1,17 +1,30 @@
 import { v2 as cloudinary } from 'cloudinary';
 
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+// Configure Cloudinary function
+const configureCloudinary = () => {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+    const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
+    const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+
+    if (!cloudName || !apiKey || !apiSecret) {
+        console.error("[saveFile] Missing Cloudinary environment variables!");
+        throw new Error("إعدادات Cloudinary غير مكتملة. تأكد من وجود CLOUDINARY_CLOUD_NAME و CLOUDINARY_API_KEY و CLOUDINARY_API_SECRET في ملف .env وإعادة تشغيل السيرفر.");
+    }
+
+    cloudinary.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+        secure: true
+    });
+};
 
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function saveFile(file: File, prefix: string = "file"): Promise<string | null> {
-    console.log(`[saveFile] Starting Cloudinary upload for ${file.name}, size: ${file.size}, type: ${file.type}`);
+    configureCloudinary();
+    console.log(`[saveFile] Starting Cloudinary upload for ${file.name}`);
 
     if (file.size === 0) {
         console.log("[saveFile] File size is 0, skipping");
