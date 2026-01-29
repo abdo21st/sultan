@@ -14,7 +14,8 @@ export function usePermission() {
         if (!session?.user) return false;
 
         const user = session.user as any;
-        if (user.role === 'ADMIN' || user.username === 'master') return true;
+        // master is the only hardcoded exception for emergency access
+        if (user.username === 'master') return true;
 
         const userPerms = user.permissions || [];
         return userPerms.includes(permission);

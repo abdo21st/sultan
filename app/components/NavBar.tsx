@@ -107,7 +107,7 @@ export default function NavBar() {
                                         </Link>
 
                                         {/* Check USERS_VIEW permission */}
-                                        {user && (user.permissions?.includes(PERMISSIONS.USERS_VIEW) || user.role === 'ADMIN') && (
+                                        {user && (user.permissions?.includes(PERMISSIONS.USERS_VIEW)) && (
                                             <Link
                                                 href="/admin/users"
                                                 onClick={() => setIsMenuOpen(false)}
@@ -121,7 +121,7 @@ export default function NavBar() {
                                         )}
 
                                         {/* Check ROLES_MANAGE permission */}
-                                        {user && (user.permissions?.includes(PERMISSIONS.ROLES_MANAGE) || user.role === 'ADMIN') && (
+                                        {user && (user.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) && (
                                             <Link
                                                 href="/admin/roles"
                                                 onClick={() => setIsMenuOpen(false)}
@@ -135,7 +135,7 @@ export default function NavBar() {
                                         )}
 
                                         {/* Check SETTINGS_MANAGE permission */}
-                                        {user && (user.permissions?.includes(PERMISSIONS.SETTINGS_MANAGE) || user.role === 'ADMIN') && (
+                                        {user && (user.permissions?.includes(PERMISSIONS.SETTINGS_MANAGE)) && (
                                             <>
                                                 <Link
                                                     href="/admin/analytics"
