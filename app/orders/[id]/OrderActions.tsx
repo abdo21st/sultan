@@ -73,8 +73,8 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
         setLoading(false);
     };
 
-    const isFactoryWorker = currentUser?.role === 'ADMIN' || (currentUser?.role !== 'ACCOUNTANT' && currentUser?.facilityId === order.factoryId);
-    const isShopWorker = currentUser?.role === 'ADMIN' || (currentUser?.role !== 'ACCOUNTANT' && currentUser?.facilityId === order.shopId);
+    const isFactoryWorker = currentUser?.facilityId === order.factoryId;
+    const isShopWorker = currentUser?.facilityId === order.shopId;
 
     if (order.status === ORDER_STATUS.COMPLETED) return null;
 

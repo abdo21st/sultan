@@ -34,8 +34,7 @@ export async function PATCH(request: Request) {
     try {
         const session = await auth();
 
-        const hasPermission = session?.user?.role === "ADMIN" ||
-            (session?.user as { permissions?: string[] })?.permissions?.includes(PERMISSIONS.SETTINGS_MANAGE);
+        const hasPermission = (session?.user as { permissions?: string[] })?.permissions?.includes(PERMISSIONS.SETTINGS_MANAGE);
 
         if (!session?.user || !hasPermission) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
