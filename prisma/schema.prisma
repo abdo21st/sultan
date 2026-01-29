@@ -34,6 +34,7 @@ model CustomRole {
   id          String   @id @default(cuid())
   name        String   @unique // e.g. "ADMIN", "MANAGER"
   displayName String
+  description String?
   permissions String[]
   users       User[]
 }

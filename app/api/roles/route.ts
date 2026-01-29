@@ -17,6 +17,11 @@ export async function GET() {
 
     try {
         const roles = await prisma.customRole.findMany({
+            include: {
+                _count: {
+                    select: { users: true }
+                }
+            },
             orderBy: { name: 'asc' }
         });
         return NextResponse.json(roles);
@@ -30,6 +35,7 @@ import { z } from "zod";
 const roleSchema = z.object({
     name: z.string().min(2, "اسم البرمجي للدور يجب أن يكون حرفين على الأقل (مثال: MANAGER)"),
     displayName: z.string().min(2, "اسم الدور الظاهر يجب أن يكون حرفين على الأقل (مثال: مدير)"),
+    description: z.string().optional(),
     permissions: z.array(z.string()).default([]),
 });
 
@@ -51,12 +57,13 @@ export async function POST(req: Request) {
         }
 
         const body = result.data;
-        const { name, displayName, permissions } = body;
+        const { name, displayName, description, permissions } = body;
 
         const role = await prisma.customRole.create({
             data: {
                 name,
                 displayName,
+                description,
                 permissions: permissions || []
             }
         });

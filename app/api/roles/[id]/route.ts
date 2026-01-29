@@ -1,27 +1,43 @@
-
 import { auth } from "../../../../auth";
 import { prisma } from "../../../../lib/prisma";
 import { NextResponse } from "next/server";
+import { z } from "zod";
+import { PERMISSIONS } from "../../../../lib/permissions";
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+const roleSchema = z.object({
+    name: z.string().min(2).optional(),
+    displayName: z.string().min(2).optional(),
+    description: z.string().optional(),
+    permissions: z.array(z.string()).optional(),
+});
+
+export async function PATCH(
+    req: Request,
+    { params }: { params: { id: string } }
+) {
     const session = await auth();
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
 
     try {
-        const { id } = await params;
-        const body = await req.json();
-        const { name, displayName, permissions } = body;
+        const json = await req.json();
+        const result = roleSchema.safeParse(json);
+
+        if (!result.success) {
+            return NextResponse.json(
+                { error: result.error.issues[0].message },
+                { status: 400 }
+            );
+        }
 
         const role = await prisma.customRole.update({
-            where: { id },
-            data: {
-                name,
-                displayName,
-                permissions
-            }
+            where: { id: params.id },
+            data: result.data
         });
+
         return NextResponse.json(role);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to update role" }, { status: 500 });
     }
 }
@@ -40,7 +56,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
             where: { id }
         });
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to delete role" }, { status: 500 });
     }
 }
