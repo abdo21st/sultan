@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
 import { auth } from "../../../../../auth";
+import { PERMISSIONS } from "../../../../../lib/permissions";
 
 export async function DELETE(
     req: Request,
@@ -9,7 +10,7 @@ export async function DELETE(
     try {
         const { id } = await params;
         const session = await auth();
-        if (!session?.user || session.user.role !== 'ADMIN') {
+        if (!session?.user?.permissions?.includes(PERMISSIONS.BOOKING_MANAGE)) {
             return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
         }
 

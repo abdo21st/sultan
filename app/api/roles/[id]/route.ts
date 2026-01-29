@@ -13,8 +13,9 @@ const roleSchema = z.object({
 
 export async function PATCH(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -32,7 +33,7 @@ export async function PATCH(
         }
 
         const role = await prisma.customRole.update({
-            where: { id: params.id },
+            where: { id },
             data: result.data
         });
 
