@@ -204,7 +204,10 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error("Error creating order:", error);
         return NextResponse.json(
-            { error: "فشل إنشاء الطلب" },
+            {
+                error: error instanceof Error ? error.message : "فشل إنشاء الطلب",
+                details: error
+            },
             { status: 500 }
         );
     }
