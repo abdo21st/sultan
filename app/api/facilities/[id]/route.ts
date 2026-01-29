@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from "../../../../lib/prisma";
 import { auth } from "../../../../auth";
+import { PERMISSIONS } from "../../../../lib/permissions";
 
 export async function DELETE(
     request: NextRequest,
@@ -10,8 +11,8 @@ export async function DELETE(
         const { id: facilityId } = await params;
         const session = await auth();
 
-        // Check authentication and admin permission
-        if (!session?.user || session.user.role !== 'ADMIN') {
+        // Check authentication and permission
+        if (!session?.user?.permissions?.includes(PERMISSIONS.FACILITIES_DELETE)) {
             return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
         }
 
