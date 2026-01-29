@@ -43,7 +43,7 @@ export async function saveFile(file: File, prefix: string = "file"): Promise<str
                 (error, result) => {
                     if (error) {
                         console.error("[saveFile] Cloudinary Upload Error:", error);
-                        reject(new Error("حدث خطأ أثناء رفع الصورة إلى السيرفر السحابي"));
+                        reject(new Error(`حدث خطأ أثناء رفع الصورة: ${error.message}`));
                     } else {
                         console.log("[saveFile] Uploaded successfully:", result?.secure_url);
                         resolve(result?.secure_url || null);
