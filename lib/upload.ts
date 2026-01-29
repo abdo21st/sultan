@@ -1,42 +1,60 @@
-import path from "path";
-import { writeFile, mkdir } from "fs/promises";
+import { v2 as cloudinary } from 'cloudinary';
+
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function saveFile(file: File, prefix: string = "file"): Promise<string | null> {
-    console.log(`[saveFile] Starting upload for ${file.name}, size: ${file.size}, type: ${file.type}`);
+    console.log(`[saveFile] Starting Cloudinary upload for ${file.name}, size: ${file.size}, type: ${file.type}`);
+
     if (file.size === 0) {
         console.log("[saveFile] File size is 0, skipping");
         return null;
     }
+
     if (file.size > MAX_FILE_SIZE) {
         console.error(`[saveFile] File too large: ${file.size}`);
         throw new Error(`الملف ${file.name} كبير جداً. الحد الأقصى هو 5 ميجابايت.`);
     }
 
-    const ext = path.extname(file.name).toLowerCase();
-    if (!ALLOWED_EXTENSIONS.includes(ext)) {
-        console.error(`[saveFile] Invalid extension: ${ext}`);
-        throw new Error(`نوع الملف ${ext} غير مسموح به. المسموح: ${ALLOWED_EXTENSIONS.join(", ")}`);
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext) && !file.type.startsWith('image/')) {
+        console.error(`[saveFile] Invalid type: ${file.type} or extension: ${ext}`);
+        throw new Error(`نوع الملف غير مسموح به. المسموح: الصور فقط (${ALLOWED_EXTENSIONS.join(", ")})`);
     }
-
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-
-    // Sanitize filename: remove special characters and add timestamp + random string
-    const safeName = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}${ext}`;
-    const fullPath = path.join(uploadDir, safeName);
-    console.log(`[saveFile] Saving to path: ${fullPath}`);
 
     try {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        await writeFile(fullPath, buffer);
-        console.log(`[saveFile] Successfully saved: ${safeName}`);
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        return new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                {
+                    folder: 'sultan/orders',
+                    public_id: `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                    resource_type: 'auto',
+                },
+                (error, result) => {
+                    if (error) {
+                        console.error("[saveFile] Cloudinary Upload Error:", error);
+                        reject(new Error("حدث خطأ أثناء رفع الصورة إلى السيرفر السحابي"));
+                    } else {
+                        console.log("[saveFile] Uploaded successfully:", result?.secure_url);
+                        resolve(result?.secure_url || null);
+                    }
+                }
+            );
+
+            uploadStream.end(buffer);
+        });
     } catch (err) {
-        console.error("[saveFile] Error writing file:", err);
+        console.error("[saveFile] Unexpected error:", err);
         throw err;
     }
-
-    return `/uploads/${safeName}`;
 }
