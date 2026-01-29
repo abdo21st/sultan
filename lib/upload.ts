@@ -2,7 +2,6 @@ import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary function
 const configureCloudinary = () => {
-    // Clean function to remove quotes and whitespace
     const clean = (val: string | undefined) => val?.replace(/['"]/g, '').trim();
 
     const cloudName = clean(process.env.CLOUDINARY_CLOUD_NAME);
@@ -10,9 +9,11 @@ const configureCloudinary = () => {
     const apiSecret = clean(process.env.CLOUDINARY_API_SECRET);
 
     if (!cloudName || !apiKey || !apiSecret) {
-        console.error("[saveFile] Missing Cloudinary environment variables!");
-        throw new Error("إعدادات Cloudinary غير مكتملة. تأكد من وجود CLOUDINARY_CLOUD_NAME و CLOUDINARY_API_KEY و CLOUDINARY_API_SECRET في ملف .env وإعادة تشغيل السيرفر.");
+        throw new Error("إعدادات Cloudinary غير مكتملة. تأكد من وجود المتغيرات في ملف .env وإعادة تشغيل السيرفر.");
     }
+
+    // Debug log (Safe: only shows first and last chars)
+    console.log(`[Cloudinary Config] Cloud: ${cloudName}, Key: ${apiKey?.substring(0, 4)}..., Secret: ${apiSecret?.substring(0, 2)}***${apiSecret?.substring(apiSecret.length - 2)}`);
 
     cloudinary.config({
         cloud_name: cloudName,
@@ -27,50 +28,30 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function saveFile(file: File, prefix: string = "file"): Promise<string | null> {
     configureCloudinary();
-    console.log(`[saveFile] Starting Cloudinary upload for ${file.name}`);
 
-    if (file.size === 0) {
-        console.log("[saveFile] File size is 0, skipping");
-        return null;
-    }
+    if (file.size === 0) return null;
 
     if (file.size > MAX_FILE_SIZE) {
-        console.error(`[saveFile] File too large: ${file.size}`);
         throw new Error(`الملف ${file.name} كبير جداً. الحد الأقصى هو 5 ميجابايت.`);
-    }
-
-    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-    if (!ALLOWED_EXTENSIONS.includes(ext) && !file.type.startsWith('image/')) {
-        console.error(`[saveFile] Invalid type: ${file.type} or extension: ${ext}`);
-        throw new Error(`نوع الملف غير مسموح به. المسموح: الصور فقط (${ALLOWED_EXTENSIONS.join(", ")})`);
     }
 
     try {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
+        const base64Image = `data:${file.type};base64,${buffer.toString('base64')}`;
 
-        return new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                {
-                    folder: 'sultan/orders',
-                    public_id: `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-                    resource_type: 'auto',
-                },
-                (error, result) => {
-                    if (error) {
-                        console.error("[saveFile] Cloudinary Upload Error:", error);
-                        reject(new Error(`حدث خطأ أثناء رفع الصورة: ${error.message}`));
-                    } else {
-                        console.log("[saveFile] Uploaded successfully:", result?.secure_url);
-                        resolve(result?.secure_url || null);
-                    }
-                }
-            );
+        console.log(`[saveFile] Uploading to Cloudinary (Base64)...`);
 
-            uploadStream.end(buffer);
+        const result = await cloudinary.uploader.upload(base64Image, {
+            folder: 'sultan/orders',
+            public_id: `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            resource_type: 'auto',
         });
-    } catch (err) {
-        console.error("[saveFile] Unexpected error:", err);
-        throw err;
+
+        console.log("[saveFile] Upload Success:", result.secure_url);
+        return result.secure_url;
+    } catch (err: any) {
+        console.error("[saveFile] Cloudinary Error:", err);
+        throw new Error(`حدث خطأ أثناء رفع الصورة: ${err.message || "خطأ مجهول"}`);
     }
 }
