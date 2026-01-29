@@ -1,6 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
 
-const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 /**
@@ -26,7 +25,7 @@ export async function saveFile(file: File, prefix: string = "file"): Promise<str
     if (file.size === 0) return null;
 
     if (file.size > MAX_FILE_SIZE) {
-        throw new Error(`الملف ${file.name} كبير جداً. الحد الأقصى هو 5 ميجابايت.`);
+        throw new Error(`المجف ${file.name} كبير جداً. الحد الأقصى هو 5 ميجابايت.`);
     }
 
     try {
@@ -36,19 +35,20 @@ export async function saveFile(file: File, prefix: string = "file"): Promise<str
 
         console.log(`[saveFile] Final attempt: Uploading with direct config for ${file.name}`);
 
-        // 🚀 هذه هي الصياغة الوحيدة التي نجحت في الاختبارات السابقة
+        // 🚀 الرفع باستخدام الطريقة التي تأكدنا من نجاحها (بدون معامل folder لتجنب خطأ التوقيع)
+        // سنستخدم public_id لتنظيم الملفات بدلاً من المجلد
         const result = await cloudinary.uploader.upload(base64Image, {
             cloud_name: cloudName,
             api_key: apiKey,
             api_secret: apiSecret,
-            folder: 'sultan/orders',
+            public_id: `sultan_orders_${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
             resource_type: 'auto'
         });
 
         console.log("[saveFile] SUCCESS!", result.secure_url);
         return result.secure_url;
     } catch (err: any) {
-        console.error("[saveFile] Error Details:", err);
-        throw new Error(`خطأ الرفع: ${err.message || "فشل التوقيع الرقمي"}`);
+        console.error("[saveFile] Final Error Details:", err);
+        throw new Error(`خطأ الرفع السحابي: ${err.message || "فشل التوقيع"}`);
     }
 }
