@@ -2,9 +2,12 @@ import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary function
 const configureCloudinary = () => {
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
-    const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
-    const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+    // Clean function to remove quotes and whitespace
+    const clean = (val: string | undefined) => val?.replace(/['"]/g, '').trim();
+
+    const cloudName = clean(process.env.CLOUDINARY_CLOUD_NAME);
+    const apiKey = clean(process.env.CLOUDINARY_API_KEY);
+    const apiSecret = clean(process.env.CLOUDINARY_API_SECRET);
 
     if (!cloudName || !apiKey || !apiSecret) {
         console.error("[saveFile] Missing Cloudinary environment variables!");
