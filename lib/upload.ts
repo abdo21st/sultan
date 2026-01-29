@@ -34,21 +34,28 @@ export async function saveFile(file: File, prefix: string = "file"): Promise<str
         const buffer = Buffer.from(arrayBuffer);
         const base64Image = `data:${file.type};base64,${buffer.toString('base64')}`;
 
-        console.log(`[saveFile] Uploading to Cloudinary (${file.name})...`);
-
-        const result = await cloudinary.uploader.upload(base64Image, {
-            folder: 'sultan/orders',
-            public_id: `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            resource_type: 'auto',
+        // 1. تثبيت الإعدادات بشكل عالمي أولاً
+        cloudinary.config({
             cloud_name: cloudName,
             api_key: apiKey,
-            api_secret: apiSecret
+            api_secret: apiSecret,
+            secure: true
         });
 
-        console.log("[saveFile] Upload SUCCESS:", result.secure_url);
+        console.log(`[saveFile] Uploading to Cloudinary (Folder: sultan/orders)...`);
+
+        // 2. الرفع باستخدام أقل قدر ممكن من المعاملات لتجنب خطأ التوقيع
+        const result = await cloudinary.uploader.upload(base64Image, {
+            folder: 'sultan/orders',
+            resource_type: 'auto',
+            use_filename: true,
+            unique_filename: true
+        });
+
+        console.log("[saveFile] SUCCESS!", result.secure_url);
         return result.secure_url;
     } catch (err: any) {
-        console.error("[saveFile] Cloudinary Error details:", err);
-        throw new Error(`حدث خطأ أثناء رفع الصورة: ${err.message || "خطأ في التوقيع أو الاتصال"}`);
+        console.error("[saveFile] Cloudinary Detailed Error:", err);
+        throw new Error(`حدث خطأ أثناء رفع الصورة: ${err.message || "خطأ في التوقيع"}`);
     }
 }
