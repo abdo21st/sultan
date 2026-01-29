@@ -67,7 +67,6 @@ export const PERMISSION_LABELS: Record<string, string> = {
     [PERMISSIONS.ALERTS_MANAGE]: 'إدارة نظام التنبيهات',
     [PERMISSIONS.BOOKING_MANAGE]: 'إدارة طاقة الحجز',
 
-    // Status Permissions
     [PERMISSIONS.STATUS_DELIVERING_TO_FACTORY]: 'نقل الطلب إلى: قيد التسليم للمصنع',
     [PERMISSIONS.STATUS_PROCESSING]: 'نقل الطلب إلى: قيد التجهيز',
     [PERMISSIONS.STATUS_SHOP_READY]: 'نقل الطلب إلى: قيد التسليم للمحل',
