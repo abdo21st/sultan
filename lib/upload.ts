@@ -1,32 +1,34 @@
 import { put } from '@vercel/blob';
 
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB (Vercel limit for Hobby)
 
 export async function saveFile(file: File, prefix: string = "file"): Promise<string | null> {
     if (file.size === 0) return null;
 
-    if (file.size > MAX_FILE_SIZE) {
-        throw new Error(`الملف ${file.name} كبير جداً. الحد الأقصى هو 5 ميجابايت.`);
+    // تأكد من وجود التوكن
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!token) {
+        console.error("[saveFile] ERROR: BLOB_READ_WRITE_TOKEN is missing from environment variables!");
+        throw new Error("لم يتم العثور على مفتاح التفعيل (Token). تأكد من وجوده في ملف .env وإعادة تشغيل السيرفر.");
     }
 
-    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
-    if (!ALLOWED_EXTENSIONS.includes(ext) && !file.type.startsWith('image/')) {
-        throw new Error(`نوع الملف غير مسموح به. المسموح: الصور فقط (${ALLOWED_EXTENSIONS.join(", ")})`);
+    if (file.size > MAX_FILE_SIZE) {
+        throw new Error(`المجف ${file.name} كبير جداً. الحد الأقصى لخطة Vercel المجانية هو 4.5 ميجابايت.`);
     }
 
     try {
         console.log(`[saveFile] Uploading to Vercel Blob: ${file.name}...`);
 
-        // Upload to Vercel Blob
         const blob = await put(`orders/${prefix}-${Date.now()}-${file.name}`, file, {
-            access: 'public', // Change to 'private' if needed, but public is standard for served images
+            access: 'public',
+            token: token // نمرر التوكن بشكل صريح للتأكد
         });
 
         console.log("[saveFile] Vercel Blob SUCCESS:", blob.url);
         return blob.url;
     } catch (err: any) {
-        console.error("[saveFile] Vercel Blob Error:", err);
-        throw new Error(`حدث خطأ أثناء رفع الصورة إلى Vercel Blob: ${err.message || "خطأ مجهول"}`);
+        console.error("[saveFile] Vercel Blob Detailed Error:", err);
+        throw new Error(`حدث خطأ أثناء رفع الصورة: ${err.message}`);
     }
 }
