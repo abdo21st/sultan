@@ -7,7 +7,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
  * Gets and cleans Cloudinary credentials from environment variables
  */
 const getCloudinaryConfig = () => {
-    const clean = (val: string | undefined) => val ? val.replace(/['"\r\n\t]/g, '').trim() : '';
+    const clean = (val: string | undefined) => val ? val.replace(/['"\r\n\t\s]/g, '').trim() : '';
 
     const cloudName = clean(process.env.CLOUDINARY_CLOUD_NAME);
     const apiKey = clean(process.env.CLOUDINARY_API_KEY);
@@ -34,28 +34,21 @@ export async function saveFile(file: File, prefix: string = "file"): Promise<str
         const buffer = Buffer.from(arrayBuffer);
         const base64Image = `data:${file.type};base64,${buffer.toString('base64')}`;
 
-        // 1. تثبيت الإعدادات بشكل عالمي أولاً
-        cloudinary.config({
+        console.log(`[saveFile] Final attempt: Uploading with direct config for ${file.name}`);
+
+        // 🚀 هذه هي الصياغة الوحيدة التي نجحت في الاختبارات السابقة
+        const result = await cloudinary.uploader.upload(base64Image, {
             cloud_name: cloudName,
             api_key: apiKey,
             api_secret: apiSecret,
-            secure: true
-        });
-
-        console.log(`[saveFile] Uploading to Cloudinary (Folder: sultan/orders)...`);
-
-        // 2. الرفع باستخدام أقل قدر ممكن من المعاملات لتجنب خطأ التوقيع
-        const result = await cloudinary.uploader.upload(base64Image, {
             folder: 'sultan/orders',
-            resource_type: 'auto',
-            use_filename: true,
-            unique_filename: true
+            resource_type: 'auto'
         });
 
         console.log("[saveFile] SUCCESS!", result.secure_url);
         return result.secure_url;
     } catch (err: any) {
-        console.error("[saveFile] Cloudinary Detailed Error:", err);
-        throw new Error(`حدث خطأ أثناء رفع الصورة: ${err.message || "خطأ في التوقيع"}`);
+        console.error("[saveFile] Error Details:", err);
+        throw new Error(`خطأ الرفع: ${err.message || "فشل التوقيع الرقمي"}`);
     }
 }
