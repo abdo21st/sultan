@@ -26,6 +26,7 @@
 *.keystore
 *.jks
 *.apk
+!public/downloads/*.apk
 *.aab
 app-release-unsigned-aligned.apk
 manifest-checksum.txt
