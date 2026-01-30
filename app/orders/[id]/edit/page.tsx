@@ -51,11 +51,14 @@ export default function EditOrderPage() {
             })
         ])
             .then(([facilitiesData, orderData]) => {
-                setFacilities(facilitiesData);
+                if (facilitiesData.error) throw new Error(facilitiesData.error);
+                if (orderData.error) throw new Error(orderData.error);
+
+                setFacilities(Array.isArray(facilitiesData) ? facilitiesData : []);
                 setFormData({
                     ...orderData,
-                    totalAmount: String(orderData.totalAmount),
-                    paidAmount: String(orderData.paidAmount),
+                    totalAmount: String(orderData.totalAmount || 0),
+                    paidAmount: String(orderData.paidAmount || 0),
                     dueDate: orderData.dueDate ? new Date(orderData.dueDate).toISOString().split('T')[0] : '',
                     images: orderData.images || [],
                 });
@@ -63,7 +66,7 @@ export default function EditOrderPage() {
             })
             .catch(err => {
                 console.error("Fetch error:", err);
-                setError('فشل تحميل البيانات');
+                setError(err instanceof Error ? err.message : 'فشل تحميل البيانات');
                 setLoading(false);
             });
     }, [params]);
@@ -148,10 +151,11 @@ export default function EditOrderPage() {
     }
 
     if (loading) return <div className="p-8 text-center text-zinc-500">جاري التحميل...</div>;
+    if (error === 'Unauthorized') return <div className="p-8 text-center text-red-500 font-bold">عذراً، ليس لديك صلاحية تعديل الطلبات.</div>;
     if (!formData) return <div className="p-8 text-center text-red-500">الطلب غير موجود</div>;
 
-    const factories = facilities.filter(f => f.type === 'FACTORY');
-    const shops = facilities.filter(f => f.type === 'SHOP' || f.type === 'OFFICE');
+    const factories = Array.isArray(facilities) ? facilities.filter(f => f.type === 'FACTORY') : [];
+    const shops = Array.isArray(facilities) ? facilities.filter(f => f.type === 'SHOP' || f.type === 'OFFICE') : [];
 
     return (
         <div className="min-h-screen bg-background p-6 flex flex-col items-center">
