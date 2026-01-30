@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { updateOrderStatus, completeOrder } from '@/lib/actions/orders';
-import { Printer, XCircle, CheckCircle, Truck, Package } from 'lucide-react';
+import { Printer, XCircle, CheckCircle, Truck, Package, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { ORDER_STATUS, ORDER_WORKFLOW, ORDER_STATUS_LABELS } from '@/lib/constants';
 /* formatCurrency and formatDate are not used in this component */
@@ -94,6 +94,20 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                     const hasPermission = currentUser?.role === 'ADMIN' || currentUser?.permissions?.includes(nextStatus);
 
                     if (!hasPermission) return null;
+
+                    if (nextStatus === ORDER_STATUS.PROCESSING) {
+                        return (
+                            <button
+                                key={nextStatus}
+                                onClick={() => handleStatusUpdate(nextStatus)}
+                                disabled={loading}
+                                className="w-full py-3 bg-amber-100 text-amber-700 rounded-lg font-bold hover:bg-amber-200 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <RefreshCw className="w-5 h-5" />
+                                استلام وبدء التجهيز
+                            </button>
+                        );
+                    }
 
                     if (nextStatus === ORDER_STATUS.REVIEW) {
                         return (

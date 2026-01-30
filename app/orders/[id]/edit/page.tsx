@@ -244,7 +244,7 @@ export default function EditOrderPage() {
                             >
                                 {Object.entries(ORDER_STATUS).map(([key, value]) => (
                                     <option key={key} value={value}>
-                                        {ORDER_STATUS_LABELS[key as keyof typeof ORDER_STATUS_LABELS]}
+                                        {ORDER_STATUS_LABELS[value]}
                                     </option>
                                 ))}
                             </select>
