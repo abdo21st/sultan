@@ -1,6 +1,6 @@
 {
   "packageId": "com.sultan.app",
-  "host": "127.0.0.1:3000",
+  "host": "sultan23.vercel.app",
   "name": "Sultan",
   "launcherName": "Sultan",
   "display": "standalone",
@@ -13,18 +13,18 @@
   "backgroundColor": "#0C0A09",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "http://127.0.0.1:3000/logo-512.png",
-  "maskableIconUrl": "http://127.0.0.1:3000/logo-512.png",
+  "iconUrl": "https://sultan23.vercel.app/logo-512.png",
+  "maskableIconUrl": "https://sultan23.vercel.app/logo-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./sultan-key.keystore",
     "alias": "android"
   },
-  "appVersionName": "3",
-  "appVersionCode": 2,
+  "appVersionName": "4",
+  "appVersionCode": 4,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "http://127.0.0.1:3000/manifest.json",
+  "webManifestUrl": "https://sultan23.vercel.app/manifest.json",
   "fallbackType": "customtabs",
   "features": {},
   "alphaDependencies": {
@@ -39,5 +39,5 @@
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "displayOverride": [],
-  "appVersion": "3"
+  "appVersion": "4"
 }
