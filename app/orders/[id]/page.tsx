@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import Link from "next/link";
+import { PERMISSIONS } from "@/lib/permissions";
 import OrderActions from "./OrderActions";
 import { ArrowLeft, Edit } from "lucide-react";
 import Image from "next/image";
@@ -112,29 +113,30 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
                     {/* Sidebar: Financials & Actions */}
                     <div className="space-y-6">
-                        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200 dark:border-zinc-800">
-                            <h3 className="font-semibold mb-4 text-foreground border-b border-border pb-2">المالية</h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-sm text-muted-foreground">الإجمالي</span>
-                                    <span className="font-bold font-mono" dir="ltr">{formatCurrency(order.totalAmount)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-sm text-muted-foreground">المدفوع</span>
-                                    <span className="font-bold text-green-600 font-mono" dir="ltr">{formatCurrency(order.paidAmount)}</span>
-                                </div>
-                                <div className="flex justify-between border-t border-dashed border-border pt-2">
-                                    <span className="text-sm font-medium">المتبقي</span>
-                                    <span className={`font-bold font-mono ${order.remainingAmount > 0 ? 'text-red-500' : 'text-zinc-500'}`} dir="ltr">
-                                        {formatCurrency(order.remainingAmount)}
-                                    </span>
+                        {(session?.user?.role === 'ADMIN' || session?.user?.permissions?.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS)) && (
+                            <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200 dark:border-zinc-800">
+                                <h3 className="font-semibold mb-4 text-foreground border-b border-border pb-2">المالية</h3>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between">
+                                        <span className="text-sm text-muted-foreground">الإجمالي</span>
+                                        <span className="font-bold font-mono" dir="ltr">{formatCurrency(order.totalAmount)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-sm text-muted-foreground">المدفوع</span>
+                                        <span className="font-bold text-green-600 font-mono" dir="ltr">{formatCurrency(order.paidAmount)}</span>
+                                    </div>
+                                    <div className="flex justify-between border-t border-dashed border-border pt-2">
+                                        <span className="text-sm font-medium">المتبقي</span>
+                                        <span className={`font-bold font-mono ${order.remainingAmount > 0 ? 'text-red-500' : 'text-zinc-500'}`} dir="ltr">
+                                            {formatCurrency(order.remainingAmount)}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* ACTION BUTTONS COMPONENT */}
                         <OrderActions order={order} currentUser={session?.user} />
-
                     </div>
                 </div>
             </main>

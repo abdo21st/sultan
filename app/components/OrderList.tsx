@@ -92,10 +92,12 @@ export default function OrderList({ queryParams }: OrderListProps) {
                             </div>
 
                             <div className="flex justify-between items-end border-t border-border pt-4 mt-2">
-                                <div>
-                                    <p className="text-xs text-muted-foreground mb-1">المبلغ الإجمالي</p>
-                                    <p className="text-lg font-bold text-foreground font-mono" dir="ltr">{formatCurrency(order.totalAmount)}</p>
-                                </div>
+                                {hasPermission(PERMISSIONS.ORDERS_VIEW_FINANCIALS) && (
+                                    <div>
+                                        <p className="text-xs text-muted-foreground mb-1">المبلغ الإجمالي</p>
+                                        <p className="text-lg font-bold text-foreground font-mono" dir="ltr">{formatCurrency(order.totalAmount)}</p>
+                                    </div>
+                                )}
                                 <div className="text-right">
                                     <p className="text-xs text-muted-foreground mb-1">تاريخ الاستحقاق</p>
                                     <p className="text-sm font-medium text-foreground font-mono">

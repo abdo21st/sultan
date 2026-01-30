@@ -95,16 +95,19 @@ export default function NavBar() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Link
-                                            href="/transactions"
-                                            onClick={() => setIsMenuOpen(false)}
-                                            className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname === '/transactions'
-                                                ? 'bg-primary/10 text-primary border-r-4 border-primary'
-                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                                }`}
-                                        >
-                                            المعاملات
-                                        </Link>
+                                        {/* Check TRANSACTIONS_VIEW permission */}
+                                        {user && (user.role === 'ADMIN' || user.permissions?.includes(PERMISSIONS.TRANSACTIONS_VIEW)) && (
+                                            <Link
+                                                href="/transactions"
+                                                onClick={() => setIsMenuOpen(false)}
+                                                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname === '/transactions'
+                                                    ? 'bg-primary/10 text-primary border-r-4 border-primary'
+                                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                    }`}
+                                            >
+                                                المعاملات
+                                            </Link>
+                                        )}
 
                                         {/* Check USERS_VIEW permission */}
                                         {user && (user.permissions?.includes(PERMISSIONS.USERS_VIEW)) && (
