@@ -106,7 +106,7 @@ export default function Home() {
                 <div className="p-4 bg-primary/10 rounded-full text-primary mb-4 group-hover:scale-110 transition-transform">
                   <PlusCircle className="w-8 h-8" />
                 </div>
-                <span className="font-black text-xs uppercase tracking-widest text-foreground">إنشاء طلب ملكي</span>
+                <span className="font-black text-xs uppercase tracking-widest text-foreground">إنشاء طلب جديد</span>
               </Link>
             </div>
           </div>
