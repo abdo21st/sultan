@@ -31,6 +31,7 @@
 app-release-unsigned-aligned.apk
 manifest-checksum.txt
 android/
+android-app-module-backup/
 .gradle/
 
 # misc
