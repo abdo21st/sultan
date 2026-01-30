@@ -190,6 +190,19 @@ export default function NavBar() {
                                                 </Link>
                                             </>
                                         )}
+
+                                        {/* Mobile App Download Link */}
+                                        <div className="pt-4 mt-4 border-t border-zinc-200 dark:border-zinc-800">
+                                            <a
+                                                href="/downloads/sultan-v1.apk"
+                                                download="sultan-v1.apk"
+                                                onClick={() => setIsMenuOpen(false)}
+                                                className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-gradient-to-br from-primary to-amber-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all duration-300"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="rotate-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                                                تنزيل تطبيق أندرويد
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -198,6 +211,16 @@ export default function NavBar() {
                     )}
 
                     <div className="flex items-center gap-4 relative">
+                        {user && (
+                            <a
+                                href="/downloads/sultan-v1.apk"
+                                download="sultan-v1.apk"
+                                title="تحميل تطبيق أندرويد"
+                                className="hidden md:flex w-10 h-10 rounded-xl bg-white/5 border border-white/5 items-center justify-center text-primary hover:bg-white/10 hover:border-primary/30 transition-all duration-300 group/dl"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover/dl:translate-y-0.5 transition-transform"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                            </a>
+                        )}
                         {user && <Notifications />}
                         {user && (
                             <div className="relative group/menu">
