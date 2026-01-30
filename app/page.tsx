@@ -97,58 +97,15 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Quick Actions & Mobile Apps */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-foreground">الوصول السريع</h3>
-            <div className="flex gap-4">
-              <Link href="/orders/new" className="flex flex-col items-center justify-center p-8 bg-card border border-border rounded-2xl hover:border-primary/50 hover:bg-primary/5 transition-all group cursor-pointer w-full md:w-auto min-w-[200px] glass">
-                <div className="p-4 bg-primary/10 rounded-full text-primary mb-4 group-hover:scale-110 transition-transform">
-                  <PlusCircle className="w-8 h-8" />
-                </div>
-                <span className="font-black text-xs uppercase tracking-widest text-foreground">إنشاء طلب جديد</span>
-              </Link>
+        {/* Quick Actions */}
+        <div className="max-w-md">
+          <h3 className="text-xl font-bold text-foreground mb-4">الوصول السريع</h3>
+          <Link href="/orders/new" className="flex flex-col items-center justify-center p-8 bg-card border border-border rounded-2xl hover:border-primary/50 hover:bg-primary/5 transition-all group cursor-pointer glass">
+            <div className="p-4 bg-primary/10 rounded-full text-primary mb-4 group-hover:scale-110 transition-transform">
+              <PlusCircle className="w-8 h-8" />
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="text-xl font-bold text-foreground flex items-center gap-3">
-              <span className="p-2 bg-amber-500/10 rounded-lg"><TrendingUp className="w-5 h-5 text-amber-500" /></span>
-              حلول الهاتف المتحرك
-            </h3>
-            <div className="bg-gradient-to-br from-zinc-900 to-[#0c0a09] border border-white/5 rounded-3xl p-8 relative overflow-hidden glass group">
-              <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-all duration-700" />
-              <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-                <div className="flex-1 space-y-4 text-center md:text-right">
-                  <h4 className="text-xl font-black text-gradient-gold">تطبيق سلطان للأندرويد</h4>
-                  <p className="text-xs text-muted-foreground/60 font-bold leading-relaxed">
-                    احصل على تجربة إدارية كاملة من هاتفك مباشرة. تتبع الطلبات، الإشعارات الفورية، وتحكم كامل في أي وقت.
-                  </p>
-                  <div className="flex flex-wrap gap-4 justify-center md:justify-start pt-2">
-                    <a
-                      href="/downloads/sultan-v1.apk"
-                      download="sultan-v1.apk"
-                      className="px-6 py-3 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-100 transition-all duration-300 flex items-center gap-3 active:scale-95 shadow-xl shadow-white/5"
-                    >
-                      <PlusCircle className="w-4 h-4 rotate-45" />
-                      تحميل ملف APK
-                    </a>
-                    <button
-                      onClick={() => alert('لتثبيت التطبيق: افتح الموقع من كروم الهاتف، واضغط على "إضافة إلى الشاشة الرئيسية"')}
-                      className="px-6 py-3 bg-white/5 text-foreground border border-white/10 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all duration-300 flex items-center gap-3 active:scale-95"
-                    >
-                      دليل التثبيت (PWA)
-                    </button>
-                  </div>
-                </div>
-                <div className="hidden lg:block w-32 h-32 bg-white/5 rounded-3xl border border-white/5 p-4 transform rotate-6 group-hover:rotate-0 transition-transform duration-700">
-                  <div className="w-full h-full bg-gradient-to-br from-primary to-amber-700 rounded-xl flex items-center justify-center text-white gold-glow">
-                    <PlusCircle className="w-12 h-12" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            <span className="font-black text-xs uppercase tracking-widest text-foreground">إنشاء طلب جديد</span>
+          </Link>
         </div>
 
         {/* Recent Orders Section */}
