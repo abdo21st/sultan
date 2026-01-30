@@ -39,7 +39,7 @@ export async function createStatusChangeNotification(order: OrderForNotification
 
 
 
-        case ORDER_STATUS.TRANSFERRED_TO_SHOP:
+        case ORDER_STATUS.SHOP_READY:
             if (!order.shopId) return;
             // Notify those who can deliver the order (Shop staff)
             targetUsers = await getUsersWithPermission(order.shopId, PERMISSIONS.STATUS_COMPLETED);
@@ -47,7 +47,7 @@ export async function createStatusChangeNotification(order: OrderForNotification
             message = `طلب رقم ${order.serialNumber} جاهز في المصنع للاستلام.`;
             break;
 
-        case ORDER_STATUS.REVIEW_NEEDED:
+        case ORDER_STATUS.REVIEW:
             if (!order.shopId) return;
             // Notify those who can edit/fix the order
             targetUsers = await getUsersWithPermission(order.shopId, PERMISSIONS.ORDERS_EDIT);

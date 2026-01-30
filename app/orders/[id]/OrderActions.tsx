@@ -2,10 +2,9 @@
 
 import { useState } from 'react';
 import { updateOrderStatus, completeOrder } from '@/lib/actions/orders';
-import { Printer, XCircle, CheckCircle, Truck, Package, CheckCheck } from 'lucide-react';
+import { Printer, XCircle, CheckCircle, Truck, Package } from 'lucide-react';
 import Link from 'next/link';
-import { ORDER_STATUS } from '@/lib/constants';
-import { PERMISSIONS } from '@/lib/permissions';
+import { ORDER_STATUS, ORDER_WORKFLOW, ORDER_STATUS_LABELS } from '@/lib/constants';
 /* formatCurrency and formatDate are not used in this component */
 
 interface Order {
@@ -44,7 +43,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
         setLoading(true);
         const res = await updateOrderStatus(order.id, newStatus, reason);
         if (res.success) {
-            if (newStatus === ORDER_STATUS.REVIEW_NEEDED) setShowRejectModal(false);
+            if (newStatus === ORDER_STATUS.REVIEW) setShowRejectModal(false);
         } else {
             alert(res.error);
         }
@@ -53,7 +52,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
 
     const handleFinishProcessing = async () => {
         setLoading(true);
-        const res = await updateOrderStatus(order.id, ORDER_STATUS.TRANSFERRED_TO_SHOP);
+        const res = await updateOrderStatus(order.id, ORDER_STATUS.SHOP_READY);
         if (res.success) {
             window.open(`/orders/print/${order.id}`, '_blank');
         } else {
@@ -73,8 +72,6 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
         setLoading(false);
     };
 
-    const isFactoryWorker = currentUser?.facilityId === order.factoryId;
-    const isShopWorker = currentUser?.facilityId === order.shopId;
 
     if (order.status === ORDER_STATUS.COMPLETED) return null;
 
@@ -92,88 +89,69 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                     طباعة تقرير الطلب
                 </Link>
 
-                {/* Factory Actions - Delivering to Factory */}
-                {(order.status === ORDER_STATUS.REGISTERED) &&
-                    (currentUser?.role === 'ADMIN' || currentUser?.permissions?.includes(PERMISSIONS.STATUS_DELIVERING_TO_FACTORY)) && (
+                {/* Dynamic Sequential Actions */}
+                {ORDER_WORKFLOW[order.status]?.map((nextStatus) => {
+                    const hasPermission = currentUser?.role === 'ADMIN' || currentUser?.permissions?.includes(nextStatus);
+
+                    if (!hasPermission) return null;
+
+                    if (nextStatus === ORDER_STATUS.REVIEW) {
+                        return (
+                            <button
+                                key={nextStatus}
+                                onClick={() => setShowRejectModal(true)}
+                                disabled={loading}
+                                className="w-full py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <XCircle className="w-5 h-5" />
+                                إعادة للمراجعة
+                            </button>
+                        );
+                    }
+
+                    if (nextStatus === ORDER_STATUS.SHOP_READY) {
+                        return (
+                            <button
+                                key={nextStatus}
+                                onClick={handleFinishProcessing}
+                                disabled={loading}
+                                className="w-full py-3 bg-indigo-100 text-indigo-700 rounded-lg font-bold hover:bg-indigo-200 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Package className="w-5 h-5" />
+                                تم التجهيز (إرسال للمحل)
+                            </button>
+                        );
+                    }
+
+                    if (nextStatus === ORDER_STATUS.COMPLETED) {
+                        return (
+                            <button
+                                key={nextStatus}
+                                onClick={() => setShowPaymentModal(true)}
+                                disabled={loading}
+                                className="w-full py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <CheckCircle className="w-5 h-5" />
+                                إتمام الطلب والدفع
+                            </button>
+                        );
+                    }
+
+                    return (
                         <button
-                            onClick={() => handleStatusUpdate(ORDER_STATUS.DELIVERING_TO_FACTORY)}
+                            key={nextStatus}
+                            onClick={() => handleStatusUpdate(nextStatus)}
                             disabled={loading}
-                            className="w-full py-3 bg-orange-100 text-orange-700 rounded-lg font-bold hover:bg-orange-200 transition-colors flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-zinc-100 text-zinc-700 rounded-lg font-bold hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
                         >
-                            <Truck className="w-5 h-5" />
-                            بدء التوصيل للمصنع
+                            {nextStatus === ORDER_STATUS.DELIVERING ? <Truck className="w-5 h-5" /> : <Package className="w-5 h-5" />}
+                            {ORDER_STATUS_LABELS[nextStatus as keyof typeof ORDER_STATUS_LABELS]}
                         </button>
-                    )}
+                    );
+                })}
 
-                {/* Status: Processing -> Shop Ready */}
-                {(order.status === ORDER_STATUS.PROCESSING) &&
-                    isFactoryWorker && currentUser?.permissions?.includes(PERMISSIONS.STATUS_SHOP_READY) && (
-                        <button
-                            onClick={() => handleStatusUpdate(ORDER_STATUS.TRANSFERRED_TO_SHOP)}
-                            disabled={loading}
-                            className="w-full py-3 bg-indigo-100 text-indigo-700 rounded-lg font-bold hover:bg-indigo-200 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <Package className="w-5 h-5" />
-                            تم التجهيز (إرسال للمحل)
-                        </button>
-                    )}
-
-                {/* Status: Shop Ready -> Completed */}
-                {(order.status === ORDER_STATUS.TRANSFERRED_TO_SHOP) &&
-                    isShopWorker && currentUser?.permissions?.includes(PERMISSIONS.STATUS_COMPLETED) && (
-                        <button
-                            onClick={() => handleStatusUpdate(ORDER_STATUS.COMPLETED)}
-                            disabled={loading}
-                            className="w-full py-3 bg-green-100 text-green-700 rounded-lg font-bold hover:bg-green-200 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <CheckCheck className="w-5 h-5" />
-                            تم التسليم للزبون (مكتمل)
-                        </button>
-                    )}
-
-                {/* Rejection - Only available in early stages */}
-                {(order.status === ORDER_STATUS.REGISTERED || order.status === ORDER_STATUS.DELIVERING_TO_FACTORY) &&
-                    isFactoryWorker && currentUser?.permissions?.includes(PERMISSIONS.STATUS_REVIEW) && (
-                        <button
-                            onClick={() => setShowRejectModal(true)}
-                            disabled={loading}
-                            className="w-full py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <XCircle className="w-5 h-5" />
-                            إعادة للمراجعة
-                        </button>
-                    )}
-
-                {/* Factory Actions - Finish Processing */}
-                {order.status === ORDER_STATUS.PROCESSING &&
-                    isFactoryWorker && currentUser?.permissions?.includes(PERMISSIONS.STATUS_SHOP_READY) && (
-                        <button
-                            onClick={handleFinishProcessing}
-                            disabled={loading}
-                            className="w-full py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <Printer className="w-5 h-5" />
-                            تم التجهيز وطباعة الملصق
-                        </button>
-                    )}
-
-
-
-                {/* Shop Actions - Complete */}
-                {order.status === ORDER_STATUS.DELIVERING &&
-                    isShopWorker && currentUser?.permissions?.includes(PERMISSIONS.STATUS_COMPLETED) && (
-                        <button
-                            onClick={() => setShowPaymentModal(true)}
-                            disabled={loading}
-                            className="w-full py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
-                        >
-                            <CheckCircle className="w-5 h-5" />
-                            إتمام الطلب
-                        </button>
-                    )}
-
-                {/* Review Actions */}
-                {order.status === ORDER_STATUS.REVIEW_NEEDED && isShopWorker && (
+                {/* Edit for Review State */}
+                {order.status === ORDER_STATUS.REVIEW && (
                     <Link
                         href={`/orders/${order.id}/edit`}
                         className="w-full py-3 bg-amber-500 text-white rounded-lg font-bold hover:bg-amber-600 transition-colors flex items-center justify-center gap-2"
@@ -196,7 +174,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                         />
                         <div className="flex gap-3">
                             <button
-                                onClick={() => handleStatusUpdate(ORDER_STATUS.REVIEW_NEEDED, rejectReason)}
+                                onClick={() => handleStatusUpdate(ORDER_STATUS.REVIEW, rejectReason)}
                                 disabled={loading || !rejectReason}
                                 className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold disabled:opacity-50"
                             >

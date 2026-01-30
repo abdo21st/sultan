@@ -22,13 +22,13 @@ export async function updateOrderStatus(id: string, newStatus: string, rejection
         if (newStatus === ORDER_STATUS.DELIVERING_TO_FACTORY && !permissions.includes(PERMISSIONS.STATUS_DELIVERING_TO_FACTORY)) {
             return { success: false, error: 'ليس لديك صلاحية بدء توصيل الطلب للمصنع' };
         }
-        if (newStatus === ORDER_STATUS.TRANSFERRED_TO_SHOP && !permissions.includes(PERMISSIONS.STATUS_SHOP_READY)) {
+        if (newStatus === ORDER_STATUS.SHOP_READY && !permissions.includes(PERMISSIONS.STATUS_SHOP_READY)) {
             return { success: false, error: 'ليس لديك صلاحية نقل الطلب إلى "جاهز للاستلام"' };
         }
         if (newStatus === ORDER_STATUS.DELIVERING && !permissions.includes(PERMISSIONS.STATUS_DELIVERING)) {
             return { success: false, error: 'ليس لديك صلاحية نقل الطلب إلى "قيد التوصيل"' };
         }
-        if (newStatus === ORDER_STATUS.REVIEW_NEEDED && !permissions.includes(PERMISSIONS.STATUS_REVIEW)) {
+        if (newStatus === ORDER_STATUS.REVIEW && !permissions.includes(PERMISSIONS.STATUS_REVIEW)) {
             return { success: false, error: 'ليس لديك صلاحية إعادة الطلب للمراجعة' };
         }
 

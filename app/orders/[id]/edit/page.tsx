@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
+import { ORDER_STATUS, ORDER_STATUS_LABELS } from '@/lib/constants';
 
 interface Facility {
     id: string;
@@ -110,8 +111,8 @@ export default function EditOrderPage() {
             submitData.append("customerPhone", formData.customerPhone);
             submitData.append("description", formData.description);
             let statusToSubmit = formData.status;
-            if (statusToSubmit === 'REVIEW_NEEDED') {
-                statusToSubmit = 'REGISTERED';
+            if (statusToSubmit === ORDER_STATUS.REVIEW) {
+                statusToSubmit = ORDER_STATUS.REGISTERED;
             }
 
             submitData.append("status", statusToSubmit);
@@ -241,11 +242,11 @@ export default function EditOrderPage() {
                                 onChange={e => setFormData({ ...formData, status: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none font-bold text-primary"
                             >
-                                <option value="REGISTERED">مسجل</option>
-                                <option value="PROCESSING">قيد التنفيذ</option>
-                                <option value="COMPLETED">مكتمل</option>
-                                <option value="DELIVERED">تم التسليم</option>
-                                <option value="CANCELLED">ملغي</option>
+                                {Object.entries(ORDER_STATUS).map(([key, value]) => (
+                                    <option key={key} value={value}>
+                                        {ORDER_STATUS_LABELS[key as keyof typeof ORDER_STATUS_LABELS]}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-2">
