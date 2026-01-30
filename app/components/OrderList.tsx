@@ -54,16 +54,6 @@ export default function OrderList({ queryParams }: OrderListProps) {
         );
     }
 
-    async function handleDelete(id: string) {
-        if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
-        try {
-            await fetch(`/api/orders/${id}`, { method: 'DELETE' });
-            setOrders(orders.filter(o => o.id !== id));
-        } catch (error) {
-            console.error('Failed to delete order', error);
-        }
-    }
-
     return (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {orders.map((order) => {
@@ -71,58 +61,50 @@ export default function OrderList({ queryParams }: OrderListProps) {
                 return (
                     <div
                         key={order.id}
-                        className="group relative bg-card border border-border rounded-xl p-0 shadow-sm hover:shadow-lg transition-all hover:bg-muted/30 overflow-hidden"
+                        className="group relative bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-0 shadow-2xl hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-1 overflow-hidden glass"
                     >
                         <Link href={`/orders/${order.id}`} className="block p-6 cursor-pointer">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                            <div className="flex justify-between items-start mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-amber-900/20 border border-primary/20 flex items-center justify-center text-primary font-black text-xl shadow-inner">
                                         {order.customerName.charAt(0)}
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-lg text-foreground truncate max-w-[150px]">
+                                        <h3 className="font-black text-lg text-foreground antialiased tracking-tight group-hover:text-primary transition-colors">
                                             {order.customerName}
                                         </h3>
-                                        <p className="text-xs text-muted-foreground font-mono" dir="ltr">#{order.id.slice(-6)}</p>
+                                        <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60 mt-0.5">#{order.id.slice(-6).toUpperCase()}</p>
                                     </div>
                                 </div>
-                                <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${statusInfo.color}`}>
+                                <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg border shadow-sm ${statusInfo.color} border-current/20 gold-glow`}>
                                     {statusInfo.label}
                                 </span>
                             </div>
 
-                            <div className="flex justify-between items-end border-t border-border pt-4 mt-2">
+                            <div className="flex justify-between items-end border-t border-white/5 pt-6 mt-4">
                                 {hasPermission(PERMISSIONS.ORDERS_VIEW_FINANCIALS) && (
-                                    <div>
-                                        <p className="text-xs text-muted-foreground mb-1">المبلغ الإجمالي</p>
-                                        <p className="text-lg font-bold text-foreground font-mono" dir="ltr">{formatCurrency(order.totalAmount)}</p>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">المبلغ المستحق</p>
+                                        <p className="text-xl font-black text-foreground font-mono antialiased" dir="ltr">{formatCurrency(order.totalAmount)}</p>
                                     </div>
                                 )}
-                                <div className="text-right">
-                                    <p className="text-xs text-muted-foreground mb-1">تاريخ الاستحقاق</p>
-                                    <p className="text-sm font-medium text-foreground font-mono">
+                                <div className="text-right space-y-1">
+                                    <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">موعد التسليم</p>
+                                    <p className="text-sm font-black text-primary font-mono antialiased">
                                         {formatDate(order.dueDate)}
                                     </p>
                                 </div>
                             </div>
                         </Link>
 
-                        <div className="flex gap-2 p-4 pt-0">
+                        <div className="flex gap-2 p-6 pt-0">
                             {hasPermission(PERMISSIONS.ORDERS_EDIT) && (
                                 <Link
                                     href={`/orders/${order.id}/edit`}
-                                    className="flex-1 py-2 text-sm font-medium text-center text-primary bg-primary/5 rounded-lg hover:bg-primary hover:text-white transition-colors"
+                                    className="flex-1 py-3 text-xs font-black uppercase tracking-widest text-center text-foreground bg-white/5 rounded-xl border border-white/5 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300"
                                 >
-                                    تعديل
+                                    تعديل المعلومات
                                 </Link>
-                            )}
-                            {hasPermission(PERMISSIONS.ORDERS_DELETE) && (
-                                <button
-                                    onClick={() => handleDelete(order.id)}
-                                    className="flex-1 py-2 text-sm font-medium text-center text-red-600 bg-red-500/5 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
-                                >
-                                    حذف
-                                </button>
                             )}
                         </div>
                     </div>

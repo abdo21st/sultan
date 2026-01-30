@@ -42,21 +42,29 @@ export default function NavBar() {
     }, []);
 
     return (
-        <nav className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-50">
+        <nav className="border-b border-border/40 bg-zinc-950/50 backdrop-blur-xl sticky top-0 z-50 glass">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center h-16">
-                    <div className="flex items-center gap-8">
-                        <Link href="/" className="flex items-center gap-2 text-2xl font-bold bg-gradient-to-r from-primary to-amber-400 bg-clip-text text-transparent">
-                            {settings?.logoUrl && (
-                                <Image
-                                    src={settings.logoUrl}
-                                    alt="Logo"
-                                    width={32}
-                                    height={32}
-                                    className="rounded-md object-cover"
-                                />
-                            )}
-                            <span>{settings?.appName || 'سلطان'}</span>
+                <div className="flex justify-between items-center h-20">
+                    <div className="flex items-center gap-10">
+                        <Link href="/" className="flex items-center gap-3">
+                            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-amber-700 p-0.5 shadow-lg shadow-primary/20">
+                                <div className="w-full h-full rounded-[10px] bg-zinc-900 flex items-center justify-center">
+                                    {settings?.logoUrl ? (
+                                        <Image
+                                            src={settings.logoUrl}
+                                            alt="Logo"
+                                            width={28}
+                                            height={28}
+                                            className="rounded-md object-cover"
+                                        />
+                                    ) : (
+                                        <span className="text-primary font-black text-xl">س</span>
+                                    )}
+                                </div>
+                            </div>
+                            <span className="text-2xl tracking-tight font-black text-gradient-gold drop-shadow-sm">
+                                {settings?.appName || 'سلطان'}
+                            </span>
                         </Link>
                         <div className="flex items-center gap-4">
                             {/* Mobile Menu Button */}
@@ -193,18 +201,18 @@ export default function NavBar() {
                         {user && <Notifications />}
                         {user && (
                             <div className="relative group/menu">
-                                <Link href="/profile" className="flex items-center gap-3 pl-4 border-l border-border cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors">
+                                <Link href="/profile" className="flex items-center gap-3 pl-4 border-r border-border/40 cursor-pointer hover:bg-white/5 p-2 rounded-xl transition-all duration-300">
                                     <div className="text-right hidden sm:block">
-                                        <p className="text-sm font-bold text-foreground">{user.displayName || user.name || user.username}</p>
-                                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+                                        <p className="text-sm font-black text-foreground antialiased tracking-wide">{user.displayName || user.name || user.username}</p>
+                                        <p className="text-[9px] uppercase font-bold tracking-[0.1em] text-primary/80">
                                             {user.role === 'ADMIN' ? 'مدير النظام' :
                                                 user.role === 'MANAGER' ? 'مدير' :
                                                     user.role === 'ACCOUNTANT' ? 'محاسب' :
                                                         user.role || 'زائر'}
                                         </p>
                                     </div>
-                                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-md shadow-primary/20">
-                                        <User className="w-4 h-4" />
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-border/50 text-white flex items-center justify-center font-bold shadow-xl overflow-hidden group-hover/menu:border-primary/50 transition-colors">
+                                        <User className="w-5 h-5 text-primary" />
                                     </div>
                                 </Link>
 

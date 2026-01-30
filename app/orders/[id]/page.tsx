@@ -25,85 +25,113 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
     const shop = order.shopId ? await prisma.facility.findUnique({ where: { id: order.shopId } }) : null;
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-black pb-20">
-            <header className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 py-4 sticky top-0 z-10">
-                <div className="max-w-4xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/orders" className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
-                            <ArrowLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
+        <div className="min-h-screen bg-[#0c0a09] dark:bg-[#0c0a09] pb-20 selection:bg-primary/30 antialiased">
+            <header className="bg-zinc-950/40 backdrop-blur-xl border-b border-white/5 px-4 py-6 sticky top-0 z-50 glass">
+                <div className="max-w-5xl mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <Link href="/orders" className="p-3 bg-white/5 hover:bg-primary/10 rounded-2xl transition-all duration-300 border border-white/5 hover:border-primary/20 group">
+                            <ArrowLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-bold text-foreground">الطلب #{order.serialNumber}</h1>
-                            <span className="text-xs text-muted-foreground">{formatDate(order.createdAt)}</span>
+                            <h1 className="text-2xl font-black text-gradient-gold tracking-tight">الطلب #{order.serialNumber}</h1>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60">{formatDate(order.createdAt)}</span>
+                            </div>
                         </div>
                     </div>
                     {session?.user?.permissions?.includes('orders:edit') && (
-                        <Link href={`/orders/${id}/edit`} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-primary">
-                            <Edit className="w-5 h-5" />
+                        <Link href={`/orders/${id}/edit`} className="p-3 bg-white/5 hover:bg-primary rounded-2xl transition-all duration-300 border border-white/5 group">
+                            <Edit className="w-5 h-5 text-primary group-hover:text-white transition-colors" />
                         </Link>
                     )}
                 </div>
             </header>
 
-            <main className="max-w-4xl mx-auto p-4 space-y-6">
+            <main className="max-w-5xl mx-auto p-4 md:p-8 space-y-8">
                 {/* Status Bar */}
-                <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-sm border border-zinc-200 dark:border-zinc-800 flex flex-wrap gap-2 items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-muted-foreground">الحالة الحالية:</span>
-                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${statusInfo.color}`}>
-                            {statusInfo.label}
-                        </span>
+                <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl p-6 border border-white/5 flex flex-wrap gap-4 items-center justify-between glass gold-glow">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-primary/10 rounded-xl">
+                            <div className="w-3 h-3 rounded-full bg-primary shadow-[0_0_10px_rgba(217,119,6,0.5)]" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">الحالة الحالية للنظام</p>
+                            <span className={`inline-block mt-1 px-4 py-1 rounded-lg text-xs font-black uppercase tracking-wider border ${statusInfo.color} border-current/20 shadow-sm`}>
+                                {statusInfo.label}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Details */}
-                    <div className="md:col-span-2 space-y-6">
+                    <div className="lg:col-span-2 space-y-8">
                         {/* Customer Card */}
-                        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200 dark:border-zinc-800">
-                            <h3 className="font-semibold mb-4 text-foreground border-b border-border pb-2">بيانات العميل</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-xs text-muted-foreground mb-1">الاسم</p>
-                                    <p className="font-medium text-foreground">{order.customerName}</p>
+                        <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl p-8 border border-white/5 glass">
+                            <h3 className="text-sm font-black text-gradient-gold uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <div className="w-1 h-4 bg-primary rounded-full transition-all group-hover:h-6" />
+                                بيانات العميل الملكي
+                            </h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                <div className="space-y-2">
+                                    <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">اسم العميل</p>
+                                    <p className="text-lg font-black text-foreground">{order.customerName}</p>
                                 </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground mb-1">رقم الهاتف</p>
-                                    <p className="font-medium text-foreground font-mono" dir="ltr">{order.customerPhone}</p>
+                                <div className="space-y-2">
+                                    <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">رقم التواصل</p>
+                                    <p className="text-lg font-black text-foreground font-mono tracking-tighter" dir="ltr">{order.customerPhone}</p>
                                 </div>
                             </div>
                         </div>
 
                         {/* Order Info */}
-                        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200 dark:border-zinc-800">
-                            <h3 className="font-semibold mb-4 text-foreground border-b border-border pb-2">تفاصيل الطلب</h3>
-                            <p className="text-sm text-foreground whitespace-pre-wrap">{order.description}</p>
+                        <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl p-8 border border-white/5 glass">
+                            <h3 className="text-sm font-black text-gradient-gold uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <div className="w-1 h-4 bg-primary rounded-full" />
+                                تفاصيل التصميم والتجهيز
+                            </h3>
+                            <div className="p-6 bg-white/5 rounded-2xl border border-white/5">
+                                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap antialiased font-medium">{order.description}</p>
+                            </div>
 
-                            <div className="mt-4 grid grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-xs text-muted-foreground mb-1">المصدر (المعرض)</p>
-                                    <p className="text-sm font-medium">{shop?.name || '-'}</p>
+                            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">جهة التكليف (المعرض)</p>
+                                    <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/5">
+                                        <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                                        <p className="text-sm font-black text-foreground">{shop?.name || '-'}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground mb-1">الوجهة (المصنع)</p>
-                                    <p className="text-sm font-medium">{factory?.name || '-'}</p>
+                                <div className="space-y-3">
+                                    <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">جهة التنفيذ (المصنع)</p>
+                                    <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/5">
+                                        <div className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
+                                        <p className="text-sm font-black text-foreground">{factory?.name || '-'}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Images */}
                         {order.images && (order.images as string[]).length > 0 && (
-                            <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                <h3 className="font-semibold mb-4 text-foreground border-b border-border pb-2">المرفقات</h3>
-                                <div className="grid grid-cols-3 gap-2">
+                            <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl p-8 border border-white/5 glass">
+                                <h3 className="text-sm font-black text-gradient-gold uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <div className="w-1 h-4 bg-primary rounded-full" />
+                                    المرفقات البصرية
+                                </h3>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     {(order.images as string[]).map((img: string, idx: number) => (
-                                        <a key={idx} href={img} target="_blank" rel="noopener noreferrer" title={`عرض الصورة ${idx + 1}`} className="relative group block w-full h-32 rounded-lg overflow-hidden border border-border">
+                                        <a key={idx} href={img} target="_blank" rel="noopener noreferrer" title={`عرض الصورة ${idx + 1}`} className="relative group block aspect-square rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all duration-500 shadow-lg">
                                             <Image
                                                 src={img}
                                                 alt={`Order image ${idx + 1}`}
                                                 fill
-                                                className="object-cover group-hover:scale-105 transition-transform"
+                                                className="object-cover group-hover:scale-110 transition-transform duration-700 blur-[0.5px] group-hover:blur-0"
                                             />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                                                <span className="text-[10px] font-black text-white uppercase tracking-widest">توسيع العرض</span>
+                                            </div>
                                         </a>
                                     ))}
                                 </div>
@@ -112,31 +140,41 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                     </div>
 
                     {/* Sidebar: Financials & Actions */}
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                         {(session?.user?.role === 'ADMIN' || session?.user?.permissions?.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS)) && (
-                            <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200 dark:border-zinc-800">
-                                <h3 className="font-semibold mb-4 text-foreground border-b border-border pb-2">المالية</h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">الإجمالي</span>
-                                        <span className="font-bold font-mono" dir="ltr">{formatCurrency(order.totalAmount)}</span>
+                            <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl p-8 border border-white/5 glass gold-glow sticky top-28">
+                                <h3 className="text-sm font-black text-gradient-gold uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <div className="w-1 h-4 bg-primary rounded-full" />
+                                    الملخص المالي
+                                </h3>
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center group">
+                                        <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">القيمة الإجمالية</span>
+                                        <span className="text-xl font-black font-mono text-foreground" dir="ltr">{formatCurrency(order.totalAmount)}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-sm text-muted-foreground">المدفوع</span>
-                                        <span className="font-bold text-green-600 font-mono" dir="ltr">{formatCurrency(order.paidAmount)}</span>
+                                    <div className="flex justify-between items-center bg-green-500/5 p-4 rounded-xl border border-green-500/10">
+                                        <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">المبلغ المحصل</span>
+                                        <span className="text-xl font-black font-mono text-green-500" dir="ltr">{formatCurrency(order.paidAmount)}</span>
                                     </div>
-                                    <div className="flex justify-between border-t border-dashed border-border pt-2">
-                                        <span className="text-sm font-medium">المتبقي</span>
-                                        <span className={`font-bold font-mono ${order.remainingAmount > 0 ? 'text-red-500' : 'text-zinc-500'}`} dir="ltr">
+                                    <div className="flex justify-between items-center pt-2">
+                                        <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">الرصيد المتبقي</span>
+                                        <span className={`text-2xl font-black font-mono ${order.remainingAmount > 0 ? 'text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'text-zinc-500'}`} dir="ltr">
                                             {formatCurrency(order.remainingAmount)}
                                         </span>
                                     </div>
                                 </div>
+                                <div className="mt-8">
+                                    {/* Action buttons inside the financial card or below it */}
+                                    <OrderActions order={order} currentUser={session?.user} />
+                                </div>
                             </div>
                         )}
 
-                        {/* ACTION BUTTONS COMPONENT */}
-                        <OrderActions order={order} currentUser={session?.user} />
+                        {!(session?.user?.role === 'ADMIN' || session?.user?.permissions?.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS)) && (
+                            <div className="sticky top-28">
+                                <OrderActions order={order} currentUser={session?.user} />
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
