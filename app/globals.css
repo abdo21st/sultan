@@ -2,13 +2,17 @@
 
 :root {
   /* Premium Light Mode - Cream & Gold */
-  --background: #fafaf9; /* Stone 50 */
-  --foreground: #1c1917; /* Stone 900 */
-  
-  --primary: #b45309; /* Amber 700 - Deep Gold */
+  --background: #fafaf9;
+  /* Stone 50 */
+  --foreground: #1c1917;
+  /* Stone 900 */
+
+  --primary: #b45309;
+  /* Amber 700 - Deep Gold */
   --primary-foreground: #ffffff;
-  
-  --secondary: #44403c; /* Stone 700 */
+
+  --secondary: #44403c;
+  /* Stone 700 */
   --secondary-foreground: #fafaf9;
 
   --muted: #f5f5f4;
@@ -24,7 +28,7 @@
   --radius: 0.75rem;
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
@@ -38,29 +42,33 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  
+
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
-  
+
   --font-sans: var(--font-cairo), ui-sans-serif, system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     /* Royal Dark Mode - Deep Midnight & Gold */
-    --background: #0c0a09; /* Warm Black */
+    --background: #0c0a09;
+    /* Warm Black */
     --foreground: #f5f5f4;
-    
-    --primary: #d97706; /* Amber 600 - Radiant Gold */
+
+    --primary: #d97706;
+    /* Amber 600 - Radiant Gold */
     --primary-foreground: #000000;
 
-    --secondary: #292524; /* Stone 800 */
+    --secondary: #292524;
+    /* Stone 800 */
     --secondary-foreground: #f5f5f4;
 
     --muted: #1c1917;
     --muted-foreground: #a8a29e;
 
-    --accent: #451a03; /* Deep Amber */
+    --accent: #451a03;
+    /* Deep Amber */
     --accent-foreground: #f59e0b;
 
     --border: #292524;
@@ -80,8 +88,8 @@ body {
 /* Glassmorphism Utilities */
 .glass {
   background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -97,5 +105,6 @@ body {
 .text-gradient-gold {
   background: linear-gradient(to bottom right, #f59e0b, #b45309);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }

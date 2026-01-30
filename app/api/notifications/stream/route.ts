@@ -6,6 +6,9 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
     const session = await auth();
     if (!session) return new Response("Unauthorized", { status: 401 });
+    if (!session?.user?.id) {
+        return new Response('Unauthorized', { status: 401 });
+    }
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
