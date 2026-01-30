@@ -11,6 +11,14 @@ const cairo = Cairo({
 export const metadata: Metadata = {
   title: "سلطان - إدارة الطلبات",
   description: "نظام إدارة الطلبات والمعاملات",
+  manifest: "/manifest.json",
+  themeColor: "#0c0a09",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Sultan",
+  },
 };
 
 import { auth } from "../auth";
