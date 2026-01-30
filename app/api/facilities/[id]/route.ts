@@ -10,9 +10,10 @@ export async function DELETE(
     try {
         const { id: facilityId } = await params;
         const session = await auth();
+        const userPermissions = (session?.user as any)?.permissions || [];
 
         // Check authentication and permission
-        if (!session?.user?.permissions?.includes(PERMISSIONS.FACILITIES_DELETE)) {
+        if (!userPermissions.includes(PERMISSIONS.FACILITIES_DELETE)) {
             return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
         }
 

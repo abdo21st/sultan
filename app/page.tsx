@@ -127,6 +127,7 @@ export default function Home() {
                   <div className="flex flex-wrap gap-4 justify-center md:justify-start pt-2">
                     <a
                       href="/downloads/sultan-v1.apk"
+                      download="sultan-v1.apk"
                       className="px-6 py-3 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-100 transition-all duration-300 flex items-center gap-3 active:scale-95 shadow-xl shadow-white/5"
                     >
                       <PlusCircle className="w-4 h-4 rotate-45" />
