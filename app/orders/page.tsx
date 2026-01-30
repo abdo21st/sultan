@@ -72,25 +72,25 @@ export default function OrdersPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50/50 pb-20">
+        <div className="min-h-screen bg-[#0c0a09] dark:bg-[#0c0a09] pb-20 selection:bg-primary/30 antialiased">
             <NavBar />
-            <main className="max-w-7xl mx-auto px-4 py-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <main className="max-w-7xl mx-auto px-4 py-12">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
                     <div>
-                        <h1 className="text-3xl font-bold text-foreground">سجل الطلبات</h1>
-                        <p className="text-muted-foreground mt-1">إدارة الطلبات، تتبع الحالات، والبحث المتقدم.</p>
+                        <h1 className="text-4xl font-black text-gradient-gold tracking-tight mb-2">سجل الطلبات الملكي</h1>
+                        <p className="text-sm text-muted-foreground/60 font-bold uppercase tracking-widest">إدارة شاملة، تتبع دقيق، وتحكم كامل في المسار.</p>
                     </div>
-                    <div className="flex gap-2 w-full md:w-auto">
+                    <div className="flex flex-wrap gap-3 w-full md:w-auto">
                         <button
                             onClick={() => setIsSidebarOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl transition-all font-medium bg-card text-foreground border border-border hover:bg-muted"
+                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest bg-white/5 text-foreground border border-white/5 hover:bg-white/10 hover:border-primary/30 glass"
                         >
-                            <Menu className="w-5 h-5" />
+                            <Menu className="w-5 h-5 text-primary" />
                             <span>الأقسام</span>
                         </button>
                         <button
                             onClick={() => setShowFilters(!showFilters)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all font-medium border ${showFilters ? 'bg-primary text-white border-primary' : 'bg-card text-foreground border-border hover:bg-muted'}`}
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest border ${showFilters ? 'bg-primary text-white border-primary shadow-[0_0_20px_rgba(217,119,6,0.3)]' : 'bg-white/5 text-foreground border-white/5 hover:bg-white/10 glass'}`}
                         >
                             <Filter className="w-5 h-5" />
                             <span>فلاتر متقدمة</span>
@@ -99,10 +99,10 @@ export default function OrdersPage() {
                         {hasPermission(PERMISSIONS.ORDERS_ADD) && (
                             <Link
                                 href="/orders/new"
-                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-gradient-to-r from-primary to-amber-500 text-white rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all font-bold"
+                                className="flex-1 md:flex-none flex items-center justify-center gap-3 px-8 py-3 bg-gradient-to-br from-primary to-amber-700 text-white rounded-2xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-500 font-black text-xs uppercase tracking-widest gold-glow transform hover:-translate-y-0.5"
                             >
                                 <Plus className="w-5 h-5" />
-                                <span>طلب جديد</span>
+                                <span>إنشاء طلب جديد</span>
                             </Link>
                         )}
                     </div>
@@ -110,68 +110,66 @@ export default function OrdersPage() {
 
                 {/* Advanced Filters Panel */}
                 {showFilters && (
-                    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm mb-8 animate-in slide-in-from-top duration-300">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
-                                    <Search className="w-3 h-3" /> اسم العميل
+                    <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/5 rounded-3xl p-8 shadow-2xl mb-12 animate-in slide-in-from-top duration-500 glass gold-glow">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest flex items-center gap-2">
+                                    <Search className="w-3 h-3 text-primary" /> اسم العميل
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="ابحث بالاسم..."
-                                    className="w-full bg-muted/50 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                                    placeholder="ابحث بالاسم الملكي..."
+                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300"
                                     value={filters.customerName}
                                     onChange={e => setFilters({ ...filters, customerName: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
-                                    <FactoryIcon className="w-3 h-3" /> المصنع / الورشة
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest flex items-center gap-2">
+                                    <FactoryIcon className="w-3 h-3 text-primary" /> المصنع / الورشة
                                 </label>
                                 <select
                                     title="filter factory"
-                                    className="w-full bg-muted/50 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300 appearance-none cursor-pointer"
                                     value={filters.factoryId}
                                     onChange={e => setFilters({ ...filters, factoryId: e.target.value })}
                                 >
-                                    <option value="">الكل</option>
+                                    <option value="" className="bg-zinc-900">الكل</option>
                                     {facilities.filter(f => f.type === 'FACTORY' || f.type === 'ورشة').map(f => (
-                                        <option key={f.id} value={f.id}>{f.name}</option>
+                                        <option key={f.id} value={f.id} className="bg-zinc-900">{f.name}</option>
                                     ))}
                                 </select>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
-                                    <Calendar className="w-3 h-3" /> التاريخ من
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest flex items-center gap-2">
+                                    <Calendar className="w-3 h-3 text-primary" /> التاريخ من
                                 </label>
                                 <input
                                     type="date"
                                     title="التاريخ من"
-                                    placeholder="من تاريخ"
-                                    className="w-full bg-muted/50 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300"
                                     value={filters.startDate}
                                     onChange={e => setFilters({ ...filters, startDate: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground flex items-center gap-2">
-                                    <Calendar className="w-3 h-3" /> التاريخ إلى
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest flex items-center gap-2">
+                                    <Calendar className="w-3 h-3 text-primary" /> التاريخ إلى
                                 </label>
                                 <input
                                     type="date"
                                     title="التاريخ إلى"
-                                    placeholder="إلى تاريخ"
-                                    className="w-full bg-muted/50 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300"
                                     value={filters.endDate}
                                     onChange={e => setFilters({ ...filters, endDate: e.target.value })}
                                 />
                             </div>
                         </div>
-                        <div className="flex justify-end mt-6 gap-2 pt-4 border-t border-border/50">
+                        <div className="flex justify-end mt-8 gap-4 pt-6 border-t border-white/5">
                             <button
                                 onClick={() => setFilters({ factoryId: '', startDate: '', endDate: '', paymentStatus: 'ALL', customerName: '' })}
-                                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                            >تنظيف الفلاتر</button>
+                                className="px-6 py-2 text-xs font-black text-muted-foreground/60 hover:text-primary transition-colors uppercase tracking-widest"
+                            >تفريغ الفلاتر</button>
                         </div>
                     </div>
                 )}
@@ -179,32 +177,32 @@ export default function OrdersPage() {
 
                 {/* Sidebar Drawer - Overlay */}
                 {isSidebarOpen && (
-                    <div className="fixed inset-0 z-50 flex justify-start">
+                    <div className="fixed inset-0 z-[60] flex justify-start">
                         {/* Backdrop */}
                         <div
-                            className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
+                            className="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-500"
                             onClick={() => setIsSidebarOpen(false)}
                         />
 
                         {/* Drawer Content */}
-                        <aside className="relative w-80 h-full bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 p-6 shadow-2xl animate-in slide-in-from-right duration-300 flex flex-col">
-                            <div className="flex justify-between items-center mb-6 border-b border-border pb-4">
-                                <h3 className="text-xl font-bold text-foreground">أقسام الطلبات</h3>
+                        <aside className="relative w-85 h-full bg-[#0c0a09] border-l border-white/5 p-10 shadow-3xl animate-in slide-in-from-right duration-500 flex flex-col glass">
+                            <div className="flex justify-between items-center mb-10 border-b border-white/5 pb-6">
+                                <h3 className="text-2xl font-black text-gradient-gold tracking-tighter">أقسام السلطان</h3>
                                 <button
                                     onClick={() => setIsSidebarOpen(false)}
-                                    className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground"
+                                    className="p-3 hover:bg-white/5 rounded-full transition-all duration-300 text-muted-foreground hover:text-primary"
                                     aria-label="إغلاق القائمة"
                                 >
-                                    <X className="w-6 h-6" />
+                                    <X className="w-7 h-7" />
                                 </button>
                             </div>
 
-                            <nav className="flex flex-col gap-2 overflow-y-auto flex-1">
+                            <nav className="flex flex-col gap-3 overflow-y-auto flex-1 pr-2">
                                 {[
-                                    { id: 'ALL', label: 'الكل', color: 'bg-zinc-500' },
-                                    { id: 'FACTORY_INBOX', label: 'المصنع (وارد)', color: 'bg-orange-500' },
-                                    { id: 'SHOP_INBOX', label: 'المحل (وارد)', color: 'bg-indigo-500' },
-                                    { id: 'COMPLETED', label: 'المكتملة', color: 'bg-green-500' }
+                                    { id: 'ALL', label: 'كافة الطلبات', color: 'bg-zinc-500' },
+                                    { id: 'FACTORY_INBOX', label: 'وارد المصانع', color: 'bg-orange-500' },
+                                    { id: 'SHOP_INBOX', label: 'وارد المعارض', color: 'bg-indigo-500' },
+                                    { id: 'COMPLETED', label: 'السجل المكتمل', color: 'bg-green-500' }
                                 ].map(tab => (
                                     <button
                                         key={tab.id}
@@ -212,16 +210,16 @@ export default function OrdersPage() {
                                             setActiveTab(tab.id);
                                             setIsSidebarOpen(false);
                                         }}
-                                        className={`w-full text-right px-4 py-3 rounded-lg text-sm font-bold transition-all flex justify-between items-center ${activeTab === tab.id
-                                            ? 'bg-primary/10 text-primary border-r-4 border-primary'
-                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground border border-transparent'
+                                        className={`w-full text-right px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-500 flex justify-between items-center border ${activeTab === tab.id
+                                            ? 'bg-primary/10 text-primary border-primary/30 shadow-[0_0_15px_rgba(217,119,6,0.1)] translate-x-1'
+                                            : 'text-muted-foreground/60 hover:bg-white/5 hover:text-foreground border-transparent'
                                             }`}
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full ${tab.color}`} />
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-3 h-3 rounded-full ${tab.color} shadow-sm transition-transform duration-500 ${activeTab === tab.id ? 'scale-125' : ''}`} />
                                             <span>{tab.label}</span>
                                         </div>
-                                        {activeTab === tab.id && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                                        {activeTab === tab.id && <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
                                     </button>
                                 ))}
                             </nav>

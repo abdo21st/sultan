@@ -76,17 +76,17 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
     if (order.status === ORDER_STATUS.COMPLETED) return null;
 
     return (
-        <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 shadow-sm border border-zinc-200 dark:border-zinc-800">
-            <h3 className="font-semibold mb-4 text-foreground border-b border-border pb-2">الإجراءات</h3>
+        <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl p-8 border border-white/5 shadow-2xl glass">
+            <h3 className="text-[10px] font-black text-gradient-gold uppercase tracking-[0.2em] mb-6 border-b border-white/5 pb-4">الإجراءات والعمليات</h3>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
                 <Link
                     href={`/orders/print/${order.id}`}
                     target="_blank"
-                    className="w-full py-2 bg-zinc-100 text-zinc-900 rounded-lg font-bold hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2 mb-2"
+                    className="w-full py-4 bg-white/5 text-foreground rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-white/10 transition-all duration-300 border border-white/5 flex items-center justify-center gap-3 active:scale-95"
                 >
-                    <Printer className="w-4 h-4" />
-                    طباعة تقرير الطلب
+                    <Printer className="w-4 h-4 text-primary" />
+                    طباعة المستند الرسمي
                 </Link>
 
                 {/* Dynamic Sequential Actions */}
@@ -101,9 +101,9 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                                 key={nextStatus}
                                 onClick={() => handleStatusUpdate(nextStatus)}
                                 disabled={loading}
-                                className="w-full py-3 bg-amber-100 text-amber-700 rounded-lg font-bold hover:bg-amber-200 transition-colors flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-gradient-to-br from-primary to-amber-700 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:shadow-lg hover:shadow-primary/20 transition-all duration-500 flex items-center justify-center gap-3 active:scale-95 gold-glow"
                             >
-                                <RefreshCw className="w-5 h-5" />
+                                <RefreshCw className="w-5 h-5 animate-spin-slow" />
                                 استلام وبدء التجهيز
                             </button>
                         );
@@ -115,10 +115,10 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                                 key={nextStatus}
                                 onClick={() => setShowRejectModal(true)}
                                 disabled={loading}
-                                className="w-full py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-500/20 transition-all duration-300 flex items-center justify-center gap-3 active:scale-95"
                             >
                                 <XCircle className="w-5 h-5" />
-                                إعادة للمراجعة
+                                إعادة للمراجعة الفنية
                             </button>
                         );
                     }
@@ -129,10 +129,10 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                                 key={nextStatus}
                                 onClick={handleFinishProcessing}
                                 disabled={loading}
-                                className="w-full py-3 bg-indigo-100 text-indigo-700 rounded-lg font-bold hover:bg-indigo-200 transition-colors flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-500/20 transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-lg shadow-indigo-500/5"
                             >
                                 <Package className="w-5 h-5" />
-                                تم التجهيز (إرسال للمحل)
+                                إرسال للمعرض (جاهز)
                             </button>
                         );
                     }
@@ -143,10 +143,10 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                                 key={nextStatus}
                                 onClick={() => setShowPaymentModal(true)}
                                 disabled={loading}
-                                className="w-full py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-green-500 text-black rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-green-400 transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
                             >
                                 <CheckCircle className="w-5 h-5" />
-                                إتمام الطلب والدفع
+                                إتمام التسليم والدفع
                             </button>
                         );
                     }
@@ -156,9 +156,9 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                             key={nextStatus}
                             onClick={() => handleStatusUpdate(nextStatus)}
                             disabled={loading}
-                            className="w-full py-3 bg-zinc-100 text-zinc-700 rounded-lg font-bold hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2"
+                            className="w-full py-4 bg-white/5 text-foreground rounded-2xl font-black text-[11px] uppercase tracking-widest border border-white/5 hover:bg-white/10 transition-all duration-300 flex items-center justify-center gap-3"
                         >
-                            {nextStatus === ORDER_STATUS.DELIVERING ? <Truck className="w-5 h-5" /> : <Package className="w-5 h-5" />}
+                            {nextStatus === ORDER_STATUS.DELIVERING ? <Truck className="w-5 h-5 text-primary" /> : <Package className="w-5 h-5 text-primary" />}
                             {ORDER_STATUS_LABELS[nextStatus as keyof typeof ORDER_STATUS_LABELS]}
                         </button>
                     );
@@ -168,35 +168,36 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                 {order.status === ORDER_STATUS.REVIEW && (
                     <Link
                         href={`/orders/${order.id}/edit`}
-                        className="w-full py-3 bg-amber-500 text-white rounded-lg font-bold hover:bg-amber-600 transition-colors flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-amber-500/20 transition-all duration-300 flex items-center justify-center gap-3"
                     >
-                        تعديل الطلب للمراجعة
+                        تعديل للمراجعة
                     </Link>
                 )}
             </div>
 
             {/* Rejection Modal */}
             {showRejectModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-                        <h3 className="text-xl font-bold mb-4">سبب إعادة المراجعة</h3>
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+                    <div className="bg-zinc-900 border border-white/5 rounded-[2rem] p-10 w-full max-w-lg shadow-[0_0_50px_rgba(0,0,0,0.5)] glass">
+                        <h3 className="text-2xl font-black text-gradient-gold tracking-tight mb-2">إعادة للمراجعة</h3>
+                        <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-8">يرجى توضيح سبب الرفض أو الملاحظات الفنية.</p>
                         <textarea
-                            className="w-full h-32 p-3 border border-zinc-200 dark:border-zinc-700 rounded-xl mb-4 bg-transparent"
-                            placeholder="اكتب تفاصيل المشكلة هنا..."
+                            className="w-full h-40 p-6 bg-white/5 border border-white/10 rounded-3xl text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300 mb-8 resize-none"
+                            placeholder="اكتب التفاصيل هنا..."
                             value={rejectReason}
                             onChange={(e) => setRejectReason(e.target.value)}
                         />
-                        <div className="flex gap-3">
+                        <div className="flex gap-4">
                             <button
                                 onClick={() => handleStatusUpdate(ORDER_STATUS.REVIEW, rejectReason)}
                                 disabled={loading || !rejectReason}
-                                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold disabled:opacity-50"
+                                className="flex-[2] py-4 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-red-500/20 disabled:opacity-50"
                             >
-                                إرسال للمراجعة
+                                تأكيد الإعادة
                             </button>
                             <button
                                 onClick={() => setShowRejectModal(false)}
-                                className="flex-1 py-3 bg-zinc-100 text-zinc-600 rounded-xl font-bold"
+                                className="flex-1 py-4 bg-white/5 text-muted-foreground rounded-2xl font-black text-[11px] uppercase tracking-widest border border-white/5 hover:text-foreground transition-colors"
                             >
                                 إلغاء
                             </button>
@@ -207,50 +208,61 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
 
             {/* Payment Modal */}
             {showPaymentModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white dark:bg-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold">إتمام الطلب والدفع</h3>
-                            <button onClick={() => setShowPaymentModal(false)} className="text-zinc-500 hover:text-zinc-700">✕</button>
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+                    <div className="bg-zinc-900 border border-white/5 rounded-[2rem] p-10 w-full max-w-lg shadow-[0_0_50px_rgba(0,0,0,0.5)] glass">
+                        <div className="flex justify-between items-center mb-10 border-b border-white/5 pb-6">
+                            <div>
+                                <h3 className="text-2xl font-black text-gradient-gold tracking-tight">إتمام التحصيل</h3>
+                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mt-1">تأكيد استلام المبلغ المتبقي.</p>
+                            </div>
+                            <button onClick={() => setShowPaymentModal(false)} className="p-3 hover:bg-white/5 rounded-full text-zinc-500 hover:text-primary transition-colors">✕</button>
                         </div>
 
-                        <div className="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl mb-4 border border-zinc-100 dark:border-zinc-800">
+                        <div className="bg-white/5 p-8 rounded-3xl mb-8 border border-white/5 glass">
                             <div className="flex justify-between items-center mb-1">
-                                <span className="text-sm">المبلغ المتبقي:</span>
-                                <span className="text-xl font-bold text-red-500 font-mono" dir="ltr">{order.remainingAmount.toLocaleString()} د.ل</span>
+                                <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">المبلغ المتبقي المعلق</span>
+                                <span className="text-3xl font-black text-red-500 font-mono tracking-tighter" dir="ltr">{order.remainingAmount.toLocaleString()} د.ل</span>
                             </div>
                         </div>
 
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium mb-1">المبلغ المستلم</label>
+                        <div className="mb-8 space-y-3">
+                            <label className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest flex items-center gap-2 px-1">
+                                المبلغ المقبوض فعلياً
+                            </label>
                             <input
                                 type="number"
                                 required
                                 step="0.01"
-                                className="w-full p-3 border border-zinc-200 dark:border-zinc-700 rounded-xl bg-transparent"
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xl font-black font-mono text-green-500 focus:border-green-500/50 focus:ring-4 focus:ring-green-500/5 outline-none transition-all duration-300"
                                 placeholder="0.00"
                                 value={paymentAmount}
                                 onChange={(e) => setPaymentAmount(e.target.value)}
                             />
                         </div>
 
-                        <textarea
-                            className="w-full h-24 p-3 border border-zinc-200 dark:border-zinc-700 rounded-xl mb-4 bg-transparent"
-                            placeholder="ملاحظات الدفع (اختياري)..."
-                            value={paymentNote}
-                            onChange={(e) => setPaymentNote(e.target.value)}
-                        />
-                        <div className="flex gap-3">
+                        <div className="mb-10 space-y-3">
+                            <label className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest flex items-center gap-2 px-1">
+                                ملاحظات التحصيل
+                            </label>
+                            <textarea
+                                className="w-full h-24 p-4 bg-white/5 border border-white/10 rounded-2xl text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300 resize-none"
+                                placeholder="أي ملاحظات إضافية..."
+                                value={paymentNote}
+                                onChange={(e) => setPaymentNote(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="flex gap-4">
                             <button
                                 onClick={handleComplete}
                                 disabled={loading}
-                                className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold disabled:opacity-50"
+                                className="flex-[2] py-4 bg-green-500 text-black rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-green-500/20 disabled:opacity-50 active:scale-95"
                             >
-                                {loading ? 'جاري الإتمام...' : 'تأكيد واستلام'}
+                                {loading ? 'جاري المعالجة...' : 'تأكيد التسليم الرسمي'}
                             </button>
                             <button
                                 onClick={() => setShowPaymentModal(false)}
-                                className="flex-1 py-3 bg-zinc-100 text-zinc-600 rounded-xl font-bold"
+                                className="flex-1 py-4 bg-white/5 text-muted-foreground rounded-2xl font-black text-[11px] uppercase tracking-widest border border-white/5"
                             >
                                 رجوع
                             </button>
