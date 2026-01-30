@@ -39,6 +39,7 @@ export const PERMISSIONS = {
     STATUS_DELIVERING: 'orders:status:delivering',
     STATUS_COMPLETED: 'orders:status:completed',
     STATUS_REVIEW: 'orders:status:review',
+    STATUS_REGISTERED: 'orders:status:registered',
 } as const;
 
 export const PERMISSION_LABELS: Record<string, string> = {
@@ -73,6 +74,7 @@ export const PERMISSION_LABELS: Record<string, string> = {
     [PERMISSIONS.STATUS_DELIVERING]: 'نقل الطلب إلى: قيد التوصيل للعميل',
     [PERMISSIONS.STATUS_COMPLETED]: 'نقل الطلب إلى: مكتمل',
     [PERMISSIONS.STATUS_REVIEW]: 'إعادة الطلب للمراجعة',
+    [PERMISSIONS.STATUS_REGISTERED]: 'إعادة الطلب إلى: قيد التسجيل',
 };
 
 export const DEFAULT_ROLES = {

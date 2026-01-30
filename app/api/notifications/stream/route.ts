@@ -14,7 +14,7 @@ export async function GET() {
             const timer = setInterval(() => {
                 try {
                     controller.enqueue(encoder.encode(': keep-alive\n\n'));
-                } catch (e) {
+                } catch {
                     clearInterval(timer);
                 }
             }, 30000);
@@ -43,7 +43,7 @@ export async function GET() {
                     clearInterval(timer);
                     try {
                         controller.close();
-                    } catch (closeError) {
+                    } catch {
                         // Ignore if already closed
                     }
                 }

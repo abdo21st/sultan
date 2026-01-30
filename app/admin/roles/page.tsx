@@ -339,6 +339,7 @@ export default function RolesPage() {
                                 <button
                                     onClick={() => setEditingRole(null)}
                                     className="p-2 hover:bg-gray-200 rounded-full transition-colors text-gray-400"
+                                    title="إغلاق"
                                 >
                                     <X className="w-6 h-6" />
                                 </button>
@@ -429,8 +430,8 @@ export default function RolesPage() {
                                                                 <label
                                                                     key={perm}
                                                                     className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${isSelected
-                                                                            ? 'bg-primary/5 border-primary shadow-sm'
-                                                                            : 'bg-white border-gray-100 hover:border-gray-300'
+                                                                        ? 'bg-primary/5 border-primary shadow-sm'
+                                                                        : 'bg-white border-gray-100 hover:border-gray-300'
                                                                         }`}
                                                                 >
                                                                     <span className={`text-xs font-bold ${isSelected ? 'text-primary' : 'text-gray-600'}`}>

@@ -1,6 +1,5 @@
 import { put } from '@vercel/blob';
 
-const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
 const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB (Vercel limit for Hobby)
 
 export async function saveFile(file: File, prefix: string = "file"): Promise<string | null> {
@@ -27,7 +26,8 @@ export async function saveFile(file: File, prefix: string = "file"): Promise<str
 
         console.log("[saveFile] Vercel Blob SUCCESS:", blob.url);
         return blob.url;
-    } catch (err: any) {
+    } catch (error: unknown) {
+        const err = error as Error;
         console.error("[saveFile] Vercel Blob Detailed Error:", err);
         throw new Error(`حدث خطأ أثناء رفع الصورة: ${err.message}`);
     }

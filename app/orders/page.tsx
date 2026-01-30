@@ -54,7 +54,7 @@ export default function OrdersPage() {
     const getStatusQuery = (tab: string) => {
         switch (tab) {
             case 'FACTORY_INBOX': return `${ORDER_STATUS.DELIVERING_TO_FACTORY},${ORDER_STATUS.PROCESSING}`;
-            case 'SHOP_INBOX': return `${ORDER_STATUS.TRANSFERRED_TO_SHOP},${ORDER_STATUS.REVIEW_NEEDED}`;
+            case 'SHOP_INBOX': return `${ORDER_STATUS.SHOP_READY},${ORDER_STATUS.REVIEW}`;
             case 'COMPLETED': return ORDER_STATUS.COMPLETED;
             default: return '';
         }
