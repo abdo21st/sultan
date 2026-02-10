@@ -61,7 +61,7 @@ export default function OrderList({ queryParams }: OrderListProps) {
                 return (
                     <div
                         key={order.id}
-                        className="group relative bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-0 shadow-2xl hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-1 overflow-hidden glass"
+                        className="group relative bg-card border border-border rounded-2xl p-0 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden"
                     >
                         <Link href={`/orders/${order.id}`} className="block p-6 cursor-pointer">
                             <div className="flex justify-between items-start mb-6">
@@ -81,7 +81,7 @@ export default function OrderList({ queryParams }: OrderListProps) {
                                 </span>
                             </div>
 
-                            <div className="flex justify-between items-end border-t border-white/5 pt-6 mt-4">
+                            <div className="flex justify-between items-end border-t border-border pt-6 mt-4">
                                 {hasPermission(PERMISSIONS.ORDERS_VIEW_FINANCIALS) && (
                                     <div className="space-y-1">
                                         <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">المبلغ المستحق</p>
@@ -101,7 +101,7 @@ export default function OrderList({ queryParams }: OrderListProps) {
                             {hasPermission(PERMISSIONS.ORDERS_EDIT) && (
                                 <Link
                                     href={`/orders/${order.id}/edit`}
-                                    className="flex-1 py-3 text-xs font-black uppercase tracking-widest text-center text-foreground bg-white/5 rounded-xl border border-white/5 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300"
+                                    className="flex-1 py-3 text-xs font-black uppercase tracking-widest text-center text-foreground bg-primary/5 rounded-xl border border-border hover:bg-primary hover:text-white hover:border-primary transition-all duration-300"
                                 >
                                     تعديل المعلومات
                                 </Link>

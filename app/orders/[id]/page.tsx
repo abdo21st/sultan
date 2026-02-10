@@ -25,11 +25,11 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
     const shop = order.shopId ? await prisma.facility.findUnique({ where: { id: order.shopId } }) : null;
 
     return (
-        <div className="min-h-screen bg-[#0c0a09] dark:bg-[#0c0a09] pb-20 selection:bg-primary/30 antialiased">
-            <header className="bg-zinc-950/40 backdrop-blur-xl border-b border-white/5 px-4 py-6 sticky top-0 z-50 glass">
+        <div className="min-h-screen bg-background pb-20 selection:bg-primary/30 antialiased">
+            <header className="bg-background/80 backdrop-blur-md border-b border-border px-4 py-6 sticky top-0 z-50">
                 <div className="max-w-5xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-6">
-                        <Link href="/orders" className="p-3 bg-white/5 hover:bg-primary/10 rounded-2xl transition-all duration-300 border border-white/5 hover:border-primary/20 group">
+                        <Link href="/orders" className="p-3 bg-card hover:bg-primary/10 rounded-2xl transition-all duration-300 border border-border hover:border-primary/20 group">
                             <ArrowLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                         </Link>
                         <div>
@@ -41,7 +41,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         </div>
                     </div>
                     {session?.user?.permissions?.includes('orders:edit') && (
-                        <Link href={`/orders/${id}/edit`} className="p-3 bg-white/5 hover:bg-primary rounded-2xl transition-all duration-300 border border-white/5 group">
+                        <Link href={`/orders/${id}/edit`} className="p-3 bg-card hover:bg-primary rounded-2xl transition-all duration-300 border border-border group">
                             <Edit className="w-5 h-5 text-primary group-hover:text-white transition-colors" />
                         </Link>
                     )}
@@ -50,7 +50,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
             <main className="max-w-5xl mx-auto p-4 md:p-8 space-y-8">
                 {/* Status Bar */}
-                <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl p-6 border border-white/5 flex flex-wrap gap-4 items-center justify-between glass gold-glow">
+                <div className="bg-card rounded-2xl p-6 border border-border flex flex-wrap gap-4 items-center justify-between shadow-sm">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-primary/10 rounded-xl">
                             <div className="w-3 h-3 rounded-full bg-primary shadow-[0_0_10px_rgba(217,119,6,0.5)]" />
@@ -68,7 +68,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                     {/* Main Details */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Customer Card */}
-                        <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl p-8 border border-white/5 glass">
+                        <div className="bg-card rounded-2xl p-8 border border-border shadow-sm">
                             <h3 className="text-sm font-black text-gradient-gold uppercase tracking-widest mb-6 flex items-center gap-2">
                                 <div className="w-1 h-4 bg-primary rounded-full transition-all group-hover:h-6" />
                                 بيانات العميل الملكي
@@ -86,26 +86,26 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         </div>
 
                         {/* Order Info */}
-                        <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl p-8 border border-white/5 glass">
+                        <div className="bg-card rounded-2xl p-8 border border-border shadow-sm">
                             <h3 className="text-sm font-black text-gradient-gold uppercase tracking-widest mb-6 flex items-center gap-2">
                                 <div className="w-1 h-4 bg-primary rounded-full" />
                                 تفاصيل التصميم والتجهيز
                             </h3>
-                            <div className="p-6 bg-white/5 rounded-2xl border border-white/5">
+                            <div className="p-6 bg-background rounded-2xl border border-border">
                                 <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap antialiased font-medium">{order.description}</p>
                             </div>
 
                             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
                                 <div className="space-y-3">
                                     <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">جهة التكليف (المعرض)</p>
-                                    <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/5">
+                                    <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
                                         <div className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
                                         <p className="text-sm font-black text-foreground">{shop?.name || '-'}</p>
                                     </div>
                                 </div>
                                 <div className="space-y-3">
                                     <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">جهة التنفيذ (المصنع)</p>
-                                    <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/5">
+                                    <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
                                         <div className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
                                         <p className="text-sm font-black text-foreground">{factory?.name || '-'}</p>
                                     </div>
@@ -115,14 +115,14 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
                         {/* Images */}
                         {order.images && (order.images as string[]).length > 0 && (
-                            <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl p-8 border border-white/5 glass">
+                            <div className="bg-card rounded-2xl p-8 border border-border shadow-sm">
                                 <h3 className="text-sm font-black text-gradient-gold uppercase tracking-widest mb-6 flex items-center gap-2">
                                     <div className="w-1 h-4 bg-primary rounded-full" />
                                     المرفقات البصرية
                                 </h3>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     {(order.images as string[]).map((img: string, idx: number) => (
-                                        <a key={idx} href={img} target="_blank" rel="noopener noreferrer" title={`عرض الصورة ${idx + 1}`} className="relative group block aspect-square rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all duration-500 shadow-lg">
+                                        <a key={idx} href={img} target="_blank" rel="noopener noreferrer" title={`عرض الصورة ${idx + 1}`} className="relative group block aspect-square rounded-2xl overflow-hidden border border-border hover:border-primary/50 transition-all duration-500 shadow-lg">
                                             <Image
                                                 src={img}
                                                 alt={`Order image ${idx + 1}`}
@@ -142,7 +142,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                     {/* Sidebar: Financials & Actions */}
                     <div className="space-y-8">
                         {(session?.user?.role === 'ADMIN' || session?.user?.permissions?.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS)) && (
-                            <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl p-8 border border-white/5 glass gold-glow sticky top-28">
+                            <div className="bg-card rounded-2xl p-8 border border-border shadow-sm sticky top-28">
                                 <h3 className="text-sm font-black text-gradient-gold uppercase tracking-widest mb-6 flex items-center gap-2">
                                     <div className="w-1 h-4 bg-primary rounded-full" />
                                     الملخص المالي

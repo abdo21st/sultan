@@ -72,7 +72,7 @@ export default function OrdersPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0c0a09] dark:bg-[#0c0a09] pb-20 selection:bg-primary/30 antialiased">
+        <div className="min-h-screen bg-background pb-20 selection:bg-primary/30 antialiased">
             <NavBar />
             <main className="max-w-7xl mx-auto px-4 py-12">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
@@ -83,14 +83,14 @@ export default function OrdersPage() {
                     <div className="flex flex-wrap gap-3 w-full md:w-auto">
                         <button
                             onClick={() => setIsSidebarOpen(true)}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest bg-white/5 text-foreground border border-white/5 hover:bg-white/10 hover:border-primary/30 glass"
+                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest bg-card/50 text-foreground border border-border hover:bg-card hover:border-primary/30 shadow-sm"
                         >
                             <Menu className="w-5 h-5 text-primary" />
                             <span>الأقسام</span>
                         </button>
                         <button
                             onClick={() => setShowFilters(!showFilters)}
-                            className={`flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest border ${showFilters ? 'bg-primary text-white border-primary shadow-[0_0_20px_rgba(217,119,6,0.3)]' : 'bg-white/5 text-foreground border-white/5 hover:bg-white/10 glass'}`}
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest border ${showFilters ? 'bg-primary text-white border-primary shadow-[0_0_20px_rgba(217,119,6,0.3)]' : 'bg-card/50 text-foreground border-border hover:bg-card shadow-sm'}`}
                         >
                             <Filter className="w-5 h-5" />
                             <span>فلاتر متقدمة</span>
@@ -110,7 +110,7 @@ export default function OrdersPage() {
 
                 {/* Advanced Filters Panel */}
                 {showFilters && (
-                    <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/5 rounded-3xl p-8 shadow-2xl mb-12 animate-in slide-in-from-top duration-500 glass gold-glow">
+                    <div className="bg-card border border-border rounded-3xl p-8 shadow-2xl mb-12 animate-in slide-in-from-top duration-500">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest flex items-center gap-2">
@@ -119,7 +119,7 @@ export default function OrdersPage() {
                                 <input
                                     type="text"
                                     placeholder="ابحث بالاسم الملكي..."
-                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300"
+                                    className="w-full bg-background border border-border rounded-2xl p-4 text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300 text-foreground"
                                     value={filters.customerName}
                                     onChange={e => setFilters({ ...filters, customerName: e.target.value })}
                                 />
@@ -130,13 +130,13 @@ export default function OrdersPage() {
                                 </label>
                                 <select
                                     title="filter factory"
-                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300 appearance-none cursor-pointer"
+                                    className="w-full bg-background border border-border rounded-2xl p-4 text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300 appearance-none cursor-pointer text-foreground"
                                     value={filters.factoryId}
                                     onChange={e => setFilters({ ...filters, factoryId: e.target.value })}
                                 >
-                                    <option value="" className="bg-zinc-900">الكل</option>
+                                    <option value="" className="bg-background text-foreground">الكل</option>
                                     {facilities.filter(f => f.type === 'FACTORY' || f.type === 'ورشة').map(f => (
-                                        <option key={f.id} value={f.id} className="bg-zinc-900">{f.name}</option>
+                                        <option key={f.id} value={f.id} className="bg-background text-foreground">{f.name}</option>
                                     ))}
                                 </select>
                             </div>
@@ -147,7 +147,7 @@ export default function OrdersPage() {
                                 <input
                                     type="date"
                                     title="التاريخ من"
-                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300"
+                                    className="w-full bg-background border border-border rounded-2xl p-4 text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300 text-foreground"
                                     value={filters.startDate}
                                     onChange={e => setFilters({ ...filters, startDate: e.target.value })}
                                 />
@@ -159,13 +159,13 @@ export default function OrdersPage() {
                                 <input
                                     type="date"
                                     title="التاريخ إلى"
-                                    className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300"
+                                    className="w-full bg-background border border-border rounded-2xl p-4 text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300 text-foreground"
                                     value={filters.endDate}
                                     onChange={e => setFilters({ ...filters, endDate: e.target.value })}
                                 />
                             </div>
                         </div>
-                        <div className="flex justify-end mt-8 gap-4 pt-6 border-t border-white/5">
+                        <div className="flex justify-end mt-8 gap-4 pt-6 border-t border-border">
                             <button
                                 onClick={() => setFilters({ factoryId: '', startDate: '', endDate: '', paymentStatus: 'ALL', customerName: '' })}
                                 className="px-6 py-2 text-xs font-black text-muted-foreground/60 hover:text-primary transition-colors uppercase tracking-widest"
@@ -185,12 +185,12 @@ export default function OrdersPage() {
                         />
 
                         {/* Drawer Content */}
-                        <aside className="relative w-85 h-full bg-[#0c0a09] border-l border-white/5 p-10 shadow-3xl animate-in slide-in-from-right duration-500 flex flex-col glass">
-                            <div className="flex justify-between items-center mb-10 border-b border-white/5 pb-6">
+                        <aside className="relative w-85 h-full bg-background border-l border-border p-10 shadow-3xl animate-in slide-in-from-right duration-500 flex flex-col">
+                            <div className="flex justify-between items-center mb-10 border-b border-border pb-6">
                                 <h3 className="text-2xl font-black text-gradient-gold tracking-tighter">أقسام السلطان</h3>
                                 <button
                                     onClick={() => setIsSidebarOpen(false)}
-                                    className="p-3 hover:bg-white/5 rounded-full transition-all duration-300 text-muted-foreground hover:text-primary"
+                                    className="p-3 hover:bg-primary/10 rounded-full transition-all duration-300 text-muted-foreground hover:text-primary"
                                     aria-label="إغلاق القائمة"
                                 >
                                     <X className="w-7 h-7" />
@@ -212,7 +212,7 @@ export default function OrdersPage() {
                                         }}
                                         className={`w-full text-right px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-500 flex justify-between items-center border ${activeTab === tab.id
                                             ? 'bg-primary/10 text-primary border-primary/30 shadow-[0_0_15px_rgba(217,119,6,0.1)] translate-x-1'
-                                            : 'text-muted-foreground/60 hover:bg-white/5 hover:text-foreground border-transparent'
+                                            : 'text-muted-foreground/60 hover:bg-primary/5 hover:text-foreground border-transparent'
                                             }`}
                                     >
                                         <div className="flex items-center gap-4">
