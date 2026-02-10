@@ -6,10 +6,24 @@ import { Bell, X } from "lucide-react";
 
 export default function NotificationListener() {
     const { data: session } = useSession();
-    const [toasts, setToasts] = useState<any[]>([]);
+    const [toasts, setToasts] = useState<{ id: string; title: string; message: string }[]>([]);
+
+    const [enabled, setEnabled] = useState(true);
+
+    // Sync state with local storage and other components
+    useEffect(() => {
+        const checkState = () => {
+            const saved = localStorage.getItem('notifications_enabled');
+            setEnabled(saved !== 'false'); // Default true
+        };
+
+        checkState();
+        window.addEventListener('notification-change', checkState);
+        return () => window.removeEventListener('notification-change', checkState);
+    }, []);
 
     useEffect(() => {
-        if (!session) return;
+        if (!session || !enabled) return;
 
         const eventSource = new EventSource("/api/notifications/stream");
 
@@ -33,13 +47,12 @@ export default function NotificationListener() {
 
         eventSource.onerror = () => {
             eventSource.close();
-            // Reconnect logic could be added here
         };
 
         return () => {
             eventSource.close();
         };
-    }, [session]);
+    }, [session, enabled]);
 
     const removeToast = (id: string) => {
         setToasts(prev => prev.filter(t => t.id !== id));
