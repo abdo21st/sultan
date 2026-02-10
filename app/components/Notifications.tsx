@@ -17,8 +17,20 @@ export default function Notifications() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
+    const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(true);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
+        const saved = localStorage.getItem('notifications_enabled');
+        if (saved !== null) {
+            setIsNotificationsEnabled(saved === 'true');
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!mounted) return;
+
         const loadNotifications = async () => {
             try {
                 const res = await fetch('/api/notifications');
@@ -35,7 +47,14 @@ export default function Notifications() {
         loadNotifications();
         const interval = setInterval(loadNotifications, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [mounted]);
+
+    const toggleNotifications = () => {
+        const newState = !isNotificationsEnabled;
+        setIsNotificationsEnabled(newState);
+        localStorage.setItem('notifications_enabled', String(newState));
+        window.dispatchEvent(new Event('notification-change'));
+    };
 
     const markAsRead = async (id: string) => {
         try {
@@ -55,9 +74,12 @@ export default function Notifications() {
                 onClick={() => setIsOpen(!isOpen)}
                 className="relative p-2 rounded-full hover:bg-muted/50 transition-colors"
             >
-                <Bell className="w-5 h-5 text-muted-foreground" />
-                {unreadCount > 0 && (
+                <Bell className={`w-5 h-5 ${isNotificationsEnabled ? 'text-muted-foreground' : 'text-muted-foreground/50'}`} />
+                {unreadCount > 0 && isNotificationsEnabled && (
                     <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white dark:ring-zinc-950 animate-pulse" />
+                )}
+                {!isNotificationsEnabled && (
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-zinc-400 rounded-full ring-2 ring-white" />
                 )}
             </button>
 
@@ -68,8 +90,17 @@ export default function Notifications() {
                         onClick={() => setIsOpen(false)}
                     />
                     <div className="absolute left-0 mt-2 w-80 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
-                        <div className="p-3 border-b border-border bg-muted/30">
+                        <div className="p-3 border-b border-border bg-muted/30 flex justify-between items-center">
                             <h3 className="font-semibold text-sm">الإشعارات</h3>
+                            <button
+                                onClick={toggleNotifications}
+                                className={`text-xs px-2 py-1 rounded-md transition-colors ${isNotificationsEnabled
+                                    ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                                    : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
+                                    }`}
+                            >
+                                {isNotificationsEnabled ? 'تنبيهات مفعلة' : 'تنبيهات متوقفة'}
+                            </button>
                         </div>
                         <div className="max-h-80 overflow-y-auto">
                             {notifications.length === 0 ? (
