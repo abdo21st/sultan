@@ -1,14 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  /* Premium Light Mode - Cream & Gold (Restored) */
+  color-scheme: light;
+
+  /* Premium Light Mode - Cream & Gold */
   --background: #fafaf9;
   /* Stone 50 */
   --foreground: #1c1917;
   /* Stone 900 */
 
+  --card: #f5f5f4;
+  /* Stone 100 */
+  --card-foreground: #1c1917;
+
+  --popover: #f5f5f4;
+  --popover-foreground: #1c1917;
+
   --primary: #b45309;
-  /* Amber 700 - Deep Gold */
+  /* Amber 700 */
   --primary-foreground: #ffffff;
 
   --secondary: #44403c;
@@ -21,16 +30,12 @@
   --accent: #fef3c7;
   --accent-foreground: #b45309;
 
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
   --border: #e7e5e4;
   --input: #e7e5e4;
   --ring: #b45309;
-
-  --card: #f5f5f4;
-  /* Stone 100 - Slightly darker than background */
-  --card-foreground: #1c1917;
-
-  --popover: #f5f5f4;
-  --popover-foreground: #1c1917;
 
   --radius: 0.75rem;
 }
@@ -42,24 +47,4 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* Glassmorphism Utilities */
-.glass {
-  background: rgba(255, 255, 255, 0.03);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-
-.gold-glow {
-  box-shadow: 0 0 20px rgba(217, 119, 6, 0.15);
-}
-
-.text-gradient-gold {
-  background: linear-gradient(to bottom right, #f59e0b, #b45309);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
