@@ -50,6 +50,8 @@ export default function AlertsPage() {
         phone: ""
     });
 
+    const [editingId, setEditingId] = useState<string | null>(null);
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
@@ -58,10 +60,8 @@ export default function AlertsPage() {
             setSettings(data);
 
             if (activeTab === 'current') {
-                // Fetch orders that need attention (e.g., due today or tomorrow)
                 const ordersRes = await fetch('/api/orders');
                 const ordersData: Order[] = await ordersRes.json();
-                // Simple logic: show orders due today or tomorrow
                 const today = new Date().toISOString().split('T')[0];
                 const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
                 setMatchingOrders(ordersData.filter(o => o.dueDate === today || o.dueDate === tomorrow));
@@ -81,14 +81,18 @@ export default function AlertsPage() {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await fetch('/api/admin/alerts', {
-                method: 'POST',
+            const url = editingId ? `/api/admin/alerts/${editingId}` : '/api/admin/alerts';
+            const method = editingId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...newSetting,
                     recipientPhones: newSetting.phone ? [newSetting.phone] : []
                 })
             });
+
             if (res.ok) {
                 setNewSetting({
                     name: "",
@@ -97,11 +101,48 @@ export default function AlertsPage() {
                     whatsappEnabled: false,
                     phone: ""
                 });
+                setEditingId(null);
                 fetchData();
             }
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleEdit = (setting: AlertSetting) => {
+        setNewSetting({
+            name: setting.name,
+            triggerStatus: setting.triggerStatus,
+            timingDays: setting.timingDays,
+            whatsappEnabled: setting.whatsappEnabled,
+            phone: setting.recipientPhones[0] || ""
+        });
+        setEditingId(setting.id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('هل أنت متأكد من حذف هذا التنبيه؟')) return;
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/admin/alerts/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                fetchData();
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setNewSetting({
+            name: "",
+            triggerStatus: "REGISTERED",
+            timingDays: 0,
+            whatsappEnabled: false,
+            phone: ""
+        });
+        setEditingId(null);
     };
 
     const openWhatsApp = (phone: string, message: string) => {
@@ -183,8 +224,11 @@ export default function AlertsPage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="md:col-span-1">
-                            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Plus className="w-5 h-5" /> إضافة تنبيه آلي</h3>
+                            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm sticky top-24">
+                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                    {editingId ? <Settings className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                                    {editingId ? 'تعديل التنبيه' : 'إضافة تنبيه آلي'}
+                                </h3>
                                 <form onSubmit={handleAddSetting} className="space-y-4">
                                     <div>
                                         <label className="text-xs font-bold mb-1 block">اسم التنبيه</label>
@@ -239,10 +283,23 @@ export default function AlertsPage() {
                                             />
                                         )}
                                     </div>
-                                    <button
-                                        disabled={loading}
-                                        className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50"
-                                    >حفظ الإعدادات</button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            disabled={loading}
+                                            className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                                        >
+                                            {editingId ? 'حفظ التعديلات' : 'إضافة'}
+                                        </button>
+                                        {editingId && (
+                                            <button
+                                                type="button"
+                                                onClick={handleCancelEdit}
+                                                className="px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl font-bold transition-all"
+                                            >
+                                                إلغاء
+                                            </button>
+                                        )}
+                                    </div>
                                 </form>
                             </div>
                         </div>
@@ -250,7 +307,7 @@ export default function AlertsPage() {
                         <div className="md:col-span-2 space-y-4">
                             <h3 className="text-lg font-bold flex items-center gap-2"><Bell className="w-5 h-5" /> القواعد المفعلة</h3>
                             {settings.map(s => (
-                                <div key={s.id} className="bg-card border border-border rounded-2xl p-4 flex justify-between items-center">
+                                <div key={s.id} className={`bg-card border rounded-2xl p-4 flex justify-between items-center transition-all ${editingId === s.id ? 'border-primary ring-1 ring-primary' : 'border-border'}`}>
                                     <div className="flex items-center gap-4">
                                         <div className="p-3 bg-primary/10 rounded-2xl text-primary"><Bell className="w-6 h-6" /></div>
                                         <div>
@@ -259,7 +316,22 @@ export default function AlertsPage() {
                                             {s.whatsappEnabled && <p className="text-xs text-green-600 font-bold mt-1 inline-flex items-center gap-1"><MessageSquare className="w-3 h-3" /> واتساب مفعل لـ {s.recipientPhones.length} رقم</p>}
                                         </div>
                                     </div>
-                                    <button title="حذف القاعدة" className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-5 h-5" /></button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleEdit(s)}
+                                            title="تعديل"
+                                            className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                                        >
+                                            <Settings className="w-5 h-5" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(s.id)}
+                                            title="حذف"
+                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
