@@ -13,7 +13,8 @@ import {
     User,
     Phone,
     Calendar,
-    Loader2
+    Loader2,
+    Minus
 } from "lucide-react";
 import Link from "next/link";
 
@@ -256,13 +257,32 @@ export default function AlertsPage() {
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold mb-1 block">التوقيت (بالأيام)</label>
-                                        <input
-                                            type="number"
-                                            className="w-full bg-muted/50 border-none rounded-xl p-3 text-sm"
-                                            placeholder="0 يعني في نفس اليوم، -1 قبل يوم"
-                                            value={newSetting.timingDays}
-                                            onChange={e => setNewSetting({ ...newSetting, timingDays: parseInt(e.target.value) })}
-                                        />
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                title="زيادة"
+                                                onClick={() => setNewSetting(prev => ({ ...prev, timingDays: prev.timingDays + 1 }))}
+                                                className="p-3 bg-muted hover:bg-muted/80 rounded-xl transition-colors"
+                                            >
+                                                <Plus className="w-4 h-4" />
+                                            </button>
+                                            <input
+                                                type="number"
+                                                className="w-full bg-muted/50 border-none rounded-xl p-3 text-sm text-center font-bold"
+                                                placeholder="0"
+                                                value={newSetting.timingDays}
+                                                onChange={e => setNewSetting({ ...newSetting, timingDays: parseInt(e.target.value) || 0 })}
+                                            />
+                                            <button
+                                                type="button"
+                                                title="نقصان"
+                                                onClick={() => setNewSetting(prev => ({ ...prev, timingDays: prev.timingDays - 1 }))}
+                                                className="p-3 bg-muted hover:bg-muted/80 rounded-xl transition-colors"
+                                            >
+                                                <Minus className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground mt-1 mr-1">0 = نفس اليوم، -1 = قبل يوم، 1 = بعد يوم</p>
                                     </div>
                                     <div className="bg-muted/30 p-3 rounded-xl">
                                         <label className="flex items-center gap-2 cursor-pointer">
