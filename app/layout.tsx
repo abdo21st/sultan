@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: "سلطان - إدارة الطلبات",
   description: "نظام إدارة الطلبات والمعاملات",
   manifest: "/manifest.json",
-  themeColor: "#f97316",
+  themeColor: "#b45309",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
   appleWebApp: {
     capable: true,
