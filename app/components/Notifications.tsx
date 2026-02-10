@@ -76,10 +76,10 @@ export default function Notifications() {
             >
                 <Bell className={`w-5 h-5 ${isNotificationsEnabled ? 'text-muted-foreground' : 'text-muted-foreground/50'}`} />
                 {unreadCount > 0 && isNotificationsEnabled && (
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-background animate-pulse" />
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white dark:ring-zinc-950 animate-pulse" />
                 )}
                 {!isNotificationsEnabled && (
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-muted-foreground rounded-full ring-2 ring-background" />
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-zinc-400 rounded-full ring-2 ring-white" />
                 )}
             </button>
 
@@ -96,7 +96,7 @@ export default function Notifications() {
                                 onClick={toggleNotifications}
                                 className={`text-xs px-2 py-1 rounded-md transition-colors ${isNotificationsEnabled
                                     ? 'bg-primary/10 text-primary hover:bg-primary/20'
-                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                    : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
                                     }`}
                             >
                                 {isNotificationsEnabled ? 'تنبيهات مفعلة' : 'تنبيهات متوقفة'}

@@ -104,8 +104,8 @@ export default function NewOrderPage() {
     if (!user) return <div className="p-8 text-center text-muted-foreground">جاري التحميل...</div>;
 
     return (
-        <div className="min-h-screen bg-background p-6 flex flex-col items-center">
-            <div className="w-full max-w-2xl bg-card rounded-xl shadow-sm border border-border p-8">
+        <div className="min-h-screen bg-zinc-50 dark:bg-black p-6 flex flex-col items-center">
+            <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-8">
                 <h1 className="text-2xl font-bold mb-6 text-foreground">إنشاء طلب جديد</h1>
 
                 {error && (
