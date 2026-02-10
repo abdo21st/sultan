@@ -18,11 +18,11 @@ export async function GET(request: Request) {
             timestamp: new Date().toISOString(),
             data: { userCount: count }
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Keep-alive error:", error);
         return NextResponse.json({
             success: false,
-            error: error.message
+            error: error instanceof Error ? error.message : "Unknown error"
         }, { status: 500 });
     }
 }

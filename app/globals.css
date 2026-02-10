@@ -7,8 +7,8 @@
   --foreground: #292524;
   /* Stone 800 */
 
-  --primary: #854d0e;
-  /* Yellow 800 - Brownish Gold */
+  --primary: #d97706;
+  /* Golden Orange (Amber 600) */
   --primary-foreground: #ffffff;
 
   --secondary: #e7e5e4;
@@ -19,14 +19,14 @@
   /* Light Grey */
   --muted-foreground: #78716c;
 
-  --accent: #fafaf9;
-  /* Stone 50 */
-  --accent-foreground: #854d0e;
+  --accent: #fffbeb;
+  /* Amber 50 - Hints of Orange */
+  --accent-foreground: #d97706;
 
   --border: #d6d3d1;
   /* Stone 300 */
   --input: #d6d3d1;
-  --ring: #854d0e;
+  --ring: #d97706;
 
   --radius: 0.75rem;
 }
@@ -53,7 +53,7 @@ body {
 }
 
 .text-gradient-gold {
-  background: linear-gradient(to bottom right, #f59e0b, #b45309);
+  background: linear-gradient(to bottom right, #fbbf24, #d97706);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
