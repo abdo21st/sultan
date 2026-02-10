@@ -1,32 +1,61 @@
 @import "tailwindcss";
 
 :root {
-  /* Premium Creamy Grey Theme */
-  --background: #f5f5f4;
-  /* Stone 100 - Creamy Grey */
-  --foreground: #292524;
-  /* Stone 800 */
+  /* Sultan Custom Theme */
+  --background: #fdfbf7;
+  /* Warm Cream */
+  --foreground: #334155;
+  /* Slate 700 */
 
-  --primary: #d97706;
-  /* Golden Orange (Amber 600) */
+  --card: #ffffff;
+  /* White Card */
+  --card-foreground: #334155;
+
+  --popover: #ffffff;
+  /* White Popover */
+  --popover-foreground: #334155;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --primary: #f97316;
+  /* Orange 500 */
   --primary-foreground: #ffffff;
 
-  --secondary: #e7e5e4;
-  /* Stone 200 */
-  --secondary-foreground: #292524;
+  --secondary: #e2e8f0;
+  /* Slate 200 - Clearly defined for Menu/Sidebar */
+  --secondary-foreground: #1e293b;
 
-  --muted: #f0f0f0;
-  /* Light Grey */
-  --muted-foreground: #78716c;
+  --muted: #f1f5f9;
+  /* Slate 100 */
+  --muted-foreground: #64748b;
 
-  --accent: #fffbeb;
-  /* Amber 50 - Hints of Orange */
-  --accent-foreground: #d97706;
+  --accent: #fff7ed;
+  /* Orange 50 */
+  --accent-foreground: #c2410c;
 
-  --border: #d6d3d1;
-  /* Stone 300 */
-  --input: #d6d3d1;
-  --ring: #d97706;
+  --border: #cbd5e1;
+  /* Slate 300 */
+  --input: #cbd5e1;
+  --ring: #f97316;
 
   --radius: 0.75rem;
 }
@@ -53,7 +82,7 @@ body {
 }
 
 .text-gradient-gold {
-  background: linear-gradient(to bottom right, #fbbf24, #d97706);
+  background: linear-gradient(to bottom right, #fbbf24, #ea580c);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
