@@ -42,9 +42,9 @@ export default function NewFacilityPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background p-6 flex flex-col items-center">
-            <div className="w-full max-w-xl bg-card rounded-xl shadow-sm border border-border p-8">
-                <h1 className="text-2xl font-bold mb-6 text-foreground">إضافة منشأة جديدة</h1>
+        <div className="min-h-screen bg-zinc-50 dark:bg-black p-6 flex flex-col items-center">
+            <div className="w-full max-w-xl bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-200 dark:border-zinc-800 p-8">
+                <h1 className="text-2xl font-bold mb-6 text-zinc-900 dark:text-white">إضافة منشأة جديدة</h1>
 
                 {error && (
                     <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-md text-sm">
@@ -54,26 +54,26 @@ export default function NewFacilityPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                             اسم المنشأة
                         </label>
                         <input
                             required
                             name="name"
                             type="text"
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                             placeholder="مثال: المصنع الرئيسي، معرض وسط البلد"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                             النوع
                         </label>
                         <select
                             name="type"
                             required
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                             aria-label="نوع المنشأة"
                         >
                             <option value="FACTORY">مصنع</option>
@@ -82,14 +82,14 @@ export default function NewFacilityPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                             الموقع
                         </label>
                         <input
                             required
                             name="location"
                             type="text"
-                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
                             placeholder="مثال: القاهرة، الجيزة"
                         />
                     </div>
