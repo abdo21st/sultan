@@ -42,7 +42,7 @@ export default function NavBar() {
     }, []);
 
     return (
-        <nav className="border-b border-border/40 bg-zinc-950/50 backdrop-blur-xl sticky top-0 z-50 glass">
+        <nav className="border-b border-border bg-background sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-20">
                     <div className="flex items-center gap-10">
