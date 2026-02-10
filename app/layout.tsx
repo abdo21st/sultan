@@ -33,7 +33,7 @@ export default async function RootLayout({
 }>) {
   const session = await auth();
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
+    <html lang="ar" dir="rtl" className="light" suppressHydrationWarning>
       <body
         suppressHydrationWarning
         className={`${cairo.variable} font-sans antialiased`}
