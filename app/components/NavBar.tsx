@@ -48,7 +48,7 @@ export default function NavBar() {
                     <div className="flex items-center gap-10">
                         <Link href="/" className="flex items-center gap-3">
                             <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-amber-700 p-0.5 shadow-lg shadow-primary/20">
-                                <div className="w-full h-full rounded-[10px] bg-zinc-900 flex items-center justify-center">
+                                <div className="w-full h-full rounded-[10px] bg-card flex items-center justify-center">
                                     {settings?.logoUrl ? (
                                         <Image
                                             src={settings.logoUrl}
@@ -89,7 +89,7 @@ export default function NavBar() {
                             />
 
                             {/* Drawer Content */}
-                            <div className="relative w-80 h-full bg-white dark:bg-zinc-900 shadow-2xl animate-in slide-in-from-right duration-300 overflow-y-auto border-l border-zinc-200 dark:border-zinc-800">
+                            <div className="relative w-80 h-full bg-card shadow-2xl animate-in slide-in-from-right duration-300 overflow-y-auto border-l border-border">
                                 <div className="p-6">
                                     <div className="flex items-center justify-between mb-8">
                                         <h2 className="text-xl font-bold text-foreground">القائمة الرئيسية</h2>
@@ -192,7 +192,7 @@ export default function NavBar() {
                                         )}
 
                                         {/* Mobile App Download Link */}
-                                        <div className="pt-4 mt-4 border-t border-zinc-200 dark:border-zinc-800">
+                                        <div className="pt-4 mt-4 border-t border-border">
                                             <a
                                                 href="/downloads/sultan-v1.apk"
                                                 download="sultan-v1.apk"
@@ -234,7 +234,7 @@ export default function NavBar() {
                                                         user.role || 'زائر'}
                                         </p>
                                     </div>
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-border/50 text-white flex items-center justify-center font-bold shadow-xl overflow-hidden group-hover/menu:border-primary/50 transition-colors">
+                                    <div className="w-10 h-10 rounded-xl bg-card border border-border text-foreground flex items-center justify-center font-bold shadow-md overflow-hidden group-hover/menu:border-primary/50 transition-colors">
                                         <User className="w-5 h-5 text-primary" />
                                     </div>
                                 </Link>
