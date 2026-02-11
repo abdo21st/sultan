@@ -3,6 +3,7 @@ import { prisma } from "../../../../lib/prisma";
 import { auth } from "../../../../auth";
 import { PERMISSIONS } from "../../../../lib/permissions";
 import { ORDER_STATUS } from "@/lib/constants";
+import { startOfMonth, endOfMonth, eachDayOfInterval, format, startOfDay, endOfDay } from "date-fns";
 
 export async function GET() {
     try {
@@ -14,7 +15,8 @@ export async function GET() {
         }
 
         const now = new Date();
-        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const firstDayOfMonth = startOfMonth(now);
+        const lastDayOfMonth = endOfMonth(now);
 
         // 1. Total Sales (This Month)
         const salesAgg = await prisma.order.aggregate({
@@ -24,6 +26,7 @@ export async function GET() {
             where: {
                 createdAt: {
                     gte: firstDayOfMonth,
+                    lte: lastDayOfMonth,
                 },
             },
         });
@@ -33,7 +36,6 @@ export async function GET() {
         const activeOrdersCount = await prisma.order.count({
             where: {
                 status: {
-                    // Exclude both legacy and new completed values
                     notIn: [ORDER_STATUS.COMPLETED, "COMPLETED"],
                 },
             },
@@ -52,37 +54,47 @@ export async function GET() {
         });
         const totalDebts = debtsAgg._sum.remainingAmount || 0;
 
-        // 4. Calculate approximate percentage change (Mocked for now or complex logic needed)
-        // For simplicity, we'll return 0 or a placeholder as establishing "last month" change 
-        // requires more complex queries.
+        // 4. Sales Trends (Daily for this month)
+        const days = eachDayOfInterval({ start: firstDayOfMonth, end: now });
 
-        // #region agent log
-        fetch("http://127.0.0.1:7242/ingest/490d5893-3539-43ca-b492-240d3ed9fa0c", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                id: `log_${Date.now()}_dashboard_stats`,
-                timestamp: Date.now(),
-                runId: "pre-fix",
-                hypothesisId: "H1",
-                location: "app/api/dashboard/stats/route.ts:GET",
-                message: "Dashboard stats computed",
-                data: {
-                    userId: session.user.id,
-                    totalSales,
-                    activeOrdersCount,
-                    totalDebts,
-                },
-            }),
-        }).catch(() => {});
-        // #endregion agent log
+        const dailySales = await Promise.all(days.map(async (day) => {
+            const dayAgg = await prisma.order.aggregate({
+                _sum: { totalAmount: true },
+                where: {
+                    createdAt: {
+                        gte: startOfDay(day),
+                        lte: endOfDay(day)
+                    }
+                }
+            });
+            return {
+                date: format(day, 'MMM dd'),
+                sales: dayAgg._sum.totalAmount || 0
+            };
+        }));
+
+        // 5. Status Distribution
+        const statuses = [
+            { label: 'قيد الانتظار', status: ORDER_STATUS.PENDING },
+            { label: 'قيد التنفيذ', status: ORDER_STATUS.PROCESSING },
+            { label: 'جاهز للاستلام', status: ORDER_STATUS.READY },
+            { label: 'مكتمل', status: ORDER_STATUS.COMPLETED }
+        ];
+
+        const statusDistribution = await Promise.all(statuses.map(async (s) => {
+            const count = await prisma.order.count({
+                where: { status: s.status }
+            });
+            return { name: s.label, value: count };
+        }));
 
         return NextResponse.json({
             totalSales,
             activeOrdersCount,
             totalDebts,
+            dailySales,
+            statusDistribution,
+            growth: 12 // Placeholder for growth calculation
         });
     } catch (error) {
         console.error("Dashboard Stats API Error:", error);
