@@ -1,7 +1,6 @@
 'use client';
 
 import { PERMISSIONS } from '../../lib/permissions';
-
 import Link from 'next/link';
 import Image from 'next/image';
 import { LogOut, User, Menu, X } from 'lucide-react';
@@ -42,226 +41,155 @@ export default function NavBar() {
     }, []);
 
     return (
-        <nav className="border-b border-border bg-background sticky top-0 z-50">
+        <nav className="glass-panel sticky top-0 z-50 border-b border-border/50 shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-20">
                     <div className="flex items-center gap-10">
-                        <Link href="/" className="flex items-center gap-3">
-                            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-amber-700 p-0.5 shadow-lg shadow-primary/20">
-                                <div className="w-full h-full rounded-[10px] bg-card flex items-center justify-center">
+                        <Link href="/" className="flex items-center gap-3 active:scale-95 transition-transform">
+                            <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-amber-900 p-[2px] shadow-gold">
+                                <div className="w-full h-full rounded-[14px] bg-white flex items-center justify-center">
                                     {settings?.logoUrl ? (
                                         <Image
                                             src={settings.logoUrl}
                                             alt="Logo"
-                                            width={28}
-                                            height={28}
-                                            className="rounded-md object-cover"
+                                            width={32}
+                                            height={32}
+                                            className="rounded-lg object-cover"
                                         />
                                     ) : (
-                                        <span className="text-primary font-black text-xl">س</span>
+                                        <span className="text-primary font-black text-2xl drop-shadow-sm">س</span>
                                     )}
                                 </div>
                             </div>
-                            <span className="text-2xl tracking-tight font-black text-gradient-gold drop-shadow-sm">
-                                {settings?.appName || 'سلطان'}
-                            </span>
+                            <div className="flex flex-col">
+                                <span className="text-2xl tracking-tighter font-black text-gradient-gold antialiased leading-none">
+                                    {settings?.appName || 'سلطان'}
+                                </span>
+                                <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-muted-foreground/60 leading-tight">سجل الطلبات</span>
+                            </div>
                         </Link>
-                        <div className="flex items-center gap-4">
-                            {/* Mobile Menu Button */}
+
+                        <div className="hidden lg:flex items-center gap-6">
+                            <Link href="/" className={`text-sm font-bold transition-colors ${pathname === '/' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>الطلبات</Link>
+                            {user && (user.role === 'ADMIN' || user.permissions?.includes(PERMISSIONS.DASHBOARD_VIEW)) && (
+                                <Link href="/admin/dashboard" className={`text-sm font-bold transition-colors ${pathname === '/admin/dashboard' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>الإحصائيات</Link>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 md:gap-4">
+                            {user && (
+                                <a
+                                    href="/downloads/sultan-v1.apk"
+                                    download="sultan-v1.apk"
+                                    title="تحميل تطبيق أندرويد"
+                                    className="hidden md:flex w-11 h-11 rounded-2xl bg-muted border border-border items-center justify-center text-primary hover:bg-primary/5 hover:border-primary/50 transition-all duration-300 group/dl"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover/dl:translate-y-0.5 transition-transform"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                                </a>
+                            )}
+                            {user && <Notifications />}
+
+                            {user ? (
+                                <div className="relative group/menu">
+                                    <div className="flex items-center gap-3 cursor-pointer p-1 rounded-2xl hover:bg-muted/50 transition-all duration-300">
+                                        <div className="text-right hidden sm:block mr-2">
+                                            <p className="text-sm font-black text-foreground antialiased tracking-tight">{user.displayName || user.name || user.username}</p>
+                                            <p className="text-[10px] uppercase font-bold tracking-widest text-primary/80">
+                                                {user.role === 'ADMIN' ? 'مدير النظام' :
+                                                    user.role === 'MANAGER' ? 'مدير' :
+                                                        user.role === 'ACCOUNTANT' ? 'محاسب' :
+                                                            user.role || 'زائر'}
+                                            </p>
+                                        </div>
+                                        <div className="w-12 h-12 rounded-2xl bg-white border-2 border-border text-foreground flex items-center justify-center font-bold shadow-sm overflow-hidden group-hover/menu:border-primary/50 transition-all">
+                                            <User className="w-6 h-6 text-primary" />
+                                        </div>
+                                    </div>
+
+                                    <div className="absolute left-0 top-full mt-2 w-52 bg-card border border-border rounded-2xl shadow-premium opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-300 transform translate-y-2 group-hover/menu:translate-y-0 origin-top-left z-50">
+                                        <div className="p-2">
+                                            <Link href="/profile" className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-foreground hover:bg-muted rounded-xl transition-colors">
+                                                <User className="w-4 h-4 text-primary" />
+                                                <span>الملف الشخصي</span>
+                                            </Link>
+                                            <div className="my-1 border-t border-border"></div>
+                                            <button
+                                                onClick={() => window.location.href = '/api/auth/signout'}
+                                                className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors w-full text-right"
+                                            >
+                                                <LogOut className="w-4 h-4" />
+                                                <span>تسجيل الخروج</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Link href="/login" className="px-6 py-2.5 rounded-xl bg-primary text-white font-black text-sm shadow-gold">تسجيل الدخول</Link>
+                            )}
+
                             <button
                                 onClick={() => setIsMenuOpen(true)}
-                                className="p-2 -ml-2 rounded-md text-foreground hover:bg-muted focus:outline-none"
+                                className="lg:hidden p-3 rounded-2xl bg-muted text-foreground border border-border"
                                 aria-label="Open menu"
                             >
                                 <Menu className="w-6 h-6" />
                             </button>
                         </div>
                     </div>
-
-                    {/* Drawer Overlay */}
-                    {/* Drawer Overlay */}
-                    {isMenuOpen && typeof document !== 'undefined' && createPortal(
-                        <div className="fixed inset-0 z-[100] flex justify-start">
-                            {/* Backdrop */}
-                            <div
-                                className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity animate-in fade-in duration-300"
-                                onClick={() => setIsMenuOpen(false)}
-                            />
-
-                            {/* Drawer Content */}
-                            <div className="relative w-80 h-full bg-card shadow-2xl animate-in slide-in-from-right duration-300 overflow-y-auto border-l border-border">
-                                <div className="p-6">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <h2 className="text-xl font-bold text-foreground">القائمة الرئيسية</h2>
-                                        <button
-                                            onClick={() => setIsMenuOpen(false)}
-                                            className="p-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                            aria-label="Close menu"
-                                        >
-                                            <X className="w-6 h-6" />
-                                        </button>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        {/* Check TRANSACTIONS_VIEW permission */}
-                                        {user && (user.role === 'ADMIN' || user.permissions?.includes(PERMISSIONS.TRANSACTIONS_VIEW)) && (
-                                            <Link
-                                                href="/transactions"
-                                                onClick={() => setIsMenuOpen(false)}
-                                                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname === '/transactions'
-                                                    ? 'bg-primary/10 text-primary border-r-4 border-primary'
-                                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                                    }`}
-                                            >
-                                                المعاملات
-                                            </Link>
-                                        )}
-
-                                        {/* Check USERS_VIEW permission */}
-                                        {user && (user.permissions?.includes(PERMISSIONS.USERS_VIEW)) && (
-                                            <Link
-                                                href="/admin/users"
-                                                onClick={() => setIsMenuOpen(false)}
-                                                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/users')
-                                                    ? 'bg-primary/10 text-primary border-r-4 border-primary'
-                                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                                    }`}
-                                            >
-                                                المستخدمين
-                                            </Link>
-                                        )}
-
-                                        {/* Check ROLES_MANAGE permission */}
-                                        {user && (user.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) && (
-                                            <Link
-                                                href="/admin/roles"
-                                                onClick={() => setIsMenuOpen(false)}
-                                                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/roles')
-                                                    ? 'bg-primary/10 text-primary border-r-4 border-primary'
-                                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                                    }`}
-                                            >
-                                                الأدوار
-                                            </Link>
-                                        )}
-
-                                        {/* Check SETTINGS_MANAGE permission */}
-                                        {user && (user.permissions?.includes(PERMISSIONS.SETTINGS_MANAGE)) && (
-                                            <>
-                                                <Link
-                                                    href="/admin/analytics"
-                                                    onClick={() => setIsMenuOpen(false)}
-                                                    className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/analytics')
-                                                        ? 'bg-primary/10 text-primary border-r-4 border-primary'
-                                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                                        }`}
-                                                >
-                                                    التقارير
-                                                </Link>
-                                                <Link
-                                                    href="/admin/booking"
-                                                    onClick={() => setIsMenuOpen(false)}
-                                                    className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/booking')
-                                                        ? 'bg-primary/10 text-primary border-r-4 border-primary'
-                                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                                        }`}
-                                                >
-                                                    الحجز
-                                                </Link>
-                                                <Link
-                                                    href="/admin/alerts"
-                                                    onClick={() => setIsMenuOpen(false)}
-                                                    className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/alerts')
-                                                        ? 'bg-primary/10 text-primary border-r-4 border-primary'
-                                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                                        }`}
-                                                >
-                                                    التنبيهات
-                                                </Link>
-                                                <Link
-                                                    href="/admin/settings"
-                                                    onClick={() => setIsMenuOpen(false)}
-                                                    className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${pathname.startsWith('/admin/settings')
-                                                        ? 'bg-primary/10 text-primary border-r-4 border-primary'
-                                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                                        }`}
-                                                >
-                                                    الإعدادات
-                                                </Link>
-                                            </>
-                                        )}
-
-                                        {/* Mobile App Download Link */}
-                                        <div className="pt-4 mt-4 border-t border-border">
-                                            <a
-                                                href="/downloads/sultan-v1.apk"
-                                                download="sultan-v1.apk"
-                                                onClick={() => setIsMenuOpen(false)}
-                                                className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-gradient-to-br from-primary to-amber-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all duration-300"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="rotate-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                                                تنزيل تطبيق أندرويد
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>,
-                        document.body
-                    )}
-
-                    <div className="flex items-center gap-4 relative">
-                        {user && (
-                            <a
-                                href="/downloads/sultan-v1.apk"
-                                download="sultan-v1.apk"
-                                title="تحميل تطبيق أندرويد"
-                                className="hidden md:flex w-10 h-10 rounded-xl bg-white/5 border border-white/5 items-center justify-center text-primary hover:bg-white/10 hover:border-primary/30 transition-all duration-300 group/dl"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover/dl:translate-y-0.5 transition-transform"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                            </a>
-                        )}
-                        {user && <Notifications />}
-                        {user && (
-                            <div className="relative group/menu">
-                                <Link href="/profile" className="flex items-center gap-3 pl-4 border-r border-border/40 cursor-pointer hover:bg-white/5 p-2 rounded-xl transition-all duration-300">
-                                    <div className="text-right hidden sm:block">
-                                        <p className="text-sm font-black text-foreground antialiased tracking-wide">{user.displayName || user.name || user.username}</p>
-                                        <p className="text-[9px] uppercase font-bold tracking-[0.1em] text-primary/80">
-                                            {user.role === 'ADMIN' ? 'مدير النظام' :
-                                                user.role === 'MANAGER' ? 'مدير' :
-                                                    user.role === 'ACCOUNTANT' ? 'محاسب' :
-                                                        user.role || 'زائر'}
-                                        </p>
-                                    </div>
-                                    <div className="w-10 h-10 rounded-xl bg-card border border-border text-foreground flex items-center justify-center font-bold shadow-md overflow-hidden group-hover/menu:border-primary/50 transition-colors">
-                                        <User className="w-5 h-5 text-primary" />
-                                    </div>
-                                </Link>
-
-                                {/* Dropdown Menu */}
-                                <div className="absolute left-0 top-full mt-2 w-48 bg-card border border-border rounded-xl shadow-lg opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-200 transform origin-top-left z-50">
-                                    <div className="p-1">
-                                        <Link href="/profile" className="flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors">
-                                            <User className="w-4 h-4" />
-                                            <span>الملف الشخصي</span>
-                                        </Link>
-                                        <div className="my-1 border-t border-border"></div>
-                                        <Link href="/api/auth/signout" className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors w-full text-right">
-                                            <LogOut className="w-4 h-4" />
-                                            <span>تسجيل الخروج</span>
-                                        </Link>
-                                        <Link href="/api/auth/signout?callbackUrl=/login" className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-lg transition-colors w-full text-right">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>
-                                            <span>تبديل المستخدم</span>
-                                        </Link>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
                 </div>
             </div>
+
+            {isMenuOpen && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[100] flex justify-end">
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity animate-in fade-in duration-500"
+                        onClick={() => setIsMenuOpen(false)}
+                    />
+                    <div className="relative w-[320px] h-full glass-panel shadow-2xl animate-in slide-in-from-left duration-500 overflow-y-auto border-r border-white/20">
+                        <div className="p-8">
+                            <div className="flex items-center justify-between mb-10">
+                                <h2 className="text-2xl font-black text-foreground tracking-tight">القائمة</h2>
+                                <button
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="p-2.5 rounded-2xl bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                    aria-label="Close menu"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <div className="space-y-8">
+                                <div>
+                                    <h3 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2">الطلبات</h3>
+                                    <div className="space-y-2">
+                                        <Link href="/" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
+                                            قائمة الطلبات
+                                        </Link>
+                                        <Link href="/orders/new" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/orders/new' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
+                                            طلب جديد
+                                        </Link>
+                                    </div>
+                                </div>
+                                {user && (user.role === 'ADMIN' || user.permissions?.includes(PERMISSIONS.DASHBOARD_VIEW)) && (
+                                    <div>
+                                        <h3 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2">الإدارة</h3>
+                                        <div className="space-y-2">
+                                            <Link href="/admin/dashboard" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/dashboard' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
+                                                لوحة المعلومات
+                                            </Link>
+                                            <Link href="/admin/users" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/users' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
+                                                المستخدمين
+                                            </Link>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </nav>
     );
 }

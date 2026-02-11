@@ -46,7 +46,9 @@ export default function RolesPage() {
     const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
         'المستخدمين': true,
         'الطلبات': true,
-        'النظام': true
+        'النظام': true,
+        'مشاهدة الحالات': true,
+        'تغيير الحالات': true
     });
 
     // Form State
@@ -204,15 +206,28 @@ export default function RolesPage() {
                 PERMISSIONS.BOOKING_MANAGE
             ]
         },
-        'حالات الطلب': {
+        'مشاهدة الحالات': {
             icon: <History className="w-4 h-4" />,
             perms: [
-                PERMISSIONS.STATUS_DELIVERING_TO_FACTORY,
-                PERMISSIONS.STATUS_PROCESSING,
-                PERMISSIONS.STATUS_SHOP_READY,
-                PERMISSIONS.STATUS_DELIVERING,
-                PERMISSIONS.STATUS_COMPLETED,
-                PERMISSIONS.STATUS_REVIEW
+                PERMISSIONS.STATUS_VIEW_REGISTERED,
+                PERMISSIONS.STATUS_VIEW_REVIEW,
+                PERMISSIONS.STATUS_VIEW_PROCESSING,
+                PERMISSIONS.STATUS_VIEW_DELIVERING_TO_FACTORY,
+                PERMISSIONS.STATUS_VIEW_SHOP_READY,
+                PERMISSIONS.STATUS_VIEW_DELIVERING,
+                PERMISSIONS.STATUS_VIEW_COMPLETED
+            ]
+        },
+        'تغيير الحالات': {
+            icon: <RefreshCw className="w-4 h-4" />,
+            perms: [
+                PERMISSIONS.STATUS_CHANGE_REGISTERED,
+                PERMISSIONS.STATUS_CHANGE_REVIEW,
+                PERMISSIONS.STATUS_CHANGE_PROCESSING,
+                PERMISSIONS.STATUS_CHANGE_DELIVERING_TO_FACTORY,
+                PERMISSIONS.STATUS_CHANGE_SHOP_READY,
+                PERMISSIONS.STATUS_CHANGE_DELIVERING,
+                PERMISSIONS.STATUS_CHANGE_COMPLETED
             ]
         }
     };
@@ -270,7 +285,7 @@ export default function RolesPage() {
                                     <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
                                         <Shield className="w-6 h-6" />
                                     </div>
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                                         <button
                                             onClick={() => handleDuplicate(role)}
                                             className="p-2 text-gray-400 hover:text-primary hover:bg-gray-50 rounded-lg transition-colors"
