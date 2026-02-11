@@ -11,9 +11,10 @@ export async function POST() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        const currentUserId = session.user.id as string;
+        const currentUserId = session.user.id;
 
-        await prisma.$transaction(async (tx: any) => {
+        // We use a transaction to ensure atomicity
+        await prisma.$transaction(async (tx) => {
             // Delete everything
             await tx.order.deleteMany({});
             await tx.transaction.deleteMany({});

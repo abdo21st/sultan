@@ -44,6 +44,8 @@ const userSchema = z.object({
     roleIds: z.array(z.string()).optional(),
 });
 
+
+
 export async function POST(request: Request) {
     try {
         const session = await auth();
@@ -64,12 +66,23 @@ export async function POST(request: Request) {
         const body = result.data;
         const hashedPassword = await bcrypt.hash(body.password, 10);
 
-        const newUser = await prisma.user.create({
-            data: {
+        const newUser = await prisma.user.upsert({
+            where: { username: body.username },
+            update: {
+                displayName: body.displayName,
+                phoneNumber: body.phoneNumber || null,
+                role: body.role || 'USER',
+                facilityId: body.facilityId || null,
+                password: hashedPassword,
+                roles: body.roleIds ? {
+                    set: body.roleIds.map((id: string) => ({ id }))
+                } : undefined
+            },
+            create: {
                 username: body.username,
                 displayName: body.displayName,
                 phoneNumber: body.phoneNumber || null,
-                role: (body.role as any) || 'USER',
+                role: body.role || 'USER',
                 facilityId: body.facilityId || null,
                 password: hashedPassword,
                 roles: body.roleIds ? {

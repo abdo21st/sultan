@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Cairo } from "next/font/google";
 import "./globals.css";
+import { auth } from "../auth";
+import { Providers } from "./providers";
+import BottomNav from "./components/BottomNav";
 
 const cairo = Cairo({
   subsets: ["arabic"],
@@ -12,8 +15,6 @@ export const metadata: Metadata = {
   title: "سلطان - إدارة الطلبات",
   description: "نظام إدارة الطلبات والمعاملات",
   manifest: "/manifest.json",
-  themeColor: "#b45309",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -21,9 +22,13 @@ export const metadata: Metadata = {
   },
 };
 
-import { auth } from "../auth";
-import { Providers } from "./providers";
-import BottomNav from "./components/BottomNav";
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#b45309",
+};
 
 // ...
 

@@ -1,15 +1,9 @@
-import NextAuth from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
-import { authConfig } from './auth.config';
-import bcrypt from 'bcryptjs';
-import { z } from 'zod';
-
-// Use a global prisma instance or import from lib if available
-// Assuming we can use the one from lib/prisma.ts tailored for edge if needed, 
-// but for credentials usually we need standard node prisma.
-// Since we are in app router, let's just make a new client or use the lib one.
-import { PERMISSIONS, DEFAULT_ROLES } from '@/lib/permissions';
-import { prisma } from '@/lib/prisma';
+import NextAuth, { type User } from "next-auth"
+import { authConfig } from "./auth.config"
+import { prisma } from "@/lib/prisma"
+import { PERMISSIONS, DEFAULT_ROLES } from "@/lib/permissions"
+import bcrypt from "bcryptjs"
+import { z } from "zod"
 
 async function getUser(username: string) {
     try {
@@ -24,18 +18,14 @@ async function getUser(username: string) {
         if (user.username === 'master') {
             return {
                 ...user,
-                permissions: Object.values(PERMISSIONS)
+                permissions: Object.values(PERMISSIONS) as string[]
             };
         }
 
-        // Start with permissions stored directly on the user (if any)
         const allPermissions = new Set<string>(user.permissions || []);
-
-        // Add default permissions based on the user's static role (ADMIN, MANAGER, USER)
         const defaultRolePermissions = DEFAULT_ROLES[user.role as keyof typeof DEFAULT_ROLES] || [];
         defaultRolePermissions.forEach(p => allPermissions.add(p));
 
-        // Add permissions from assigned Custom Roles
         if (user.roles && user.roles.length > 0) {
             user.roles.forEach((role: { permissions: string[] }) => {
                 role.permissions.forEach(p => allPermissions.add(p));
@@ -45,14 +35,21 @@ async function getUser(username: string) {
         return { ...user, permissions: Array.from(allPermissions) };
     } catch (error) {
         console.error('Failed to fetch user:', error);
-        throw new Error('Failed to fetch user.');
+        return null;
     }
 }
 
 export const { auth, signIn, signOut, handlers } = NextAuth({
     ...authConfig,
     providers: [
-        Credentials({
+        {
+            id: 'credentials',
+            name: 'Credentials',
+            type: 'credentials',
+            credentials: {
+                username: { label: "Username", type: "text" },
+                password: { label: "Password", type: "password" }
+            },
             async authorize(credentials) {
                 const parsedCredentials = z
                     .object({ username: z.string(), password: z.string().min(4) })
@@ -64,12 +61,10 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
                     if (!user) return null;
 
                     const passwordsMatch = await bcrypt.compare(password, user.password);
-                    if (passwordsMatch) return user;
+                    if (passwordsMatch) return user as User;
                 }
-
-                console.log('Invalid credentials');
                 return null;
             },
-        }),
+        },
     ],
-});
+})
