@@ -75,9 +75,10 @@ export async function GET() {
 
         // 5. Status Distribution
         const statuses = [
-            { label: 'قيد الانتظار', status: ORDER_STATUS.PENDING },
-            { label: 'قيد التنفيذ', status: ORDER_STATUS.PROCESSING },
-            { label: 'جاهز للاستلام', status: ORDER_STATUS.READY },
+            { label: 'قيد التسجيل', status: ORDER_STATUS.REGISTERED },
+            { label: 'قيد التجهيز', status: ORDER_STATUS.PROCESSING },
+            { label: 'جاهز للمحل', status: ORDER_STATUS.SHOP_READY },
+            { label: 'قيد التوصيل', status: ORDER_STATUS.DELIVERING },
             { label: 'مكتمل', status: ORDER_STATUS.COMPLETED }
         ];
 

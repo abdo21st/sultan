@@ -4,7 +4,7 @@ import { prisma } from "../../../../../lib/prisma";
 
 export async function PUT(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
@@ -13,7 +13,7 @@ export async function PUT(
         }
 
         const body = await req.json();
-        const { id } = params;
+        const { id } = await params;
 
         const updated = await prisma.alertSetting.update({
             where: { id },
@@ -35,7 +35,7 @@ export async function PUT(
 
 export async function DELETE(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
@@ -43,7 +43,7 @@ export async function DELETE(
             return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         await prisma.alertSetting.delete({
             where: { id }
         });

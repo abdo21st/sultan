@@ -136,7 +136,10 @@ export default function DashboardPage() {
                                 <span className="text-lg font-black text-primary/60">د.ل</span>
                             </div>
                             <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden">
-                                <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: '75%' }}></div>
+                                <div
+                                    className="h-full bg-primary rounded-full transition-all duration-1000"
+                                    style={{ width: `${Math.min(100, (stats.totalSales / 50000) * 100)}%` } as React.CSSProperties}
+                                ></div>
                             </div>
                         </div>
                     </div>
@@ -159,7 +162,10 @@ export default function DashboardPage() {
                                 <span className="text-lg font-black text-blue-500/60">عملية</span>
                             </div>
                             <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden">
-                                <div className="h-full bg-blue-500 rounded-full transition-all duration-1000" style={{ width: '45%' }}></div>
+                                <div
+                                    className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                    style={{ width: `${Math.min(100, (stats.activeOrdersCount / 50) * 100)}%` } as React.CSSProperties}
+                                ></div>
                             </div>
                         </div>
                     </div>
@@ -181,7 +187,10 @@ export default function DashboardPage() {
                                 <span className="text-lg font-black text-rose-500/60">د.ل</span>
                             </div>
                             <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden">
-                                <div className="h-full bg-rose-500 rounded-full transition-all duration-1000" style={{ width: '60%' }}></div>
+                                <div
+                                    className="h-full bg-rose-500 rounded-full transition-all duration-1000"
+                                    style={{ width: `${Math.min(100, (stats.totalDebts / 20000) * 100)}%` } as React.CSSProperties}
+                                ></div>
                             </div>
                         </div>
                     </div>
@@ -194,7 +203,7 @@ export default function DashboardPage() {
                         <div className="flex items-center justify-between mb-8">
                             <div className="space-y-1">
                                 <h4 className="text-xl font-black text-foreground antialiased">نمو المبيعات اليومي</h4>
-                                <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">تتبع أداء المبيعات الحقيقي لشهر فبراير</p>
+                                <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">تتبع أداء المبيعات الحقيقي للشهر الحالي</p>
                             </div>
                             <div className="p-3 rounded-2xl bg-primary/5 text-primary border border-primary/20">
                                 <TrendingUp className="w-5 h-5" />
@@ -262,18 +271,23 @@ export default function DashboardPage() {
                                         paddingAngle={8}
                                         dataKey="value"
                                     >
-                                        {stats.statusDistribution.map((entry, index) => (
+                                        {stats.statusDistribution.map((_entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                                         ))}
                                     </Pie>
                                     <Tooltip />
+                                </PieChart>
                             </ResponsiveContainer>
                         </div>
                         <div className="w-full space-y-3 mt-6">
-                            {stats.statusDistribution.map((entry, index) => (
+                            {stats.statusDistribution.map((entry: { name: string; value: number }, index) => (
                                 <div key={entry.name} className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                                        <div
+                                            className="w-3 h-3 rounded-full"
+                                            style={{ '--bg-color': COLORS[index % COLORS.length] } as React.CSSProperties}
+                                            sx={{ backgroundColor: 'var(--bg-color)' }}
+                                        ></div>
                                         <span className="text-sm font-bold text-muted-foreground">{entry.name}</span>
                                     </div>
                                     <span className="text-sm font-black text-foreground">{entry.value}</span>
