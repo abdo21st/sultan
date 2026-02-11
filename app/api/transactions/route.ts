@@ -70,7 +70,7 @@ export async function POST(request: Request) {
             // Link transaction to order implies Paying off debt
             // Update Order: paidAmount += amount, remainingAmount -= amount
             // We use a transaction to ensure atomicity
-            const [updatedOrder, newTransaction] = await prisma.$transaction([
+            const [, newTransaction] = await prisma.$transaction([
                 prisma.order.update({
                     where: { id: body.orderId },
                     data: {

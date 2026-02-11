@@ -92,7 +92,7 @@ export default function OrderFilters({ isOpen, onClose, onApply, initialFilters 
                     <div className="space-y-3">
                         <label className="text-sm font-bold text-foreground">حالة الطلب</label>
                         <div className="grid grid-cols-2 gap-2">
-                            {Object.entries(ORDER_STATUS_LABELS).filter(([key]) => Object.values(ORDER_STATUS).includes(key as any)).map(([value, label]) => (
+                            {Object.entries(ORDER_STATUS_LABELS).filter(([key]) => (Object.values(ORDER_STATUS) as readonly string[]).includes(key)).map(([value, label]) => (
                                 <button
                                     key={value}
                                     onClick={() => handleStatusToggle(value)}
