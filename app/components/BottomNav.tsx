@@ -29,6 +29,11 @@ export default function BottomNav() {
         { icon: User, label: "حسابي", href: "/profile" },
     ];
 
+    // إخفاء القائمة في صفحة إضافة طلب جديد
+    if (pathname === "/orders/new") {
+        return null;
+    }
+
     return (
         <div className="md:hidden fixed bottom-6 left-4 right-4 z-50">
             <nav className="glass-panel rounded-3xl p-2 shadow-premium flex items-center justify-around border border-white/50">
