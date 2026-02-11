@@ -4,13 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import NavBar from "../../../components/NavBar";
 
-// Define available permissions
-const AVAILABLE_PERMISSIONS = [
-    { id: 'MANAGE_USERS', label: 'إدارة المستخدمين' },
-    { id: 'VIEW_REPORTS', label: 'عرض التقارير المالية' },
-    { id: 'DELETE_ORDERS', label: 'حذف الطلبات' },
-    { id: 'EDIT_SETTINGS', label: 'تعديل إعدادات النظام' },
-];
+
 
 export default function NewUserPage() {
     const router = useRouter();
@@ -27,6 +21,7 @@ export default function NewUserPage() {
     });
     const [facilities, setFacilities] = useState<{ id: string, name: string, type: string }[]>([]);
     const [availableRoles, setAvailableRoles] = useState<{ id: string, displayName: string }[]>([]);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         // Fetch Facilities
@@ -45,16 +40,6 @@ export default function NewUserPage() {
             })
             .catch(console.error);
     }, []);
-
-    const [error, setError] = useState('');
-
-    function togglePermission(permId: string) {
-        if (formData.permissions.includes(permId)) {
-            setFormData({ ...formData, permissions: formData.permissions.filter(p => p !== permId) });
-        } else {
-            setFormData({ ...formData, permissions: [...formData.permissions, permId] });
-        }
-    }
 
     function toggleRole(roleId: string) {
         if (formData.roleIds.includes(roleId)) {
@@ -173,9 +158,11 @@ export default function NewUserPage() {
                                 </label>
                             ))}
                         </div>
-                        <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                            تنبيه: لم يتم العثور على أدوار معرفة مسبقاً. يرجى مراجعة صفحة &quot;الأدوار والصلاحيات&quot;.
-                        </p>
+                        {availableRoles.length === 0 && (
+                            <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                                تنبيه: لم يتم العثور على أدوار معرفة مسبقاً. يرجى مراجعة صفحة &quot;الأدوار والصلاحيات&quot;.
+                            </p>
+                        )}
                     </div>
 
                     <div className="space-y-2">
@@ -196,27 +183,6 @@ export default function NewUserPage() {
                         </select>
                         <p className="text-xs text-muted-foreground">
                             تحديد المنشأة يقيد الموظف بالعمل ضمن نطاقها فقط.
-                        </p>
-                    </div>
-
-                    {/* Advanced Permissions Section */}
-                    <div className="pt-4 border-t border-border">
-                        <h3 className="font-semibold mb-3 text-foreground">الصلاحيات الإضافية</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {AVAILABLE_PERMISSIONS.map(perm => (
-                                <label key={perm.id} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.permissions.includes(perm.id)}
-                                        onChange={() => togglePermission(perm.id)}
-                                        className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
-                                    />
-                                    <span className="text-sm">{perm.label}</span>
-                                </label>
-                            ))}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            ملاحظة: المدير (Admin) يملك جميع الصلاحيات تلقائياً.
                         </p>
                     </div>
 

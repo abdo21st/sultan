@@ -1,125 +1,134 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import OrderList from "./components/OrderList";
 import {
-  Banknote,
-  ClipboardList,
-  PlusCircle,
-  TrendingUp
+  PlusCircle
 } from "lucide-react";
 import NavBar from "./components/NavBar";
+import { usePermission } from "@/lib/usePermission";
+import { PERMISSIONS } from "@/lib/permissions";
+import { useState } from "react";
+import DateTabs, { GroupingMode } from "./components/DateTabs"; // Changed import to include GroupingMode and removed DateRangeType
+import OrderFilters, { FilterState } from "./components/OrderFilters";
 
 export default function Home() {
-  const [stats, setStats] = useState({
-    totalSales: 0,
-    activeOrdersCount: 0,
-    totalDebts: 0
-  });
+  const { hasPermission } = usePermission();
+  const [showFilters, setShowFilters] = useState(false);
+  const [queryParams, setQueryParams] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Partial<FilterState>>({});
+  const [activeGrouping, setActiveGrouping] = useState<GroupingMode>("none"); // Changed from activeDateTab to activeGrouping
 
-  useEffect(() => {
-    fetch('/api/dashboard/stats')
-      .then(res => res.json())
-      .then(data => {
-        if (!data.error) setStats(data);
-      })
-      .catch(console.error);
-  }, []);
+  // Simplified updateQueryParams to only handle filters, no date tab logic
+  const updateQueryParams = (filters: Partial<FilterState>) => {
+    const params = new URLSearchParams();
+
+    // Merge filters
+    Object.entries(filters).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        if (value.length > 0) params.set(key, value.join(','));
+      } else if (value) {
+        params.set(key, value as string);
+      }
+    });
+
+    setQueryParams(params.toString());
+  };
+
+  const handleApplyFilters = (filters: FilterState) => {
+    setActiveFilters(filters);
+    // No longer need to reset quick tabs or handle date filters separately here
+    updateQueryParams(filters);
+  };
+
+  // New handler for grouping mode changes
+  const handleGroupingChange = (mode: GroupingMode) => {
+    setActiveGrouping(mode);
+  };
+
+  // Removed handleDateTabChange as activeDateTab is no longer used
+
+  // Simplified hasActiveFilters
+  const hasActiveFilters = Object.values(activeFilters).some(v =>
+    (Array.isArray(v) ? v.length > 0 : !!v)
+  );
 
   return (
     <div className="min-h-screen pb-20">
-      {/* Top Navigation Bar */}
       <NavBar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-
-        {/* Welcome Section */}
-        <header>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">لوحة التحكم</h2>
-          <p className="text-muted-foreground mt-2">نظرة عامة على أداء مشروعك اليوم.</p>
-        </header>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Sales */}
-          <div className="bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">إجمالي المبيعات (شهري)</p>
-                <h3 className="text-3xl font-bold text-foreground mt-1" dir="ltr">
-                  {stats.totalSales.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">د.ل</span>
-                </h3>
-              </div>
-              <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                <TrendingUp className="w-6 h-6" />
-              </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pt-4">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-1 w-12 bg-primary rounded-full" />
+              <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary/60">منصة الإدارة الذكية</span>
             </div>
-            <div className="text-xs text-green-600 flex items-center gap-1">
-              <span className="font-bold">+0%</span>
-              <span>مقارنة بالشهر الماضي</span>
-            </div>
+            <h1 className="text-5xl font-black text-foreground tracking-tight antialiased">
+              سجل <span className="text-gradient-gold">الطلبات</span>
+            </h1>
+            <p className="text-muted-foreground font-semibold text-lg max-w-xl leading-relaxed">
+              نظام متكامل لإدارة الطلبات، تتبع دقيق للمسار، وتحكم شامل في كافة العمليات.
+            </p>
           </div>
 
-          {/* Card 2: Active Orders */}
-          <div className="bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">الطلبات النشطة</p>
-                <h3 className="text-3xl font-bold text-foreground mt-1" dir="ltr">{stats.activeOrdersCount}</h3>
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              onClick={() => setShowFilters(true)}
+              className={`h-14 px-6 rounded-2xl border-2 transition-all duration-300 flex items-center gap-3 font-black text-sm active:scale-95 ${hasActiveFilters
+                ? 'bg-primary/5 border-primary text-primary shadow-gold'
+                : 'border-border/60 bg-card hover:border-primary/30 text-foreground shadow-sm'
+                }`}
+            >
+              <div className="p-2 rounded-lg bg-primary/10">
+                <span className="text-lg">⚡</span>
               </div>
-              <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
-                <ClipboardList className="w-6 h-6" />
-              </div>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              طلبات قيد التنفيذ حالياً
-            </div>
-          </div>
+              <span>فلاتر متقدمة</span>
+              {hasActiveFilters && (
+                <span className="bg-primary text-white text-[10px] px-2 py-0.5 rounded-full ring-4 ring-primary/10">
+                  !
+                </span>
+              )}
+            </button>
 
-          {/* Card 3: Due Amount */}
-          <div className="bg-card border border-border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">الديون المستحقة</p>
-                <h3 className="text-3xl font-bold text-foreground mt-1" dir="ltr">
-                  {stats.totalDebts.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">د.ل</span>
-                </h3>
-              </div>
-              <div className="p-2 bg-red-500/10 rounded-lg text-red-500">
-                <Banknote className="w-6 h-6" />
-              </div>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              مبالغ متبقية على العملاء
-            </div>
+            {hasPermission(PERMISSIONS.ORDERS_ADD) && (
+              <Link
+                href="/orders/new"
+                className="h-14 px-8 rounded-2xl bg-gradient-to-br from-primary to-amber-800 text-white font-black text-sm flex items-center gap-3 shadow-gold transition-all hover:scale-105 active:scale-95 border-b-4 border-amber-950/20"
+              >
+                <PlusCircle className="w-5 h-5" strokeWidth={3} />
+                <span>طلب جديد</span>
+              </Link>
+            )}
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="max-w-md">
-          <h3 className="text-xl font-bold text-foreground mb-4">الوصول السريع</h3>
-          <Link href="/orders/new" className="flex flex-col items-center justify-center p-8 bg-card border border-border rounded-2xl hover:border-primary/50 hover:bg-primary/5 transition-all group cursor-pointer glass">
-            <div className="p-4 bg-primary/10 rounded-full text-primary mb-4 group-hover:scale-110 transition-transform">
-              <PlusCircle className="w-8 h-8" />
-            </div>
-            <span className="font-black text-xs uppercase tracking-widest text-foreground">إنشاء طلب جديد</span>
-          </Link>
-        </div>
-
-        {/* Recent Orders Section */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-foreground">آخر الطلبات</h3>
-            <Link href="/orders" className="text-sm text-primary hover:underline">عرض الكل</Link>
+        {/* Quick Indexing Section */}
+        <section className="space-y-6">
+          <div className="flex items-center gap-4 mb-2">
+            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/60">تحليل الفهرسة الزمنية</h2>
+            <div className="h-px flex-1 bg-gradient-to-r from-border/40 to-transparent" />
           </div>
-          <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-            <OrderList />
+          <div className="flex justify-center md:justify-start">
+            <DateTabs activeMode={activeGrouping} onModeChange={handleGroupingChange} />
           </div>
         </section>
 
+        {/* Orders List Section */}
+        <section className="space-y-6">
+          <OrderList queryParams={queryParams} groupingMode={activeGrouping} />
+        </section>
       </main>
+
+      {showFilters && (
+        <OrderFilters
+          isOpen={showFilters}
+          onClose={() => setShowFilters(false)}
+          onApply={handleApplyFilters}
+          initialFilters={activeFilters}
+        />
+      )}
     </div>
   );
 }

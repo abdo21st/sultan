@@ -23,6 +23,7 @@ export const metadata: Metadata = {
 
 import { auth } from "../auth";
 import { Providers } from "./providers";
+import BottomNav from "./components/BottomNav";
 
 // ...
 
@@ -40,8 +41,10 @@ export default async function RootLayout({
       >
         <Providers session={session}>
           {children}
+          <BottomNav />
         </Providers>
       </body>
     </html>
   );
 }
+

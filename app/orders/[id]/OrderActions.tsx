@@ -91,7 +91,11 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
 
                 {/* Dynamic Sequential Actions */}
                 {ORDER_WORKFLOW[order.status as keyof typeof ORDER_WORKFLOW]?.map((nextStatus: string) => {
-                    const hasPermission = currentUser?.role === 'ADMIN' || currentUser?.permissions?.includes(nextStatus);
+                    // nextStatus example: "orders:status:processing"
+                    const statusSuffix = nextStatus.replace('orders:status:', '');
+                    const changePermission = `orders:status:change:${statusSuffix}`;
+
+                    const hasPermission = currentUser?.role === 'ADMIN' || currentUser?.permissions?.includes(changePermission);
 
                     if (!hasPermission) return null;
 

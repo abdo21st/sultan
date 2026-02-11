@@ -16,20 +16,27 @@ export async function updateOrderStatus(id: string, newStatus: string, rejection
         const permissions = session?.user?.permissions || [];
 
         // Permission Checks
-        if (newStatus === ORDER_STATUS.PROCESSING && !permissions.includes(PERMISSIONS.STATUS_PROCESSING)) {
+        if (newStatus === ORDER_STATUS.PROCESSING && !permissions.includes(PERMISSIONS.STATUS_CHANGE_PROCESSING)) {
             return { success: false, error: 'ليس لديك صلاحية نقل الطلب إلى "قيد التجهيز"' };
         }
-        if (newStatus === ORDER_STATUS.DELIVERING_TO_FACTORY && !permissions.includes(PERMISSIONS.STATUS_DELIVERING_TO_FACTORY)) {
+        if (newStatus === ORDER_STATUS.DELIVERING_TO_FACTORY && !permissions.includes(PERMISSIONS.STATUS_CHANGE_DELIVERING_TO_FACTORY)) {
             return { success: false, error: 'ليس لديك صلاحية بدء توصيل الطلب للمصنع' };
         }
-        if (newStatus === ORDER_STATUS.SHOP_READY && !permissions.includes(PERMISSIONS.STATUS_SHOP_READY)) {
-            return { success: false, error: 'ليس لديك صلاحية نقل الطلب إلى "جاهز للاستلام"' };
+        if (newStatus === ORDER_STATUS.SHOP_READY && !permissions.includes(PERMISSIONS.STATUS_CHANGE_SHOP_READY)) {
+            return { success: false, error: 'ليس لديك صلاحية نقل الطلب إلى "جاهز للمحل"' };
         }
-        if (newStatus === ORDER_STATUS.DELIVERING && !permissions.includes(PERMISSIONS.STATUS_DELIVERING)) {
+        if (newStatus === ORDER_STATUS.DELIVERING && !permissions.includes(PERMISSIONS.STATUS_CHANGE_DELIVERING)) {
             return { success: false, error: 'ليس لديك صلاحية نقل الطلب إلى "قيد التوصيل"' };
         }
-        if (newStatus === ORDER_STATUS.REVIEW && !permissions.includes(PERMISSIONS.STATUS_REVIEW)) {
+        if (newStatus === ORDER_STATUS.REVIEW && !permissions.includes(PERMISSIONS.STATUS_CHANGE_REVIEW)) {
             return { success: false, error: 'ليس لديك صلاحية إعادة الطلب للمراجعة' };
+        }
+        if (newStatus === ORDER_STATUS.REGISTERED && !permissions.includes(PERMISSIONS.STATUS_CHANGE_REGISTERED)) {
+            return { success: false, error: 'ليس لديك صلاحية إعادة الطلب إلى "قيد التسجيل"' };
+        }
+        if (newStatus === ORDER_STATUS.COMPLETED && !permissions.includes(PERMISSIONS.STATUS_CHANGE_COMPLETED)) {
+            // Although completeOrder should be used, we guard this path too
+            return { success: false, error: 'ليس لديك صلاحية إتمام الطلب' };
         }
 
         // Check if transition is allowed
@@ -78,7 +85,7 @@ export async function completeOrder(id: string, paymentAmount: number, paymentNo
         const userId = session?.user?.id;
         const permissions = session?.user?.permissions || [];
 
-        if (!permissions.includes(PERMISSIONS.STATUS_COMPLETED)) {
+        if (!permissions.includes(PERMISSIONS.STATUS_CHANGE_COMPLETED)) {
             return { success: false, error: 'ليس لديك صلاحية إتمام الطلب' };
         }
 

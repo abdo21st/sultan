@@ -18,6 +18,43 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
     if (!order) notFound();
 
+    // Check Status Permission
+    const userPermissions = session?.user?.permissions || [];
+    const isMaster = (session?.user as { username?: string })?.username === 'master';
+
+    if (!isMaster) {
+        // If user is not master, they must have permission for the specific status
+        // Normalize status for permission check
+        // Handle both "orders:status:registered" -> "registered" AND "REGISTERED" -> "registered"
+        let statusSuffix = order.status.replace('orders:status:', '').toLowerCase();
+
+        // Map legacy values if needed (though toLowerCase covers most, explicit mapping is safer if keys differ)
+        const LEGACY_MAP: Record<string, string> = {
+            'review_needed': 'review',
+            'transferred_to_shop': 'shop_ready'
+        };
+        if (LEGACY_MAP[statusSuffix]) statusSuffix = LEGACY_MAP[statusSuffix];
+
+        const requiredPermission = `orders:status:view:${statusSuffix}`;
+
+        // Check if user has permission for the current order status
+        // Admins/Managers have these in DEFAULT_ROLES.
+        if (!userPermissions.includes(requiredPermission)) {
+            // Return a friendly unauthorized component or redirect?
+            // Next.js doesn't have a built-in 403 page easily accessible via a function like notFound()
+            // But we can render an error message.
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-background">
+                    <div className="text-center p-8 bg-card rounded-2xl border border-border">
+                        <h1 className="text-xl font-bold text-destructive mb-2">عذراً، ليس لديك صلاحية لعرض هذا الطلب</h1>
+                        <p className="text-muted-foreground">حالة الطلب الحالية لا تسمح لك بالوصول إليه.</p>
+                        <Link href="/orders" className="inline-block mt-4 text-primary hover:underline">العودة للقائمة</Link>
+                    </div>
+                </div>
+            );
+        }
+    }
+
     const statusInfo = getStatusInfo(order.status);
 
     // Fetch facility names

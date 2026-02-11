@@ -45,19 +45,36 @@ export async function PATCH(
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
-    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // 1. Authentication & Permission Check
+    if (!session?.user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
 
     try {
         const { id } = await params;
-        // Check if users are assigned? Maybe block delete.
-        // For now, let's just delete. Prisma might error if Foreign Key constraint fails (if we had strictly enforced it, but we made it optional on user side for now).
-        // Actually we defined `roleRel CustomRole?` on User.
+
+        // 2. Check if role is assigned to any users
+        const roleToDelete = await prisma.customRole.findUnique({
+            where: { id },
+            include: { _count: { select: { users: true } } }
+        });
+
+        if (!roleToDelete) {
+            return NextResponse.json({ error: "Role not found" }, { status: 404 });
+        }
+
+        if (roleToDelete._count.users > 0) {
+            return NextResponse.json({
+                error: `Cannot delete role because it is assigned to ${roleToDelete._count.users} users.`
+            }, { status: 400 });
+        }
 
         await prisma.customRole.delete({
             where: { id }
         });
         return NextResponse.json({ success: true });
-    } catch {
+    } catch (error) {
+        console.error("Delete role error:", error);
         return NextResponse.json({ error: "Failed to delete role" }, { status: 500 });
     }
 }

@@ -1,24 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap');
 @import "tailwindcss";
 
 :root {
   color-scheme: light;
 
-  /* Premium Light Mode - Cream & Gold */
+  /* Premium Design Tokens */
   --background: #fafaf9;
   /* Stone 50 */
   --foreground: #1c1917;
   /* Stone 900 */
 
-  --card: #f5f5f4;
-  /* Stone 100 */
+  --card: #ffffff;
   --card-foreground: #1c1917;
 
-  --popover: #f5f5f4;
+  --popover: #ffffff;
   --popover-foreground: #1c1917;
 
+  /* Sultan Gold Palette */
   --primary: #b45309;
   /* Amber 700 */
   --primary-foreground: #ffffff;
+
+  --gold-light: #fcd34d;
+  --gold-dark: #b45309;
+  --gold-gradient: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
 
   --secondary: #44403c;
   /* Stone 700 */
@@ -28,6 +33,7 @@
   --muted-foreground: #78716c;
 
   --accent: #fef3c7;
+  /* Amber 50 */
   --accent-foreground: #b45309;
 
   --destructive: #ef4444;
@@ -37,14 +43,67 @@
   --input: #e7e5e4;
   --ring: #b45309;
 
-  --radius: 0.75rem;
+  --radius: 1rem;
+
+  /* Fonts */
+  --font-sans: 'Inter', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
 }
 
-
 body {
-  background: var(--background) !important;
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-heading {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+/* Premium Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.text-gradient-gold {
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.shadow-premium {
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05), 0 4px 10px -5px rgba(180, 83, 9, 0.05);
+}
+
+.shadow-gold {
+  box-shadow: 0 10px 20px -5px rgba(180, 83, 9, 0.2);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e7e5e4;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d6d3d1;
 }

@@ -150,9 +150,9 @@ export default function EditOrderPage() {
         }
     }
 
-    if (loading) return <div className="p-8 text-center text-zinc-500">جاري التحميل...</div>;
-    if (error === 'Unauthorized') return <div className="p-8 text-center text-red-500 font-bold">عذراً، ليس لديك صلاحية تعديل الطلبات.</div>;
-    if (!formData) return <div className="p-8 text-center text-red-500">الطلب غير موجود</div>;
+    if (loading) return <div className="p-8 text-center text-muted-foreground">جاري التحميل...</div>;
+    if (error === 'Unauthorized') return <div className="p-8 text-center text-destructive font-bold">عذراً، ليس لديك صلاحية تعديل الطلبات.</div>;
+    if (!formData) return <div className="p-8 text-center text-destructive">الطلب غير موجود</div>;
 
     const factories = Array.isArray(facilities) ? facilities.filter(f => f.type === 'FACTORY') : [];
     const shops = Array.isArray(facilities) ? facilities.filter(f => f.type === 'SHOP' || f.type === 'OFFICE') : [];
@@ -323,7 +323,7 @@ export default function EditOrderPage() {
                                     <button
                                         type="button"
                                         onClick={() => removeNewImage(idx)}
-                                        className="absolute top-1 right-1 bg-zinc-800 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute top-1 right-1 bg-black/60 hover:bg-destructive/90 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all"
                                         title="إزالة المرفق الجديد"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -369,7 +369,7 @@ export default function EditOrderPage() {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="px-6 py-2.5 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-lg disabled:opacity-50"
+                            className="px-6 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg shadow-lg disabled:opacity-50"
                         >
                             {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
                         </button>

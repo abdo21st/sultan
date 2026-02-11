@@ -3,6 +3,8 @@ import { prisma } from "../../../../lib/prisma";
 import { auth } from "../../../../auth";
 import { PERMISSIONS } from "../../../../lib/permissions";
 import { saveFile } from "../../../../lib/upload";
+import { orderSchema } from "@/lib/schemas";
+
 
 export async function GET(
     request: Request,
@@ -44,16 +46,27 @@ export async function PATCH(
         const { id } = await params;
         const formData = await request.formData();
 
-        // Basic data
-        const customerName = formData.get("customerName") as string;
-        const customerPhone = formData.get("customerPhone") as string;
-        const description = formData.get("description") as string;
-        const status = formData.get("status") as string;
-        const totalAmount = parseFloat(formData.get("totalAmount") as string);
-        const paidAmount = parseFloat(formData.get("paidAmount") as string);
-        const dueDate = new Date(formData.get("dueDate") as string);
-        const factoryId = formData.get("factoryId") as string;
-        const shopId = formData.get("shopId") as string;
+        // Prepare data for validation (Status is ignored as per design)
+        const dataToValidate = {
+            customerName: formData.get("customerName"),
+            customerPhone: formData.get("customerPhone"),
+            description: formData.get("description"),
+            dueDate: formData.get("dueDate"),
+            totalAmount: formData.get("totalAmount"),
+            paidAmount: formData.get("paidAmount"),
+            factoryId: formData.get("factoryId"),
+            shopId: formData.get("shopId"),
+        };
+
+        const result = orderSchema.safeParse(dataToValidate);
+        if (!result.success) {
+            return NextResponse.json(
+                { error: result.error.issues[0].message },
+                { status: 400 }
+            );
+        }
+
+        const body = result.data;
 
         // Handle images
         const existingImagesJson = formData.get("existingImages") as string;
@@ -70,19 +83,19 @@ export async function PATCH(
         const order = await prisma.order.update({
             where: { id },
             data: {
-                customerName,
-                customerPhone,
-                description,
-                status,
-                totalAmount,
-                paidAmount,
-                remainingAmount: totalAmount - paidAmount,
-                dueDate,
-                factoryId: factoryId || undefined,
-                shopId: shopId || undefined,
+                customerName: body.customerName,
+                customerPhone: body.customerPhone,
+                description: body.description,
+                totalAmount: body.totalAmount,
+                paidAmount: body.paidAmount,
+                remainingAmount: body.totalAmount - body.paidAmount,
+                dueDate: new Date(body.dueDate),
+                factoryId: body.factoryId || undefined,
+                shopId: body.shopId || undefined,
                 images: images,
             },
         });
+
 
         return NextResponse.json(order);
     } catch (error) {

@@ -3,7 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { Prisma } from "@prisma/client";
 import { PERMISSIONS } from "@/lib/permissions";
+import { ORDER_STATUS, LEGACY_STATUS_MAPPING } from "@/lib/constants";
 import { saveFile } from "@/lib/upload";
+
+
 
 export async function GET(request: Request) {
     try {
@@ -25,7 +28,69 @@ export async function GET(request: Request) {
         const where: Prisma.OrderWhereInput = {};
         if (factoryId) where.factoryId = factoryId;
         if (shopId) where.shopId = shopId;
-        if (status) where.status = { in: status.split(',') };
+
+        // --- Status Permission Logic ---
+        const userPermissions = session?.user?.permissions || [];
+        const isMaster = (session?.user as { username?: string })?.username === 'master';
+
+        const allowedStatuses: string[] = [];
+
+        // Check which statuses the user is allowed to VIEW
+        if (!isMaster) {
+            Object.values(ORDER_STATUS).forEach(status => {
+                // status example: "orders:status:registered"
+                // view permission: "orders:status:view:registered"
+                const statusSuffix = status.replace('orders:status:', '');
+                const viewPermission = `orders:status:view:${statusSuffix}`;
+
+                if (userPermissions.includes(viewPermission)) {
+                    allowedStatuses.push(status);
+                    // Add Legacy Status if exists
+                    const legacy = LEGACY_STATUS_MAPPING[status];
+                    if (legacy) allowedStatuses.push(legacy);
+                }
+            });
+        } else {
+            // Master allows all from logic below, just ensuring array isn't empty if used differently
+        }
+
+        // Hard rule: effective status filter is intersection of (requested status) AND (allowed statuses)
+        // If user is master, allowedStatuses effectively includes ALL (skipped check).
+
+        if (!isMaster) {
+            if (status) {
+                // User wants specific statuses. Check if they are allowed.
+                const requestedStatuses = status.split(',');
+                const validStatuses = requestedStatuses.filter(s => allowedStatuses.includes(s));
+
+                if (validStatuses.length === 0) {
+                    // User requested statuses they don't have access to -> return empty
+                    return NextResponse.json([]);
+                }
+
+                // Expand validStatuses to include legacy versions for DB query
+                const expandedStatuses = [...validStatuses];
+                validStatuses.forEach(s => {
+                    const legacy = LEGACY_STATUS_MAPPING[s];
+                    if (legacy && !expandedStatuses.includes(legacy)) {
+                        expandedStatuses.push(legacy);
+                    }
+                });
+
+                where.status = { in: expandedStatuses };
+            } else {
+                // User didn't request specific status -> show ALL allowed statuses
+                if (allowedStatuses.length === 0) {
+                    // User has NO status permissions -> return empty
+                    return NextResponse.json([]);
+                }
+                where.status = { in: allowedStatuses };
+            }
+        } else {
+            // Master sees what they requested, or everything
+            if (status) where.status = { in: status.split(',') };
+        }
+
         if (customerName) where.customerName = { contains: customerName, mode: 'insensitive' };
 
         if (paymentStatus === 'unpaid') {
@@ -56,20 +121,8 @@ export async function GET(request: Request) {
     }
 }
 
-import { z } from "zod";
+import { orderSchema } from "@/lib/schemas";
 
-const orderSchema = z.object({
-    customerName: z.string().min(2, "اسم العميل يجب أن يكون حرفين على الأقل"),
-    customerPhone: z.string().regex(/^\d{8,15}$/, "رقم الهاتف غير صحيح"),
-    description: z.string().min(5, "الوصف يجب أن يكون 5 أحرف على الأقل"),
-    dueDate: z.string().refine((val: string) => !isNaN(Date.parse(val)), {
-        message: "تاريخ الاستحقاق غير صحيح",
-    }),
-    totalAmount: z.preprocess((val) => parseFloat(val as string), z.number().positive("الإجمالي يجب أن يكون قيمة موجبة")),
-    paidAmount: z.preprocess((val) => parseFloat((val as string) || "0"), z.number().min(0, "المبلغ المدفوع لا يمكن أن يكون سالباً")),
-    factoryId: z.string().min(1, "يجب اختيار المصنع"),
-    shopId: z.string().min(1, "يجب اختيار المعرض"),
-});
 
 export async function POST(request: Request) {
     try {
@@ -178,7 +231,7 @@ export async function POST(request: Request) {
                     remainingAmount: body.totalAmount - body.paidAmount,
                     factoryId: body.factoryId,
                     shopId: body.shopId,
-                    status: "REGISTERED",
+                    status: ORDER_STATUS.REGISTERED,
                     images: imagePaths,
                 },
             });
@@ -199,6 +252,28 @@ export async function POST(request: Request) {
 
             return newOrder;
         });
+
+        // #region agent log
+        fetch("http://127.0.0.1:7242/ingest/490d5893-3539-43ca-b492-240d3ed9fa0c", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                id: `log_${Date.now()}_order_created`,
+                timestamp: Date.now(),
+                runId: "pre-fix",
+                hypothesisId: "H3",
+                location: "app/api/orders/route.ts:POST",
+                message: "Order created via POST /api/orders",
+                data: {
+                    orderId: order.id,
+                    status: order.status,
+                    createdBy: session?.user?.id ?? null,
+                },
+            }),
+        }).catch(() => { });
+        // #endregion agent log
 
         return NextResponse.json(order);
     } catch (error) {
