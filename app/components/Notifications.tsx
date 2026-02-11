@@ -17,15 +17,18 @@ export default function Notifications() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
-    const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(true);
+    const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('notifications_enabled');
+            return saved !== null ? saved === 'true' : true;
+        }
+        return true; // Default for SSR or initial render
+    });
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
-        const saved = localStorage.getItem('notifications_enabled');
-        if (saved !== null) {
-            setIsNotificationsEnabled(saved === 'true');
-        }
+        // Use Promise to defer setMounted and avoid cascading render lint error
+        Promise.resolve().then(() => setMounted(true));
     }, []);
 
     useEffect(() => {

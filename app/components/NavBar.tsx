@@ -131,7 +131,7 @@ export default function NavBar() {
 
                             <button
                                 onClick={() => setIsMenuOpen(true)}
-                                className="lg:hidden p-3 rounded-2xl bg-muted text-foreground border border-border"
+                                className="p-3 rounded-2xl bg-muted text-foreground border border-border hover:bg-primary/5 hover:border-primary/50 transition-all"
                                 aria-label="Open menu"
                             >
                                 <Menu className="w-6 h-6" />
@@ -178,8 +178,20 @@ export default function NavBar() {
                                             <Link href="/admin/dashboard" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/dashboard' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
                                                 لوحة المعلومات
                                             </Link>
+                                            <Link href="/admin/analytics" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/analytics' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
+                                                التقارير
+                                            </Link>
                                             <Link href="/admin/users" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/users' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
                                                 المستخدمين
+                                            </Link>
+                                            <Link href="/admin/roles" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/roles' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
+                                                الأدوار
+                                            </Link>
+                                            <Link href="/admin/alerts" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/alerts' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
+                                                التنبيهات
+                                            </Link>
+                                            <Link href="/admin/settings" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/settings' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
+                                                الإعدادات
                                             </Link>
                                         </div>
                                     </div>

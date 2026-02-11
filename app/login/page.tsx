@@ -1,6 +1,5 @@
 'use client';
 
-import { useActionState } from 'react'; // Note: React 19/Next 15 feature, or use useState
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -41,7 +40,7 @@ export default function LoginPage() {
                 router.refresh(); // Update auth state
                 router.push('/');
             }
-        } catch (e) {
+        } catch {
             setError("حدث خطأ غير متوقع");
             setIsPending(false);
         }

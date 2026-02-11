@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import bcrypt from "bcryptjs";
-import { auth } from "../../../../auth";
+import { auth } from "@/auth";
 import { PERMISSIONS } from "../../../../lib/permissions";
 
 export async function GET(
@@ -34,7 +34,7 @@ export async function GET(
         }
 
         return NextResponse.json(user);
-    } catch (_error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to fetch user" },
             { status: 500 }
@@ -54,7 +54,7 @@ export async function PATCH(
         const { id } = await params;
         const body = await request.json();
 
-        const updateData: Record<string, any> = {
+        const updateData: Record<string, unknown> = {
             username: body.username,
             displayName: body.displayName,
             phoneNumber: body.phoneNumber || null,
@@ -93,21 +93,21 @@ export async function PATCH(
 }
 
 export async function DELETE(
-    request: Request,
+    _request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        const { id } = await params;
         const session = await auth();
         if (!session?.user?.permissions?.includes(PERMISSIONS.USERS_DELETE)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
-        const { id } = await params;
         await prisma.user.delete({
             where: { id },
         });
 
         return NextResponse.json({ message: "User deleted successfully" });
-    } catch (_error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to delete user" },
             { status: 500 }

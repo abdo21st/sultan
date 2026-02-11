@@ -13,7 +13,7 @@ export function usePermission() {
     const hasPermission = (permission: string) => {
         if (!session?.user) return false;
 
-        const user = session.user as any;
+        const user = session.user;
         // master is the only hardcoded exception for emergency access
         if (user.username === 'master') return true;
 

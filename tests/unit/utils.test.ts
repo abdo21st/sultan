@@ -1,4 +1,4 @@
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 
 describe('Utility Functions', () => {
     describe('formatCurrency', () => {

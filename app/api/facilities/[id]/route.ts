@@ -10,7 +10,7 @@ export async function DELETE(
     try {
         const { id: facilityId } = await params;
         const session = await auth();
-        const userPermissions = (session?.user as any)?.permissions || [];
+        const userPermissions = session?.user?.permissions || [];
 
         // Check authentication and permission
         if (!userPermissions.includes(PERMISSIONS.FACILITIES_DELETE)) {
