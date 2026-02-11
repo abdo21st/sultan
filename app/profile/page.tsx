@@ -1,12 +1,13 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import NavBar from '../components/NavBar';
 import { User, Calendar, Shield, LogOut } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { type User as NextAuthUser } from "next-auth";
 
 export default function ProfilePage() {
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<NextAuthUser | null>(null);
     const router = useRouter();
 
     useEffect(() => {

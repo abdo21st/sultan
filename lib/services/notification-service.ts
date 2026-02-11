@@ -32,7 +32,7 @@ export async function createStatusChangeNotification(order: OrderForNotification
         case ORDER_STATUS.DELIVERING_TO_FACTORY:
             if (!order.factoryId) return;
             // Notify Factory that order is coming
-            targetUsers = await getUsersWithPermission(order.factoryId, PERMISSIONS.STATUS_PROCESSING);
+            targetUsers = await getUsersWithPermission(order.factoryId, PERMISSIONS.STATUS_VIEW_PROCESSING);
             title = 'استلام طلب جديد';
             message = `طلب رقم ${order.serialNumber} في الطريق للمصنع.`;
             break;
@@ -42,7 +42,7 @@ export async function createStatusChangeNotification(order: OrderForNotification
         case ORDER_STATUS.SHOP_READY:
             if (!order.shopId) return;
             // Notify those who can deliver the order (Shop staff)
-            targetUsers = await getUsersWithPermission(order.shopId, PERMISSIONS.STATUS_COMPLETED);
+            targetUsers = await getUsersWithPermission(order.shopId, PERMISSIONS.STATUS_VIEW_COMPLETED);
             title = 'طلب جاهز للاستلام';
             message = `طلب رقم ${order.serialNumber} جاهز في المصنع للاستلام.`;
             break;

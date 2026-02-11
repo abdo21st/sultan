@@ -29,7 +29,7 @@ export async function PATCH(
         });
 
         return NextResponse.json(updated);
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to update notification" },
             { status: 500 }

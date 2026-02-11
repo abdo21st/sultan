@@ -34,7 +34,7 @@ async function main() {
 
     // 2. Create Admin User
     const hashedPassword = await bcrypt.hash('admin123', 10)
-    const adminUser = await prisma.user.upsert({
+    await prisma.user.upsert({
         where: { username: 'admin' },
         update: {
             role: 'ADMIN',
@@ -90,7 +90,7 @@ async function main() {
     console.log('Created Master User (Hidden)')
 
     // 3. Create Sample Facilities
-    const factory = await prisma.facility.create({
+    await prisma.facility.create({
         data: {
             name: 'مصنع السلطان الرئيسي',
             type: 'FACTORY',
@@ -98,7 +98,7 @@ async function main() {
         }
     })
 
-    const shop = await prisma.facility.create({
+    await prisma.facility.create({
         data: {
             name: 'معرض السلطان - الفرع الأول',
             type: 'SHOP',
@@ -125,8 +125,8 @@ async function main() {
 }
 
 main()
-    .catch((e) => {
-        console.error(e)
+    .catch((_error) => {
+        console.error(_error)
         process.exit(1)
     })
     .finally(async () => {
