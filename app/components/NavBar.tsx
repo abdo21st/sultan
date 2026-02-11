@@ -181,7 +181,7 @@ export default function NavBar() {
                                             <Link href="/admin/analytics" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/analytics' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
                                                 التقارير
                                             </Link>
-                                            <Link href="/admin/transactions" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/transactions' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
+                                            <Link href="/transactions" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/transactions' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
                                                 المعاملات
                                             </Link>
                                             <Link href="/admin/users" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/users' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
