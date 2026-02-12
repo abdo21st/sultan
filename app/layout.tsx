@@ -4,6 +4,7 @@ import "./globals.css";
 import { auth } from "../auth";
 import { Providers } from "./providers";
 import BottomNav from "./components/BottomNav";
+import { ToastProvider } from "./components/ToastProvider";
 
 const cairo = Cairo({
   subsets: ["arabic"],
@@ -45,8 +46,10 @@ export default async function RootLayout({
         className={`${cairo.variable} font-sans antialiased`}
       >
         <Providers session={session}>
-          {children}
-          <BottomNav />
+          <ToastProvider>
+            {children}
+            <BottomNav />
+          </ToastProvider>
         </Providers>
       </body>
     </html>
