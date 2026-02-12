@@ -29,6 +29,7 @@ import {
     Pie,
     Cell
 } from 'recharts';
+import DynamicProgressBar from "@/app/components/ui/DynamicProgressBar";
 
 const COLORS = ['#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EF4444'];
 
@@ -135,16 +136,7 @@ export default function DashboardPage() {
                                 <span className="text-5xl font-black text-foreground tracking-tighter" dir="ltr">{stats.totalSales.toLocaleString()}</span>
                                 <span className="text-lg font-black text-primary/60">د.ل</span>
                             </div>
-                            <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-primary rounded-full transition-all duration-1000 progress-bar-sales"
-                                    data-width={Math.min(100, (stats.totalSales / 50000) * 100)}
-                                >
-                                    <style jsx>{`
-                                        .progress-bar-sales { width: ${Math.min(100, (stats.totalSales / 50000) * 100)}%; }
-                                    `}</style>
-                                </div>
-                            </div>
+                            <DynamicProgressBar value={stats.totalSales} max={50000} />
                         </div>
                     </div>
 
@@ -165,16 +157,7 @@ export default function DashboardPage() {
                                 <span className="text-5xl font-black text-foreground tracking-tighter">{stats.activeOrdersCount}</span>
                                 <span className="text-lg font-black text-blue-500/60">عملية</span>
                             </div>
-                            <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-blue-500 rounded-full transition-all duration-1000 progress-bar-active"
-                                    data-width={Math.min(100, (stats.activeOrdersCount / 50) * 100)}
-                                >
-                                    <style jsx>{`
-                                        .progress-bar-active { width: ${Math.min(100, (stats.activeOrdersCount / 50) * 100)}%; }
-                                    `}</style>
-                                </div>
-                            </div>
+                            <DynamicProgressBar value={stats.activeOrdersCount} max={50} colorClass="bg-blue-500" />
                         </div>
                     </div>
 
@@ -194,16 +177,7 @@ export default function DashboardPage() {
                                 <span className="text-5xl font-black text-foreground tracking-tighter" dir="ltr">{stats.totalDebts.toLocaleString()}</span>
                                 <span className="text-lg font-black text-rose-500/60">د.ل</span>
                             </div>
-                            <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-rose-500 rounded-full transition-all duration-1000 progress-bar-debt"
-                                    data-width={Math.min(100, (stats.totalDebts / 20000) * 100)}
-                                >
-                                    <style jsx>{`
-                                        .progress-bar-debt { width: ${Math.min(100, (stats.totalDebts / 20000) * 100)}%; }
-                                    `}</style>
-                                </div>
-                            </div>
+                            <DynamicProgressBar value={stats.totalDebts} max={20000} colorClass="bg-rose-500" />
                         </div>
                     </div>
                 </div>

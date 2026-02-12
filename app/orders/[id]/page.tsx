@@ -7,6 +7,7 @@ import OrderActions from "./OrderActions";
 import { ArrowLeft, Edit } from "lucide-react";
 import Image from "next/image";
 import { getStatusInfo, formatCurrency, formatDate } from "@/lib/utils";
+import AnimatedOrderImage from "@/app/components/ui/AnimatedOrderImage";
 
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -159,22 +160,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                 </h3>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     {(order.images as string[]).map((img: string, idx: number) => (
-                                        <a key={idx} id={`img-link-${idx}`} href={img} target="_blank" rel="noopener noreferrer" title={`عرض الصورة ${idx + 1}`} className="relative group block aspect-square rounded-[2rem] overflow-hidden border border-border/50 hover:border-primary/50 transition-all duration-500 shadow-lg animate-in fade-in zoom-in-95 duration-700">
-                                            <style jsx>{`
-                                                #img-link-${idx} { animation-delay: ${idx * 100}ms; }
-                                            `}</style>
-                                            <Image
-                                                src={img}
-                                                alt={`Order image ${idx + 1}`}
-                                                fill
-                                                loading="lazy"
-                                                className="object-cover group-hover:scale-110 transition-transform duration-1000 blur-[0.2px] group-hover:blur-0"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6">
-                                                <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] mb-1">المرفق التقني</p>
-                                                <span className="text-xs font-bold text-white uppercase tracking-widest">توسيع العرض 🔍</span>
-                                            </div>
-                                        </a>
+                                        <AnimatedOrderImage key={idx} src={img} index={idx} />
                                     ))}
                                 </div>
                             </div>
