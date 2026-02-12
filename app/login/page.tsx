@@ -96,7 +96,7 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={isPending}
-                        className="w-full py-3 px-4 bg-primary hover:bg-amber-600 text-white font-bold rounded-lg transition-colors disabled:opacity-50 shadow-lg shadow-primary/20"
+                        className="w-full py-3 px-4 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded-lg transition-colors disabled:opacity-50 shadow-lg shadow-amber-700/20"
                     >
                         {isPending ? 'جاري التحقق...' : 'دخول'}
                     </button>
