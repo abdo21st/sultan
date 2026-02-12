@@ -3,7 +3,7 @@
 import { PERMISSIONS } from '../../lib/permissions';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LogOut, User, Menu, X } from 'lucide-react';
+import { LogOut, User, Menu, X, List, PlusCircle, LayoutDashboard, BarChart3, Calendar, DollarSign, Users, Shield, Bell, Settings } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
@@ -39,6 +39,17 @@ export default function NavBar() {
             if (data && !data.error) setSettings(data);
         }).catch(() => { });
     }, []);
+
+    const adminLinks = [
+        { href: '/admin/dashboard', label: 'لوحة المعلومات', icon: LayoutDashboard },
+        { href: '/admin/analytics', label: 'التقارير', icon: BarChart3 },
+        { href: '/admin/booking', label: 'نظام الحجز', icon: Calendar },
+        { href: '/transactions', label: 'المعاملات', icon: DollarSign },
+        { href: '/admin/users', label: 'المستخدمين', icon: Users },
+        { href: '/admin/roles', label: 'الأدوار', icon: Shield },
+        { href: '/admin/alerts', label: 'التنبيهات', icon: Bell },
+        { href: '/admin/settings', label: 'الإعدادات', icon: Settings },
+    ];
 
     return (
         <nav className="glass-panel sticky top-0 z-50 border-b border-border/50 shadow-sm">
@@ -147,13 +158,13 @@ export default function NavBar() {
                         className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity animate-in fade-in duration-500"
                         onClick={() => setIsMenuOpen(false)}
                     />
-                    <div className="relative w-[320px] h-full glass-panel shadow-2xl animate-in slide-in-from-left duration-500 overflow-y-auto border-r border-white/20">
+                    <div className="relative w-[320px] h-full bg-slate-950/98 backdrop-blur-xl shadow-2xl animate-in slide-in-from-left duration-500 overflow-y-auto border-r border-slate-800">
                         <div className="p-8">
                             <div className="flex items-center justify-between mb-10">
-                                <h2 className="text-2xl font-black text-foreground tracking-tight">القائمة</h2>
+                                <h2 className="text-2xl font-black text-white tracking-tight">القائمة</h2>
                                 <button
                                     onClick={() => setIsMenuOpen(false)}
-                                    className="p-2.5 rounded-2xl bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                    className="p-2.5 rounded-2xl bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
                                     aria-label="Close menu"
                                 >
                                     <X className="w-6 h-6" />
@@ -161,44 +172,36 @@ export default function NavBar() {
                             </div>
                             <div className="space-y-8">
                                 <div>
-                                    <h3 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2">الطلبات</h3>
+                                    <h3 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.2em] mb-4 px-2">الطلبات</h3>
                                     <div className="space-y-2">
-                                        <Link href="/" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
-                                            قائمة الطلبات
+                                        <Link href="/" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-xl text-sm font-bold transition-all duration-300 transform-gpu ${pathname === '/' ? 'bg-amber-700 text-white shadow-lg shadow-amber-500/20 scale-105 border-r-4 border-amber-500' : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/70 hover:text-white hover:scale-[1.02]'}`}>
+                                            <List className="w-5 h-5" />
+                                            <span>قائمة الطلبات</span>
                                         </Link>
-                                        <Link href="/orders/new" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/orders/new' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
-                                            طلب جديد
+                                        <Link href="/orders/new" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-xl text-sm font-bold transition-all duration-300 transform-gpu ${pathname === '/orders/new' ? 'bg-amber-700 text-white shadow-lg shadow-amber-500/20 scale-105 border-r-4 border-amber-500' : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/70 hover:text-white hover:scale-[1.02]'}`}>
+                                            <PlusCircle className="w-5 h-5" />
+                                            <span>طلب جديد</span>
                                         </Link>
                                     </div>
                                 </div>
                                 {user && (user.role === 'ADMIN' || user.permissions?.includes(PERMISSIONS.DASHBOARD_VIEW)) && (
                                     <div>
-                                        <h3 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2">الإدارة</h3>
+                                        <h3 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.2em] mb-4 px-2">الإدارة</h3>
                                         <div className="space-y-2">
-                                            <Link href="/admin/dashboard" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/dashboard' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
-                                                لوحة المعلومات
-                                            </Link>
-                                            <Link href="/admin/analytics" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/analytics' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
-                                                التقارير
-                                            </Link>
-                                            <Link href="/admin/booking" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/booking' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
-                                                نظام الحجز
-                                            </Link>
-                                            <Link href="/transactions" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/transactions' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
-                                                المعاملات
-                                            </Link>
-                                            <Link href="/admin/users" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/users' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
-                                                المستخدمين
-                                            </Link>
-                                            <Link href="/admin/roles" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/roles' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
-                                                الأدوار
-                                            </Link>
-                                            <Link href="/admin/alerts" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/alerts' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
-                                                التنبيهات
-                                            </Link>
-                                            <Link href="/admin/settings" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/settings' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
-                                                الإعدادات
-                                            </Link>
+                                            {adminLinks.map((link) => {
+                                                const Icon = link.icon;
+                                                return (
+                                                    <Link
+                                                        key={link.href}
+                                                        href={link.href}
+                                                        onClick={() => setIsMenuOpen(false)}
+                                                        className={`flex items-center gap-3 px-5 py-4 rounded-xl text-sm font-bold transition-all duration-300 transform-gpu ${pathname === link.href ? 'bg-amber-700 text-white shadow-lg shadow-amber-500/20 scale-105 border-r-4 border-amber-500' : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/70 hover:text-white hover:scale-[1.02]'}`}
+                                                    >
+                                                        <Icon className="w-5 h-5" />
+                                                        <span>{link.label}</span>
+                                                    </Link>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}
