@@ -28,56 +28,67 @@ export default function PrintAndShareButtons({ orderData }: PrintAndShareButtons
     const handleWhatsApp = async () => {
         setLoading(true);
         try {
+            console.log('بدء تحويل المستند إلى صورة...');
+
             // 1. تحويل الصفحة إلى صورة
             const printArea = document.getElementById('print-area');
             if (!printArea) {
+                console.error('لم يتم العثور على print-area');
                 alert('لم يتم العثور على منطقة الطباعة');
+                setLoading(false);
                 return;
             }
 
+            console.log('تم العثور على print-area، بدء html2canvas...');
+
             const canvas = await html2canvas(printArea, {
-                scale: 2, // جودة عالية
+                scale: 2,
                 useCORS: true,
-                logging: false,
+                allowTaint: true,
+                logging: true,
                 backgroundColor: '#ffffff',
-                onclone: (clonedDoc) => {
-                    // إزالة أي عناصر قد تسبب مشاكل
-                    const clonedArea = clonedDoc.getElementById('print-area');
-                    if (clonedArea) {
-                        // إزالة الأزرار من النسخة المستنسخة
-                        const buttons = clonedArea.querySelectorAll('.no-print');
-                        buttons.forEach(btn => btn.remove());
-                    }
-                }
+                windowWidth: printArea.scrollWidth,
+                windowHeight: printArea.scrollHeight
             });
+
+            console.log('تم إنشاء Canvas بنجاح!', canvas.width, 'x', canvas.height);
 
             // 2. تحويل Canvas إلى Blob
             canvas.toBlob((blob) => {
                 if (!blob) {
+                    console.error('فشل إنشاء Blob');
                     alert('حدث خطأ أثناء إنشاء الصورة');
+                    setLoading(false);
                     return;
                 }
+
+                console.log('تم إنشاء Blob بنجاح!', blob.size, 'bytes');
 
                 // 3. تحميل الصورة
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
                 link.download = `طلب-${orderData.serialNumber}.png`;
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
                 URL.revokeObjectURL(url);
+
+                console.log('تم تحميل الصورة بنجاح!');
 
                 // 4. فتح واتساب مع رسالة
                 setTimeout(() => {
                     const message = `📋 *مستند الطلب #${orderData.serialNumber}*\n\n👤 العميل: ${orderData.customerName}\n💰 المبلغ: ${orderData.totalAmount.toLocaleString()} د.ل\n\n✅ تم تحميل صورة المستند، يمكنك إرفاقها الآن`;
                     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                    console.log('فتح واتساب...');
                     window.open(whatsappUrl, '_blank');
+                    setLoading(false);
                 }, 500);
             }, 'image/png');
 
         } catch (error) {
-            console.error('Error:', error);
-            alert('حدث خطأ أثناء إنشاء الصورة');
-        } finally {
+            console.error('خطأ في handleWhatsApp:', error);
+            alert('حدث خطأ أثناء إنشاء الصورة: ' + (error as Error).message);
             setLoading(false);
         }
     };
