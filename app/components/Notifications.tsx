@@ -97,59 +97,61 @@ export default function Notifications() {
                         className="fixed inset-0 z-40"
                         onClick={() => setIsOpen(false)}
                     />
-                    <div className="absolute left-0 mt-4 w-[22rem] bg-card/95 backdrop-blur-xl border border-border/50 rounded-[2rem] shadow-premium z-50 overflow-hidden animate-in slide-in-from-top-4 duration-300 transform-gpu">
-                        <div className="p-6 border-b border-border/50 flex justify-between items-center bg-muted/20">
+                    <div className="absolute left-0 mt-5 w-[24rem] bg-white border border-border/80 rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.2)] z-50 overflow-hidden animate-in slide-in-from-top-6 fade-in duration-500 transform-gpu">
+                        <div className="p-7 border-b border-border/40 flex justify-between items-center bg-muted/10">
                             <div>
-                                <h3 className="font-black text-foreground tracking-tight">مركز التنبيهات</h3>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">سلطان • إشعارات النظام</p>
+                                <h3 className="text-lg font-black text-foreground tracking-tight leading-none">مركز التنبيهات</h3>
+                                <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-2">نظام سلطان الرقمي</p>
                             </div>
                             <button
                                 onClick={toggleNotifications}
-                                className={`text-[10px] font-black px-3 py-1.5 rounded-xl transition-all border ${isNotificationsEnabled
-                                    ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
+                                className={`text-[10px] font-black px-4 py-2 rounded-2xl transition-all border-2 ${isNotificationsEnabled
+                                    ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20 hover:scale-105 active:scale-95'
                                     : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
                                     }`}
                             >
-                                {isNotificationsEnabled ? 'تعطيل' : 'تفعيل'}
+                                {isNotificationsEnabled ? 'تعطيل الإشعارات' : 'تفعيل الإشعارات'}
                             </button>
                         </div>
 
-                        <div className="max-h-[30rem] overflow-y-auto custom-scrollbar">
+                        <div className="max-h-[32rem] overflow-y-auto custom-scrollbar bg-[#fafafa]">
                             {notifications.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-20 text-center px-10">
-                                    <div className="w-16 h-16 rounded-3xl bg-muted/50 flex items-center justify-center mb-4">
-                                        <Bell className="w-8 h-8 text-muted-foreground/30" />
+                                <div className="flex flex-col items-center justify-center py-24 text-center px-12">
+                                    <div className="w-20 h-20 rounded-[2rem] bg-muted/30 flex items-center justify-center mb-6 shadow-inner">
+                                        <Bell className="w-10 h-10 text-muted-foreground/20" />
                                     </div>
-                                    <h4 className="text-sm font-black text-foreground capitalize">لا توجد تنبيهات</h4>
-                                    <p className="text-xs text-muted-foreground font-medium mt-1">سنخطرك هنا بمجرد توفر تحديثات جديدة لطلباتك.</p>
+                                    <h4 className="text-base font-black text-foreground">الهدوء يعم المكان</h4>
+                                    <p className="text-xs text-muted-foreground font-bold mt-2 leading-relaxed opacity-60">لا توجد تنبيهات جديدة حالياً. سنبقيك على اطلاع دائم.</p>
                                 </div>
                             ) : (
-                                <div className="divide-y divide-border/50">
+                                <div className="divide-y divide-border/30">
                                     {notifications.map(notification => (
                                         <div
                                             key={notification.id}
-                                            className={`p-5 hover:bg-muted/30 transition-colors cursor-pointer relative group/notif ${!notification.read ? 'bg-primary/[0.02]' : ''}`}
+                                            className={`p-6 hover:bg-white transition-all duration-300 cursor-pointer relative group/notif ${!notification.read ? 'bg-primary/[0.03] border-r-4 border-r-primary' : ''}`}
                                             onClick={() => !notification.read && markAsRead(notification.id)}
                                         >
-                                            <div className="flex gap-4">
-                                                <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${!notification.read ? 'bg-primary shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-transparent border border-border/80'}`} />
-                                                <div className="space-y-1.5 flex-1">
+                                            <div className="flex gap-5">
+                                                <div className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 transition-transform duration-500 group-hover/notif:scale-125 ${!notification.read ? 'bg-primary shadow-[0_0_12px_rgba(245,158,11,0.6)]' : 'bg-muted-foreground/20'}`} />
+                                                <div className="space-y-2 flex-1">
                                                     <div className="flex justify-between items-start">
-                                                        <p className="text-sm font-black text-foreground antialiased tracking-tight">{notification.title}</p>
-                                                        <span className="text-[10px] font-bold text-muted-foreground/50 tabular-nums">
+                                                        <p className="text-sm font-black text-foreground antialiased tracking-tight group-hover/notif:text-primary transition-colors">{notification.title}</p>
+                                                        <span className="text-[10px] font-black text-muted-foreground/40 tabular-nums">
                                                             {new Date(notification.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                     </div>
-                                                    <p className="text-xs text-muted-foreground font-medium leading-relaxed line-clamp-2">{notification.message}</p>
+                                                    <p className="text-xs text-muted-foreground font-bold leading-relaxed line-clamp-2 opacity-80">{notification.message}</p>
 
                                                     {notification.link && (
                                                         <Link
                                                             href={notification.link}
-                                                            className="flex items-center gap-1.5 text-[10px] font-black text-primary hover:gap-2 transition-all mt-3 group-hover/notif:translate-x-1"
+                                                            className="flex items-center gap-2 text-[10px] font-black text-primary hover:gap-3 transition-all mt-4 group-hover/notif:translate-x-1"
                                                             onClick={() => setIsOpen(false)}
                                                         >
-                                                            <span>عرض التفاصيل</span>
-                                                            <ArrowUpRight className="w-3 h-3" />
+                                                            <span>الانتقال للتفاصيل</span>
+                                                            <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                                                                <ArrowUpRight className="w-3 h-3" />
+                                                            </div>
                                                         </Link>
                                                     )}
                                                 </div>
@@ -161,13 +163,14 @@ export default function Notifications() {
                         </div>
 
                         {notifications.length > 0 && (
-                            <div className="p-4 bg-muted/10 border-t border-border/50 text-center">
+                            <div className="p-5 bg-muted/5 border-t border-border/40 text-center">
                                 <Link
                                     href="/admin/alerts"
                                     onClick={() => setIsOpen(false)}
-                                    className="text-xs font-black text-muted-foreground hover:text-primary transition-colors"
+                                    className="inline-flex items-center gap-2 text-[11px] font-black text-muted-foreground hover:text-primary transition-all group"
                                 >
-                                    عرض جميع التنبيهات المؤرشفة
+                                    <span>الأرشيف الكامل للتنبيهات</span>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30 group-hover:bg-primary transition-colors" />
                                 </Link>
                             </div>
                         )}
