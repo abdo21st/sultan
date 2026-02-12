@@ -193,7 +193,7 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
                                         {hasPermission(PERMISSIONS.ORDERS_EDIT) && (
                                             <Link
                                                 href={`/orders/${order.id}/edit`}
-                                                className="w-12 h-12 rounded-2xl bg-primary/30 text-foreground flex items-center justify-center transition-all duration-500 group/edit"
+                                                className="w-12 h-12 rounded-2xl bg-primary text-white hover:bg-primary/90 hover:scale-110 flex items-center justify-center transition-all duration-500 shadow-sm group/edit"
                                                 title="تعديل سريع"
                                             >
                                                 <Edit3 className="w-5 h-5 group-hover/edit:scale-110 transition-transform" />
