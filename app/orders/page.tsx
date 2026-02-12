@@ -84,27 +84,8 @@ export default function OrdersPage() {
                     </div>
                     <div className="flex flex-wrap gap-3 w-full md:w-auto">
                         <button
-                            onClick={() => setIsSidebarOpen(true)}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest bg-amber-700 text-white hover:bg-amber-600 hover:scale-105 shadow-sm"
-                        >
-                            <Menu className="w-5 h-5 text-white" />
-                            <span>الأقسام</span>
-                        </button>
-                        <button
-                            onClick={() => setShowFilters(!showFilters)}
-                            className={`flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest border ${showFilters ? 'bg-amber-700 text-white border-amber-700 shadow-gold scale-105' : 'bg-amber-700 text-white hover:bg-amber-600 hover:scale-105 border-amber-700 shadow-sm'}`}
-                        >
-                            <Filter className="w-5 h-5" />
-                            <span>فلاتر متقدمة</span>
-                            {showFilters ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
-                        </button>
-                        <button
                             onClick={async () => {
                                 try {
-                                    // We need the orders data. It's inside the OrderList child.
-                                    // However, for simplicity and since we are on the client, 
-                                    // we can fetch the filtered data again or use a ref.
-                                    // Let's fetch the same query to get ALL filtered data (not just page 1)
                                     const url = `/api/orders?${buildQuery()}`;
                                     const res = await fetch(url);
                                     if (res.ok) {
@@ -124,10 +105,25 @@ export default function OrdersPage() {
                                     toast.error('فشل في تصدير ملف PDF ❌');
                                 }
                             }}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest bg-white border-2 border-amber-700 text-amber-700 hover:bg-amber-50 shadow-sm"
+                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest bg-emerald-700 text-white hover:bg-emerald-600 hover:scale-105 shadow-lg shadow-emerald-900/20"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><path d="M10 13a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2" /><path d="M12 13h1a1.5 1.5 0 0 1 1.5 1.5v0a1.5 1.5 0 0 1-1.5 1.5h-1" /><path d="M16 13h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2" /></svg>
-                            <span>تصدير PDF</span>
+                            <span>تصدير ملف PDF</span>
+                        </button>
+                        <button
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest bg-amber-700 text-white hover:bg-amber-600 hover:scale-105 shadow-sm"
+                        >
+                            <Menu className="w-5 h-5 text-white" />
+                            <span>الأقسام</span>
+                        </button>
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest border ${showFilters ? 'bg-amber-700 text-white border-amber-700 shadow-gold scale-105' : 'bg-amber-700 text-white hover:bg-amber-600 hover:scale-105 border-amber-700 shadow-sm'}`}
+                        >
+                            <Filter className="w-5 h-5" />
+                            <span>فلاتر متقدمة</span>
+                            {showFilters ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
                         </button>
                         {hasPermission(PERMISSIONS.ORDERS_ADD) && (
                             <Link
