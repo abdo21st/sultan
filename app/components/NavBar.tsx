@@ -163,10 +163,10 @@ export default function NavBar() {
                                 <div>
                                     <h3 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2">الطلبات</h3>
                                     <div className="space-y-2">
-                                        <Link href="/" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/' ? 'bg-primary text-white shadow-gold' : 'bg-primary/30 text-foreground'}`}>
+                                        <Link href="/" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
                                             قائمة الطلبات
                                         </Link>
-                                        <Link href="/orders/new" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/orders/new' ? 'bg-primary text-white shadow-gold' : 'bg-primary/30 text-foreground'}`}>
+                                        <Link href="/orders/new" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/orders/new' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
                                             طلب جديد
                                         </Link>
                                     </div>
@@ -175,28 +175,28 @@ export default function NavBar() {
                                     <div>
                                         <h3 className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-4 px-2">الإدارة</h3>
                                         <div className="space-y-2">
-                                            <Link href="/admin/dashboard" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/dashboard' ? 'bg-primary text-white shadow-gold' : 'bg-primary/30 text-foreground'}`}>
+                                            <Link href="/admin/dashboard" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/dashboard' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
                                                 لوحة المعلومات
                                             </Link>
-                                            <Link href="/admin/analytics" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/analytics' ? 'bg-primary text-white shadow-gold' : 'bg-primary/30 text-foreground'}`}>
+                                            <Link href="/admin/analytics" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/analytics' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
                                                 التقارير
                                             </Link>
-                                            <Link href="/admin/booking" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/booking' ? 'bg-primary text-white shadow-gold' : 'bg-primary/30 text-foreground'}`}>
+                                            <Link href="/admin/booking" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/booking' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
                                                 نظام الحجز
                                             </Link>
-                                            <Link href="/transactions" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/transactions' ? 'bg-primary text-white shadow-gold' : 'bg-primary/30 text-foreground'}`}>
+                                            <Link href="/transactions" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/transactions' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
                                                 المعاملات
                                             </Link>
-                                            <Link href="/admin/users" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/users' ? 'bg-primary text-white shadow-gold' : 'bg-primary/30 text-foreground'}`}>
+                                            <Link href="/admin/users" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/users' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
                                                 المستخدمين
                                             </Link>
-                                            <Link href="/admin/roles" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/roles' ? 'bg-primary text-white shadow-gold' : 'bg-primary/30 text-foreground'}`}>
+                                            <Link href="/admin/roles" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/roles' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
                                                 الأدوار
                                             </Link>
-                                            <Link href="/admin/alerts" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/alerts' ? 'bg-primary text-white shadow-gold' : 'bg-primary/30 text-foreground'}`}>
+                                            <Link href="/admin/alerts" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/alerts' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
                                                 التنبيهات
                                             </Link>
-                                            <Link href="/admin/settings" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/settings' ? 'bg-primary text-white shadow-gold' : 'bg-primary/30 text-foreground'}`}>
+                                            <Link href="/admin/settings" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all shadow-sm ${pathname === '/admin/settings' ? 'bg-primary text-white shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105'}`}>
                                                 الإعدادات
                                             </Link>
                                         </div>
