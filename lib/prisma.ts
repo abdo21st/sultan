@@ -9,16 +9,17 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 const createPrismaClient = () => {
-    const connectionString = process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/postgres"
+    const connectionString = process.env.DATABASE_URL || ""
 
     if (!globalForPrisma.pool) {
         globalForPrisma.pool = new pg.Pool({
-            connectionString,
-            max: 10,        // Optimization for serverless
+            connectionString: connectionString,
+            max: connectionString.includes('pooler') ? 1 : 10, // Optimize for pooler vs direct
             idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 60000, // Increased for local/test stability
+            connectionTimeoutMillis: 60000,
+            ssl: { rejectUnauthorized: false }
         })
-        console.log("Creating new PG Pool with timeout 60s");
+        console.log("Prisma: Initialized Global PG Pool");
     }
 
     const adapter = new PrismaPg(globalForPrisma.pool)
