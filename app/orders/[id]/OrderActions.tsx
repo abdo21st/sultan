@@ -226,7 +226,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                         <div className="bg-slate-800/50 p-8 rounded-3xl mb-8 border border-slate-600/50">
                             <div className="flex justify-between items-center mb-1">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">المبلغ المتبقي المعلق</span>
-                                <span className="text-4xl font-black text-red-400 font-mono tracking-tighter" dir="ltr">{order.remainingAmount.toLocaleString()} د.ك</span>
+                                <span className="text-4xl font-black text-red-400 font-mono tracking-tighter" dir="ltr">{order.remainingAmount.toLocaleString()} د.ل</span>
                             </div>
                         </div>
 
