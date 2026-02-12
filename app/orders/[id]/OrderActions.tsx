@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { updateOrderStatus, completeOrder } from '@/lib/actions/orders';
 import { Printer, XCircle, CheckCircle, Truck, Package, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
@@ -211,7 +212,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
             )}
 
             {/* Payment Modal */}
-            {showPaymentModal && (
+            {showPaymentModal && typeof document !== 'undefined' && createPortal(
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
                     <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-[2rem] p-10 w-full max-w-lg shadow-2xl">
                         <div className="flex justify-between items-center mb-10 border-b border-white/5 pb-6">
@@ -272,7 +273,8 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
