@@ -162,7 +162,7 @@ export default function EditOrderPage() {
             <div className="w-full max-w-3xl bg-card border border-border rounded-xl p-8 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold text-foreground">تعديل الطلب #{String(params.id).slice(-6)}</h1>
-                    <button type="button" onClick={() => router.back()} className="text-sm text-muted-foreground hover:text-foreground">رجوع</button>
+                    <button type="button" onClick={() => router.back()} className="text-sm bg-muted text-foreground hover:bg-muted/80 px-4 py-2 rounded-lg transition-all">رجوع</button>
                 </div>
 
                 {error && (
@@ -362,14 +362,14 @@ export default function EditOrderPage() {
                         <button
                             type="button"
                             onClick={() => router.back()}
-                            className="px-6 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors"
+                            className="px-6 py-2.5 text-sm font-medium bg-muted text-foreground hover:bg-muted/80 rounded-lg transition-all"
                         >
                             إلغاء
                         </button>
                         <button
                             type="submit"
                             disabled={saving}
-                            className="px-6 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg shadow-lg disabled:opacity-50"
+                            className="px-6 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 hover:scale-105 rounded-lg shadow-sm transition-all disabled:opacity-50"
                         >
                             {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
                         </button>

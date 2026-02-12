@@ -207,8 +207,8 @@ export default function NewOrderPage() {
 
                     {/* Actions */}
                     <div className="flex justify-end gap-3 pt-6 border-t border-border">
-                        <button type="button" onClick={() => router.back()} className="px-6 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors">إلغاء</button>
-                        <button type="submit" disabled={loading} className="px-6 py-2.5 text-sm font-medium text-white bg-primary hover:bg-amber-600 rounded-lg shadow-lg shadow-primary/20 transition-all disabled:opacity-50">
+                        <button type="button" onClick={() => router.back()} className="px-6 py-2.5 text-sm font-medium bg-muted text-foreground hover:bg-muted/80 rounded-lg transition-all">إلغاء</button>
+                        <button type="submit" disabled={loading} className="px-6 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 hover:scale-105 rounded-lg shadow-sm transition-all disabled:opacity-50">
                             {loading ? "جاري الإنشاء..." : "إنشاء الطلب"}
                         </button>
                     </div>
