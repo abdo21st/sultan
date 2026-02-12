@@ -7,7 +7,9 @@ import Link from 'next/link';
 import { Plus, Filter, Search, Calendar, Factory as FactoryIcon, ChevronDown, ChevronUp, Menu, X } from 'lucide-react';
 import { usePermission } from '@/lib/usePermission';
 import { PERMISSIONS } from '@/lib/permissions';
-import { ORDER_STATUS } from '@/lib/constants';
+import { ORDER_STATUS, ORDER_STATUS_LABELS } from '@/lib/constants';
+import { exportOrdersToPDF, type OrderExportData } from '@/lib/pdf-export';
+import { toast } from 'react-hot-toast';
 /* FACILITY_TYPE was not used directly here */
 
 interface Facility {
@@ -95,6 +97,37 @@ export default function OrdersPage() {
                             <Filter className="w-5 h-5" />
                             <span>فلاتر متقدمة</span>
                             {showFilters ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />}
+                        </button>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    // We need the orders data. It's inside the OrderList child.
+                                    // However, for simplicity and since we are on the client, 
+                                    // we can fetch the filtered data again or use a ref.
+                                    // Let's fetch the same query to get ALL filtered data (not just page 1)
+                                    const url = `/api/orders?${buildQuery()}`;
+                                    const res = await fetch(url);
+                                    if (res.ok) {
+                                        const data = await res.json();
+                                        const exportData: OrderExportData[] = data.map((o: { serialNumber: number; customerName: string; totalAmount: number; status: string; dueDate: string }) => ({
+                                            serialNumber: o.serialNumber,
+                                            customerName: o.customerName,
+                                            totalAmount: o.totalAmount,
+                                            status: ORDER_STATUS_LABELS[o.status] || o.status,
+                                            dueDate: o.dueDate
+                                        }));
+                                        exportOrdersToPDF(exportData, 'تقرير طلبات سلطان');
+                                        toast.success('تم تصدير ملف PDF بنجاح 📄✅');
+                                    }
+                                } catch (err) {
+                                    console.error('Export PDF Error:', err);
+                                    toast.error('فشل في تصدير ملف PDF ❌');
+                                }
+                            }}
+                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest bg-white border-2 border-amber-700 text-amber-700 hover:bg-amber-50 shadow-sm"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><path d="M10 13a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2" /><path d="M12 13h1a1.5 1.5 0 0 1 1.5 1.5v0a1.5 1.5 0 0 1-1.5 1.5h-1" /><path d="M16 13h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2" /></svg>
+                            <span>تصدير PDF</span>
                         </button>
                         {hasPermission(PERMISSIONS.ORDERS_ADD) && (
                             <Link
