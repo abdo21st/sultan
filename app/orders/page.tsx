@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import NavBar from '../components/NavBar';
 import OrderList from '../components/OrderList';
 import Link from 'next/link';
-import { Plus, Filter, Search, Calendar, Factory as FactoryIcon, ChevronDown, ChevronUp, Menu, X } from 'lucide-react';
+import { Plus, Filter, Search, Calendar, Factory as FactoryIcon, ChevronDown, ChevronUp } from 'lucide-react';
 import { usePermission } from '@/lib/usePermission';
 import { PERMISSIONS } from '@/lib/permissions';
 import { ORDER_STATUS, ORDER_STATUS_LABELS } from '@/lib/constants';
@@ -20,7 +20,6 @@ interface Facility {
 
 export default function OrdersPage() {
     const [activeTab, setActiveTab] = useState('ALL');
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { hasPermission } = usePermission();
     const [showFilters, setShowFilters] = useState(false);
     const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -196,58 +195,6 @@ export default function OrdersPage() {
                     </div>
                 )}
 
-
-                {/* Sidebar Drawer - Overlay */}
-                {isSidebarOpen && (
-                    <div className="fixed inset-0 z-[60] flex justify-start">
-                        {/* Backdrop */}
-                        <div
-                            className="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-500"
-                            onClick={() => setIsSidebarOpen(false)}
-                        />
-
-                        {/* Drawer Content */}
-                        <aside className="relative w-85 h-full bg-background border-l border-border p-10 shadow-3xl animate-in slide-in-from-right duration-500 flex flex-col">
-                            <div className="flex justify-between items-center mb-10 border-b border-border pb-6">
-                                <h3 className="text-2xl font-black text-gradient-gold tracking-tighter">أقسام السلطان</h3>
-                                <button
-                                    onClick={() => setIsSidebarOpen(false)}
-                                    className="p-3 hover:bg-primary/10 rounded-full transition-all duration-300 text-muted-foreground hover:text-primary"
-                                    aria-label="إغلاق القائمة"
-                                >
-                                    <X className="w-7 h-7" />
-                                </button>
-                            </div>
-
-                            <nav className="flex flex-col gap-3 overflow-y-auto flex-1 pr-2">
-                                {[
-                                    { id: 'ALL', label: 'كافة الطلبات', color: 'bg-zinc-500' },
-                                    { id: 'FACTORY_INBOX', label: 'وارد المصانع', color: 'bg-orange-500' },
-                                    { id: 'SHOP_INBOX', label: 'وارد المعارض', color: 'bg-indigo-500' },
-                                    { id: 'COMPLETED', label: 'السجل المكتمل', color: 'bg-green-500' }
-                                ].map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => {
-                                            setActiveTab(tab.id);
-                                            setIsSidebarOpen(false);
-                                        }}
-                                        className={`w-full text-right px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-500 flex justify-between items-center border ${activeTab === tab.id
-                                            ? 'bg-primary/10 text-primary border-primary/30 shadow-[0_0_15px_rgba(217,119,6,0.1)] translate-x-1'
-                                            : 'text-muted-foreground/60 hover:bg-primary/5 hover:text-foreground border-transparent'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-3 h-3 rounded-full ${tab.color} shadow-sm transition-transform duration-500 ${activeTab === tab.id ? 'scale-125' : ''}`} />
-                                            <span>{tab.label}</span>
-                                        </div>
-                                        {activeTab === tab.id && <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
-                                    </button>
-                                ))}
-                            </nav>
-                        </aside>
-                    </div>
-                )}
 
                 {/* Main Content - Full Width */}
                 <div className="w-full">
