@@ -6,6 +6,7 @@ import { updateOrderStatus, completeOrder } from '@/lib/actions/orders';
 import { Printer, XCircle, CheckCircle, Truck, Package, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { ORDER_STATUS, ORDER_WORKFLOW, ORDER_STATUS_LABELS } from '@/lib/constants';
+import { useToast } from '@/app/components/ToastProvider';
 /* formatCurrency and formatDate are not used in this component */
 
 interface Order {
@@ -33,6 +34,7 @@ interface User {
 }
 
 export default function OrderActions({ order, currentUser }: { order: Order, currentUser?: User | null }) {
+    const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectReason, setRejectReason] = useState('');
@@ -45,8 +47,9 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
         const res = await updateOrderStatus(order.id, newStatus, reason);
         if (res.success) {
             if (newStatus === ORDER_STATUS.REVIEW) setShowRejectModal(false);
+            showToast('تم تحديث حالة الطلب بنجاح', 'success');
         } else {
-            alert(res.error);
+            showToast(res.error || 'حدث خطأ أثناء التحديث', 'error');
         }
         setLoading(false);
     };
@@ -56,8 +59,9 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
         const res = await updateOrderStatus(order.id, ORDER_STATUS.SHOP_READY);
         if (res.success) {
             window.open(`/orders/print/${order.id}`, '_blank');
+            showToast('تم تجهيز المستند للطباعة', 'success');
         } else {
-            alert(res.error);
+            showToast(res.error || 'حدث خطأ أثناء التجهيز', 'error');
         }
         setLoading(false);
     };
@@ -67,8 +71,9 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
         const res = await completeOrder(order.id, parseFloat(paymentAmount || '0'), paymentNote);
         if (res.success) {
             setShowPaymentModal(false);
+            showToast('تم إتمام التسليم والتحصيل بنجاح', 'success');
         } else {
-            alert(res.error);
+            showToast(res.error || 'حدث خطأ أثناء إتمام العملية', 'error');
         }
         setLoading(false);
     };

@@ -62,7 +62,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
     const shop = order.shopId ? await prisma.facility.findUnique({ where: { id: order.shopId } }) : null;
 
     return (
-        <div className="min-h-screen bg-background pb-20 selection:bg-primary/30 antialiased">
+        <div className="min-h-screen bg-background pb-32 selection:bg-primary/30 antialiased">
             <header className="bg-background/80 backdrop-blur-md border-b border-border px-4 py-6 sticky top-0 z-50">
                 <div className="max-w-5xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-6">
@@ -159,15 +159,17 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                 </h3>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     {(order.images as string[]).map((img: string, idx: number) => (
-                                        <a key={idx} href={img} target="_blank" rel="noopener noreferrer" title={`عرض الصورة ${idx + 1}`} className="relative group block aspect-square rounded-2xl overflow-hidden border border-border hover:border-primary/50 transition-all duration-500 shadow-lg">
+                                        <a key={idx} href={img} target="_blank" rel="noopener noreferrer" title={`عرض الصورة ${idx + 1}`} className="relative group block aspect-square rounded-[2rem] overflow-hidden border border-border/50 hover:border-primary/50 transition-all duration-500 shadow-lg animate-in fade-in zoom-in-95 duration-700 [animation-delay:var(--delay)]" style={{ "--delay": `${idx * 100}ms` } as React.CSSProperties}>
                                             <Image
                                                 src={img}
                                                 alt={`Order image ${idx + 1}`}
                                                 fill
-                                                className="object-cover group-hover:scale-110 transition-transform duration-700 blur-[0.5px] group-hover:blur-0"
+                                                loading="lazy"
+                                                className="object-cover group-hover:scale-110 transition-transform duration-1000 blur-[0.2px] group-hover:blur-0"
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                                                <span className="text-[10px] font-black text-white uppercase tracking-widest">توسيع العرض</span>
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6">
+                                                <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] mb-1">المرفق التقني</p>
+                                                <span className="text-xs font-bold text-white uppercase tracking-widest">توسيع العرض 🔍</span>
                                             </div>
                                         </a>
                                     ))}

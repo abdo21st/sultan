@@ -15,6 +15,7 @@ interface Order {
     status: string;
     dueDate: string;
     serialNumber: number;
+    images?: string[];
 }
 
 interface OrderListProps {
@@ -60,11 +61,11 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
     const currentOrders = orders.slice(startIndex, endIndex);
 
     const groupedOrders = useMemo(() => {
-        if (groupingMode === 'none') return { 'الكل': orders };
+        if (groupingMode === 'none') return { 'الكل': currentOrders };
 
         const groups: Record<string, Order[]> = {};
 
-        orders.forEach(order => {
+        currentOrders.forEach(order => {
             const date = new Date(order.dueDate);
             let key = "";
 
@@ -88,16 +89,21 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
         });
 
         return groups;
-    }, [orders, groupingMode]);
+    }, [currentOrders, groupingMode]);
 
     if (loading) {
         return (
-            <div className="flex flex-col items-center justify-center py-24 animate-pulse">
-                <div className="w-16 h-16 rounded-[2rem] bg-muted/50 mb-6 border border-border/40 flex items-center justify-center">
-                    <ShoppingBag className="w-8 h-8 text-muted-foreground/20" />
-                </div>
-                <div className="h-2 w-48 bg-muted/40 rounded-full mb-2"></div>
-                <div className="h-2 w-32 bg-muted/20 rounded-full"></div>
+            <div className="space-y-8 animate-pulse">
+                {[1, 2].map((i) => (
+                    <div key={i} className="space-y-4">
+                        <div className="h-8 w-48 bg-muted rounded-lg" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[1, 2, 3].map((j) => (
+                                <div key={j} className="h-64 bg-card border border-border rounded-3xl" />
+                            ))}
+                        </div>
+                    </div>
+                ))}
             </div>
         );
     }
@@ -146,6 +152,14 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
                                 {/* Status Accent Bar */}
                                 <div className="absolute top-0 right-0 left-0 h-2 bg-muted/20" />
 
+                                {order.images && (order.images as string[]).length > 0 && (
+                                    <div className="absolute top-4 left-4 z-10">
+                                        <div className="w-10 h-10 rounded-xl bg-white/90 backdrop-blur-md border border-white/50 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500">
+                                            <span className="text-[10px] font-black text-amber-700">+{(order.images as string[]).length}</span>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="p-8 space-y-8">
                                     <div className="flex justify-between items-start">
                                         <div className="space-y-2">
@@ -168,8 +182,8 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-5">
-                                        <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500 shadow-sm">
                                             <span className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-wider mb-2">القيمة الإجمالية</span>
                                             <p className="text-xl font-black text-foreground tracking-tighter">
                                                 {Number(order.totalAmount).toLocaleString()} <span className="text-xs text-muted-foreground/60">د.ل</span>
@@ -217,13 +231,13 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8 pb-4">
+                <div className="flex flex-wrap items-center justify-center gap-3 mt-12 pb-8 px-4">
                     <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="px-4 py-2 rounded-lg bg-card border border-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors"
+                        className="h-12 px-6 rounded-2xl bg-card border border-border text-foreground font-black text-xs uppercase tracking-widest disabled:opacity-30 disabled:grayscale hover:bg-muted active:scale-95 transition-all shadow-sm flex items-center gap-2"
                     >
-                        السابق
+                        <span>السابق</span>
                     </button>
 
                     <div className="flex items-center gap-2">
@@ -231,9 +245,9 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
                             <button
                                 key={page}
                                 onClick={() => setCurrentPage(page)}
-                                className={`w-10 h-10 rounded-lg font-bold transition-all ${page === currentPage
-                                        ? 'bg-primary text-primary-foreground shadow-lg scale-110'
-                                        : 'bg-card border border-border text-foreground hover:bg-muted'
+                                className={`w-12 h-12 rounded-2xl font-black text-xs transition-all duration-500 shadow-sm active:scale-90 ${page === currentPage
+                                    ? 'bg-gradient-to-br from-primary to-amber-800 text-white shadow-gold scale-110 border-b-4 border-amber-950/20'
+                                    : 'bg-card border border-border text-foreground hover:bg-muted'
                                     }`}
                             >
                                 {page}
@@ -244,9 +258,9 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
                     <button
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
-                        className="px-4 py-2 rounded-lg bg-card border border-border text-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors"
+                        className="h-12 px-6 rounded-2xl bg-card border border-border text-foreground font-black text-xs uppercase tracking-widest disabled:opacity-30 disabled:grayscale hover:bg-muted active:scale-95 transition-all shadow-sm flex items-center gap-2"
                     >
-                        التالي
+                        <span>التالي</span>
                     </button>
                 </div>
             )}

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Trash2, Edit, User as UserIcon } from 'lucide-react';
 import NavBar from '../../components/NavBar';
+import { useToast } from '@/app/components/ToastProvider';
 
 import { usePermission } from '../../../lib/usePermission';
 import { PERMISSIONS } from '../../../lib/permissions';
@@ -18,6 +19,7 @@ interface User {
 }
 
 export default function UsersPage() {
+    const { showToast } = useToast();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const { hasPermission } = usePermission();
@@ -47,8 +49,9 @@ export default function UsersPage() {
             const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 setUsers(users.filter(u => u.id !== id));
+                showToast('تم حذف المستخدم بنجاح', 'success');
             } else {
-                alert('فشل الحذف');
+                showToast('فشل حذف المستخدم', 'error');
             }
         } catch (error) {
             console.error('Failed to delete user', error);

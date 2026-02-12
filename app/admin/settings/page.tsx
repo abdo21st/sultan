@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import NavBar from "../../components/NavBar";
 import { Save, Download, Trash2, RefreshCw, AlertTriangle, Building2, Plus, X } from 'lucide-react';
+import { useToast } from '@/app/components/ToastProvider';
 
 export default function SettingsPage() {
+    const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState<'general' | 'facilities' | 'actions'>('general');
     const [loading, setLoading] = useState(false);
     const [facilities, setFacilities] = useState<{ id: string; name: string; type: string; location: string; createdAt: string }[]>([]);
@@ -54,8 +56,8 @@ export default function SettingsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings)
             });
-            if (res.ok) alert('تم حفظ الإعدادات بنجاح');
-            else alert('حدث خطأ أثناء الحفظ');
+            if (res.ok) showToast('تم حفظ الإعدادات بنجاح', 'success');
+            else showToast('حدث خطأ أثناء حفظ الإعدادات', 'error');
         } catch (error) {
             console.error(error);
         } finally {
@@ -74,8 +76,8 @@ export default function SettingsPage() {
         try {
             const res = await fetch('/api/settings/clear-data', { method: 'POST' });
             const data = await res.json();
-            if (res.ok) alert(data.message);
-            else alert(data.error || 'حدث خطأ');
+            if (res.ok) showToast(data.message, 'success');
+            else showToast(data.error || 'حدث خطأ أثناء مسح البيانات', 'error');
         } catch {
             alert('حدث خطأ في الاتصال');
         } finally {
@@ -93,10 +95,10 @@ export default function SettingsPage() {
             const res = await fetch('/api/settings/factory-reset', { method: 'POST' });
             const data = await res.json();
             if (res.ok) {
-                alert(data.message);
+                showToast(data.message, 'success');
                 window.location.href = '/login';
             } else {
-                alert(data.error || 'حدث خطأ');
+                showToast(data.error || 'حدث خطأ أثناء إعادة الضبط', 'error');
             }
         } catch {
             alert('حدث خطأ في الاتصال');
@@ -115,11 +117,11 @@ export default function SettingsPage() {
                 body: JSON.stringify(newFacility)
             });
             if (res.ok) {
-                alert('تم إضافة المنشأة بنجاح');
+                showToast('تم إضافة المنشأة بنجاح', 'success');
                 setNewFacility({ name: '', type: 'FACTORY', location: '' });
                 fetchFacilities();
             } else {
-                alert('حدث خطأ أثناء الإضافة');
+                showToast('حدث خطأ أثناء إضافة المنشأة', 'error');
             }
         } catch {
             alert('حدث خطأ في الاتصال');
@@ -136,10 +138,10 @@ export default function SettingsPage() {
             const res = await fetch(`/api/facilities/${id}`, { method: 'DELETE' });
             const data = await res.json();
             if (res.ok) {
-                alert(data.message);
+                showToast(data.message, 'success');
                 fetchFacilities();
             } else {
-                alert(data.error || 'حدث خطأ');
+                showToast(data.error || 'حدث خطأ أثناء حذف المنشأة', 'error');
             }
         } catch {
             alert('حدث خطأ في الاتصال');
@@ -158,9 +160,9 @@ export default function SettingsPage() {
             const res = await fetch('/api/users/bulk-delete', { method: 'POST' });
             const data = await res.json();
             if (res.ok) {
-                alert(data.message);
+                showToast(data.message, 'success');
             } else {
-                alert(data.error || 'حدث خطأ');
+                showToast(data.error || 'حدث خطأ أثناء حذف المستخدمين', 'error');
             }
         } catch {
             alert('حدث خطأ في الاتصال');

@@ -88,8 +88,8 @@ export default function NavBar() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 md:gap-4">
+                    <div className="flex items-center gap-4 sm:gap-6">
+                        <div className="flex items-center gap-3 sm:gap-6">
                             {user && (
                                 <a
                                     href="/downloads/sultan-v1.apk"
