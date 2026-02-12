@@ -181,6 +181,9 @@ export default function NavBar() {
                                             <Link href="/admin/analytics" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/analytics' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
                                                 التقارير
                                             </Link>
+                                            <Link href="/admin/booking" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/admin/booking' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
+                                                نظام الحجز
+                                            </Link>
                                             <Link href="/transactions" onClick={() => setIsMenuOpen(false)} className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-black transition-all ${pathname === '/transactions' ? 'bg-primary text-white shadow-gold' : 'hover:bg-muted text-muted-foreground'}`}>
                                                 المعاملات
                                             </Link>
