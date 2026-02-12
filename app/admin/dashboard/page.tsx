@@ -299,9 +299,11 @@ export default function DashboardPage() {
                                 <div key={entry.name} className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div
-                                            className="w-3 h-3 rounded-full"
-                                            data-color={COLORS[index % COLORS.length]}
-                                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                                            className={`w-3 h-3 rounded-full shadow-sm ${index === 0 ? 'bg-amber-500' :
+                                                    index === 1 ? 'bg-blue-500' :
+                                                        index === 2 ? 'bg-emerald-500' :
+                                                            index === 3 ? 'bg-rose-500' : 'bg-zinc-400'
+                                                }`}
                                         ></div>
                                         <span className="text-sm font-bold text-muted-foreground">{entry.name}</span>
                                     </div>
