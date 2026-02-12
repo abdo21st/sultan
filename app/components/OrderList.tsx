@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Calendar, ArrowRight, Edit3, ShoppingBag, ChevronDown } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { PERMISSIONS } from "@/lib/permissions";
+import { ORDER_STATUS_LABELS } from "@/lib/constants";
 import { GroupingMode } from "./DateTabs";
 
 interface Order {
@@ -151,11 +152,11 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
                                             </h3>
                                         </div>
 
-                                        <div className={`px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all duration-500 shadow-sm ${order.status.includes('completed') ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                                                order.status.includes('pending') ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                                                    'bg-primary/10 text-primary border-primary/30'
+                                        <div className={`px-5 py-2 rounded-2xl text-[10px] font-black tracking-widest border transition-all duration-500 shadow-sm ${order.status.includes('completed') ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                                            order.status.includes('pending') ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                                'bg-primary/10 text-primary border-primary/30'
                                             }`}>
-                                            {order.status.split(':').pop()?.replace('_', ' ')}
+                                            {ORDER_STATUS_LABELS[order.status] || order.status}
                                         </div>
                                     </div>
 
