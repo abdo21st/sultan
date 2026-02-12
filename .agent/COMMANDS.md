@@ -197,3 +197,29 @@ npm test -- --coverage   # تقرير التغطية
 ## 📞 الدعم
 
 للمساعدة أو الاستفسارات، استخدم Antigravity مع الأوامر السريعة المذكورة أعلاه.
+
+---
+
+## 🔍 أوامر التشخيص واستكشاف الأخطاء
+
+### فحص قاعدة البيانات والتوثيق
+
+```bash
+# فحص المستخدمين مباشرة (Bypass Prisma)
+node scripts/check-users-direct.js
+
+# اختبار مطابقة كلمة المرور برمجياً
+node scripts/test-bcrypt.js
+
+# اختبار نقطة النهاية التشخيصية برمجياً
+node -e "const http = require('http'); const data = JSON.stringify({username: 'master', password: 'any'}); const options = { hostname: 'localhost', port: 3000, path: '/api/auth-debug', method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': data.length } }; const req = http.request(options, (res) => { let body = ''; res.on('data', (d) => body += d); res.on('end', () => { console.log('STATUS:', res.statusCode); console.log('BODY:', body); }); }); req.on('error', (e) => console.error(e)); req.write(data); req.end();"
+
+# فحص المخطط الحالي من قاعدة البيانات مباشرة
+npx prisma db pull --print
+```
+
+### تنظيف الملفات المؤقتة (PowerShell)
+
+```powershell
+Remove-Item -Path "app/api/auth-debug/route.ts", "scripts/check-users-direct.js", "scripts/test-bcrypt.js" -ErrorAction SilentlyContinue
+```
