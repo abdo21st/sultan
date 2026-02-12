@@ -1,6 +1,8 @@
 'use client';
 
 import { Printer, Share2 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { useState } from 'react';
 
 interface PrintAndShareButtonsProps {
     orderData: {
@@ -17,31 +19,58 @@ interface PrintAndShareButtonsProps {
 }
 
 export default function PrintAndShareButtons({ orderData }: PrintAndShareButtonsProps) {
+    const [loading, setLoading] = useState(false);
+
     const handlePrint = () => {
         window.print();
     };
 
-    const handleWhatsApp = () => {
-        const message = `
-🔔 *طلب جديد - #${orderData.serialNumber}*
+    const handleWhatsApp = async () => {
+        setLoading(true);
+        try {
+            // 1. تحويل الصفحة إلى صورة
+            const printArea = document.getElementById('print-area');
+            if (!printArea) {
+                alert('لم يتم العثور على منطقة الطباعة');
+                return;
+            }
 
-👤 العميل: ${orderData.customerName}
-📞 الهاتف: ${orderData.customerPhone}
+            const canvas = await html2canvas(printArea, {
+                scale: 2, // جودة عالية
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
 
-📝 التفاصيل:
-${orderData.description || 'لا توجد تفاصيل'}
+            // 2. تحويل Canvas إلى Blob
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    alert('حدث خطأ أثناء إنشاء الصورة');
+                    return;
+                }
 
-💰 المبلغ الإجمالي: ${orderData.totalAmount.toLocaleString()} د.ل
-✅ المدفوع: ${orderData.paidAmount.toLocaleString()} د.ل
-⏳ المتبقي: ${orderData.remainingAmount.toLocaleString()} د.ل
+                // 3. تحميل الصورة
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `طلب-${orderData.serialNumber}.png`;
+                link.click();
+                URL.revokeObjectURL(url);
 
-📅 موعد التسليم: ${new Date(orderData.dueDate).toLocaleDateString('ar-LY')}
+                // 4. فتح واتساب مع رسالة
+                setTimeout(() => {
+                    const message = `📋 *مستند الطلب #${orderData.serialNumber}*\n\n👤 العميل: ${orderData.customerName}\n💰 المبلغ: ${orderData.totalAmount.toLocaleString()} د.ل\n\n✅ تم تحميل صورة المستند، يمكنك إرفاقها الآن`;
+                    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank');
+                }, 500);
+            }, 'image/png');
 
-🔗 رابط الطلب: ${window.location.origin}/orders/print/${orderData.orderId}
-        `.trim();
-
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
+        } catch (error) {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء إنشاء الصورة');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -55,10 +84,20 @@ ${orderData.description || 'لا توجد تفاصيل'}
             </button>
             <button
                 onClick={handleWhatsApp}
-                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-green-500 transition-all shadow-lg shadow-green-500/30 active:scale-95"
+                disabled={loading}
+                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-green-500 transition-all shadow-lg shadow-green-500/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                <Share2 className="w-5 h-5" />
-                إرسال واتساب
+                {loading ? (
+                    <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        جاري التحميل...
+                    </>
+                ) : (
+                    <>
+                        <Share2 className="w-5 h-5" />
+                        تحميل وإرسال
+                    </>
+                )}
             </button>
         </div>
     );
