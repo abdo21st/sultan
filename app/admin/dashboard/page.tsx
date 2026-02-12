@@ -139,8 +139,12 @@ export default function DashboardPage() {
                                 <div
                                     className="h-full bg-primary rounded-full transition-all duration-1000"
                                     data-width={Math.min(100, (stats.totalSales / 50000) * 100)}
-                                    style={{ width: `${Math.min(100, (stats.totalSales / 50000) * 100)}%` }}
-                                ></div>
+                                    style={{ "--progress": `${Math.min(100, (stats.totalSales / 50000) * 100)}%` } as React.CSSProperties}
+                                >
+                                    <style jsx>{`
+                                        div { width: var(--progress); }
+                                    `}</style>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -166,8 +170,12 @@ export default function DashboardPage() {
                                 <div
                                     className="h-full bg-blue-500 rounded-full transition-all duration-1000"
                                     data-width={Math.min(100, (stats.activeOrdersCount / 50) * 100)}
-                                    style={{ width: `${Math.min(100, (stats.activeOrdersCount / 50) * 100)}%` }}
-                                ></div>
+                                    style={{ "--progress": `${Math.min(100, (stats.activeOrdersCount / 50) * 100)}%` } as React.CSSProperties}
+                                >
+                                    <style jsx>{`
+                                        div { width: var(--progress); }
+                                    `}</style>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -192,8 +200,12 @@ export default function DashboardPage() {
                                 <div
                                     className="h-full bg-rose-500 rounded-full transition-all duration-1000"
                                     data-width={Math.min(100, (stats.totalDebts / 20000) * 100)}
-                                    style={{ width: `${Math.min(100, (stats.totalDebts / 20000) * 100)}%` }}
-                                ></div>
+                                    style={{ "--progress": `${Math.min(100, (stats.totalDebts / 20000) * 100)}%` } as React.CSSProperties}
+                                >
+                                    <style jsx>{`
+                                        div { width: var(--progress); }
+                                    `}</style>
+                                </div>
                             </div>
                         </div>
                     </div>
