@@ -138,6 +138,7 @@ export default function DashboardPage() {
                             <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden">
                                 <div
                                     className="h-full bg-primary rounded-full transition-all duration-1000"
+                                    data-width={Math.min(100, (stats.totalSales / 50000) * 100)}
                                     style={{ width: `${Math.min(100, (stats.totalSales / 50000) * 100)}%` }}
                                 ></div>
                             </div>
@@ -164,6 +165,7 @@ export default function DashboardPage() {
                             <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden">
                                 <div
                                     className="h-full bg-blue-500 rounded-full transition-all duration-1000"
+                                    data-width={Math.min(100, (stats.activeOrdersCount / 50) * 100)}
                                     style={{ width: `${Math.min(100, (stats.activeOrdersCount / 50) * 100)}%` }}
                                 ></div>
                             </div>
@@ -189,6 +191,7 @@ export default function DashboardPage() {
                             <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden">
                                 <div
                                     className="h-full bg-rose-500 rounded-full transition-all duration-1000"
+                                    data-width={Math.min(100, (stats.totalDebts / 20000) * 100)}
                                     style={{ width: `${Math.min(100, (stats.totalDebts / 20000) * 100)}%` }}
                                 ></div>
                             </div>
@@ -285,6 +288,7 @@ export default function DashboardPage() {
                                     <div className="flex items-center gap-2">
                                         <div
                                             className="w-3 h-3 rounded-full"
+                                            data-color={COLORS[index % COLORS.length]}
                                             style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                         ></div>
                                         <span className="text-sm font-bold text-muted-foreground">{entry.name}</span>
