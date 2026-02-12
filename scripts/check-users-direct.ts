@@ -20,8 +20,12 @@ async function checkUsers() {
             hashPrefix: row.password ? row.password.substring(0, 10) + "..." : "NULL"
         })));
 
-    } catch (err: any) {
-        console.error("Database connection error:", err.message);
+    } catch (err: unknown) {
+        if (err instanceof Error) {
+            console.error("Database connection error:", err.message);
+        } else {
+            console.error("An unknown database error occurred");
+        }
     } finally {
         await pool.end();
     }

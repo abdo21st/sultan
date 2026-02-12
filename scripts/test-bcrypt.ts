@@ -31,8 +31,12 @@ async function verifyPassword() {
             console.log(`- Attempt with "${pass}": ${match ? '✅ MATCH' : '❌ NO MATCH'}`);
         }
 
-    } catch (err: any) {
-        console.error("Error:", err.message);
+    } catch (err: unknown) {
+        if (err instanceof Error) {
+            console.error("Error:", err.message);
+        } else {
+            console.error("An unexpected error occurred");
+        }
     } finally {
         await pool.end();
     }
