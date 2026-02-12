@@ -39,7 +39,16 @@ export default function PrintAndShareButtons({ orderData }: PrintAndShareButtons
                 scale: 2, // جودة عالية
                 useCORS: true,
                 logging: false,
-                backgroundColor: '#ffffff'
+                backgroundColor: '#ffffff',
+                onclone: (clonedDoc) => {
+                    // إزالة أي عناصر قد تسبب مشاكل
+                    const clonedArea = clonedDoc.getElementById('print-area');
+                    if (clonedArea) {
+                        // إزالة الأزرار من النسخة المستنسخة
+                        const buttons = clonedArea.querySelectorAll('.no-print');
+                        buttons.forEach(btn => btn.remove());
+                    }
+                }
             });
 
             // 2. تحويل Canvas إلى Blob
