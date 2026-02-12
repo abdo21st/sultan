@@ -260,6 +260,41 @@ export default function OrdersPage() {
                 <div className="w-full">
                     <OrderList queryParams={buildQuery()} />
                 </div>
+
+                {/* Floating Action Button for PDF Export */}
+                <div className="fixed bottom-8 right-8 z-[100] group">
+                    <button
+                        onClick={async () => {
+                            try {
+                                const url = `/api/orders?${buildQuery()}`;
+                                const res = await fetch(url);
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    const exportData: OrderExportData[] = data.map((o: { serialNumber: number; customerName: string; totalAmount: number; status: string; dueDate: string }) => ({
+                                        serialNumber: o.serialNumber,
+                                        customerName: o.customerName,
+                                        totalAmount: o.totalAmount,
+                                        status: ORDER_STATUS_LABELS[o.status] || o.status,
+                                        dueDate: o.dueDate
+                                    }));
+                                    exportOrdersToPDF(exportData, 'تقرير طلبات سلطان');
+                                    toast.success('تم تصدير ملف PDF بنجاح 📄✅');
+                                }
+                            } catch (err) {
+                                console.error('Export PDF Error:', err);
+                                toast.error('فشل في تصدير ملف PDF ❌');
+                            }
+                        }}
+                        className="flex items-center gap-3 px-8 py-4 bg-emerald-600 text-white rounded-full shadow-[0_10px_30px_rgba(5,150,105,0.4)] hover:bg-emerald-500 hover:scale-110 active:scale-95 transition-all duration-300 group-hover:pr-10"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><path d="M10 13a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2" /><path d="M12 13h1a1.5 1.5 0 0 1 1.5 1.5v0a1.5 1.5 0 0 1-1.5 1.5h-1" /><path d="M16 13h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2" /></svg>
+                        <span className="font-black text-sm uppercase tracking-tighter">تصدير التقرير PDF</span>
+                    </button>
+                    {/* Tooltip hint */}
+                    <div className="absolute bottom-full right-0 mb-4 px-4 py-2 bg-emerald-900 text-emerald-100 text-[10px] font-black rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
+                        اضغط لسحب التقرير حسب الفهرسة الحالية 📄✨
+                    </div>
+                </div>
             </main>
         </div>
     );
