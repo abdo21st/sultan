@@ -159,9 +159,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                 </h3>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     {(order.images as string[]).map((img: string, idx: number) => (
-                                        <a key={idx} href={img} target="_blank" rel="noopener noreferrer" title={`عرض الصورة ${idx + 1}`} className="relative group block aspect-square rounded-[2rem] overflow-hidden border border-border/50 hover:border-primary/50 transition-all duration-500 shadow-lg animate-in fade-in zoom-in-95 duration-700" style={{ "--item-delay": `${idx * 100}ms` } as React.CSSProperties}>
+                                        <a key={idx} id={`img-link-${idx}`} href={img} target="_blank" rel="noopener noreferrer" title={`عرض الصورة ${idx + 1}`} className="relative group block aspect-square rounded-[2rem] overflow-hidden border border-border/50 hover:border-primary/50 transition-all duration-500 shadow-lg animate-in fade-in zoom-in-95 duration-700">
                                             <style jsx>{`
-                                                a { animation-delay: var(--item-delay); }
+                                                #img-link-${idx} { animation-delay: ${idx * 100}ms; }
                                             `}</style>
                                             <Image
                                                 src={img}
