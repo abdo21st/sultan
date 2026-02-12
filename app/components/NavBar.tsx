@@ -119,18 +119,26 @@ export default function NavBar() {
                                         </div>
                                     </div>
 
-                                    <div className="absolute left-0 top-full mt-2 w-52 bg-card border border-border rounded-2xl shadow-premium opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-300 transform translate-y-2 group-hover/menu:translate-y-0 origin-top-left z-50">
-                                        <div className="p-2">
-                                            <Link href="/profile" className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-foreground hover:bg-muted rounded-xl transition-colors">
-                                                <User className="w-4 h-4 text-primary" />
+                                    <div className="absolute left-0 top-full mt-3 w-56 bg-white border border-border rounded-[1.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-300 transform translate-y-2 group-hover/menu:translate-y-0 origin-top-left z-50 overflow-hidden">
+                                        <div className="p-2.5">
+                                            <div className="px-4 py-3 mb-2 bg-muted/30 rounded-xl sm:hidden">
+                                                <p className="text-sm font-black text-foreground">{user.displayName || user.name || user.username}</p>
+                                                <p className="text-[10px] uppercase font-bold text-primary/80">{user.role}</p>
+                                            </div>
+                                            <Link href="/profile" className="flex items-center gap-3 px-4 py-3.5 text-sm font-bold text-foreground hover:bg-muted rounded-xl transition-all duration-200 group/item">
+                                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center group-hover/item:bg-primary/20 transition-colors">
+                                                    <User className="w-4 h-4 text-primary" />
+                                                </div>
                                                 <span>الملف الشخصي</span>
                                             </Link>
-                                            <div className="my-1 border-t border-border"></div>
+                                            <div className="my-1.5 border-t border-border/60"></div>
                                             <button
                                                 onClick={() => window.location.href = '/api/auth/signout'}
-                                                className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors w-full text-right"
+                                                className="flex items-center gap-3 px-4 py-3.5 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 w-full text-right group/logout"
                                             >
-                                                <LogOut className="w-4 h-4" />
+                                                <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center group-hover/logout:bg-red-100 transition-colors">
+                                                    <LogOut className="w-4 h-4" />
+                                                </div>
                                                 <span>تسجيل الخروج</span>
                                             </button>
                                         </div>
