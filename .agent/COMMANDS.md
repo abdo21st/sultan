@@ -14,6 +14,24 @@
 | `/database` | إدارة قاعدة البيانات (Prisma) |
 | `/install` | تثبيت المكتبات |
 | `/lint` | فحص وتنسيق الكود |
+| `/backup` | نسخ احتياطي للبيانات |
+| `/restore` | استعادة البيانات |
+| `/test` | تشغيل الاختبارات |
+| `/clean` | تنظيف المشروع |
+| `/analyze` | تحليل الأداء |
+| `/format` | تنسيق الكود |
+| `/deploy-preview` | نشر نسخة تجريبية |
+| `/seed-db` | ملء قاعدة البيانات |
+| `/security-check` | فحص الأمان |
+| `/update-deps` | تحديث المكتبات |
+| `/export-orders` | تصدير الطلبات إلى Excel/CSV |
+| `/generate-report` | إنشاء تقرير مالي شهري |
+| `/optimize-db` | تحسين أداء قاعدة البيانات |
+| `/check-health` | فحص صحة النظام |
+| `/create-component` | إنشاء component جديد بسرعة |
+| `/create-api` | إنشاء API route جديد |
+| `/monitor-errors` | مراقبة الأخطاء في الإنتاج |
+| `/check-performance` | فحص أداء البرنامج |
 
 ---
 
