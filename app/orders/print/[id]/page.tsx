@@ -1,7 +1,7 @@
 import { prisma } from "../../../../lib/prisma";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import PrintButton from "../../../components/PrintButton";
+import PrintAndShareButtons from "../../../components/PrintAndShareButtons";
 
 export default async function PrintOrderPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -142,7 +142,19 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                 }
             `}} />
 
-            <PrintButton />
+            <PrintAndShareButtons
+                orderData={{
+                    serialNumber: order.serialNumber,
+                    customerName: order.customerName,
+                    customerPhone: order.customerPhone,
+                    description: order.description,
+                    totalAmount: order.totalAmount,
+                    paidAmount: order.paidAmount,
+                    remainingAmount: order.remainingAmount,
+                    dueDate: order.dueDate,
+                    orderId: order.id
+                }}
+            />
         </div>
     );
 }
