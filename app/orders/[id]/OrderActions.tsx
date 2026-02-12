@@ -213,31 +213,31 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
             {/* Payment Modal */}
             {showPaymentModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
-                    <div className="bg-zinc-900 border border-white/5 rounded-[2rem] p-10 w-full max-w-lg shadow-[0_0_50px_rgba(0,0,0,0.5)] glass">
+                    <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-700 rounded-[2rem] p-10 w-full max-w-lg shadow-2xl">
                         <div className="flex justify-between items-center mb-10 border-b border-white/5 pb-6">
                             <div>
-                                <h3 className="text-2xl font-black text-gradient-gold tracking-tight">إتمام التحصيل</h3>
-                                <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest mt-1">تأكيد استلام المبلغ المتبقي.</p>
+                                <h3 className="text-2xl font-black text-white tracking-tight">إتمام التحصيل</h3>
+                                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-1">تأكيد استلام المبلغ المتبقي.</p>
                             </div>
                             <button onClick={() => setShowPaymentModal(false)} className="p-3 hover:bg-white/5 rounded-full text-zinc-500 hover:text-primary transition-colors">✕</button>
                         </div>
 
-                        <div className="bg-white/5 p-8 rounded-3xl mb-8 border border-white/5 glass">
+                        <div className="bg-slate-800/50 p-8 rounded-3xl mb-8 border border-slate-600/50">
                             <div className="flex justify-between items-center mb-1">
-                                <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">المبلغ المتبقي المعلق</span>
-                                <span className="text-3xl font-black text-red-500 font-mono tracking-tighter" dir="ltr">{order.remainingAmount.toLocaleString()} د.ل</span>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">المبلغ المتبقي المعلق</span>
+                                <span className="text-4xl font-black text-red-400 font-mono tracking-tighter" dir="ltr">{order.remainingAmount.toLocaleString()} د.ك</span>
                             </div>
                         </div>
 
                         <div className="mb-8 space-y-3">
-                            <label className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest flex items-center gap-2 px-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
                                 المبلغ المقبوض فعلياً
                             </label>
                             <input
                                 type="number"
                                 required
                                 step="0.01"
-                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xl font-black font-mono text-green-500 focus:border-green-500/50 focus:ring-4 focus:ring-green-500/5 outline-none transition-all duration-300"
+                                className="w-full bg-slate-800/50 border border-slate-600/50 rounded-2xl p-4 text-xl font-black font-mono text-green-400 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20 outline-none transition-all duration-300"
                                 placeholder="0.00"
                                 value={paymentAmount}
                                 onChange={(e) => setPaymentAmount(e.target.value)}
@@ -245,11 +245,11 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                         </div>
 
                         <div className="mb-10 space-y-3">
-                            <label className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest flex items-center gap-2 px-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
                                 ملاحظات التحصيل
                             </label>
                             <textarea
-                                className="w-full h-24 p-4 bg-white/5 border border-white/10 rounded-2xl text-sm font-bold focus:border-primary/50 focus:ring-4 focus:ring-primary/5 outline-none transition-all duration-300 resize-none"
+                                className="w-full h-24 p-4 bg-slate-800/50 border border-slate-600/50 rounded-2xl text-sm font-bold text-slate-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20 outline-none transition-all duration-300 resize-none"
                                 placeholder="أي ملاحظات إضافية..."
                                 value={paymentNote}
                                 onChange={(e) => setPaymentNote(e.target.value)}
@@ -260,13 +260,13 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                             <button
                                 onClick={handleComplete}
                                 disabled={loading}
-                                className="flex-[2] py-4 bg-green-500 text-black rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-green-500/20 disabled:opacity-50 active:scale-95"
+                                className="flex-[2] py-4 bg-amber-700 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-amber-500/30 hover:bg-amber-600 disabled:opacity-50 active:scale-95 transition-all"
                             >
                                 {loading ? 'جاري المعالجة...' : 'تأكيد التسليم الرسمي'}
                             </button>
                             <button
                                 onClick={() => setShowPaymentModal(false)}
-                                className="flex-1 py-4 bg-white/5 text-muted-foreground rounded-2xl font-black text-[11px] uppercase tracking-widest border border-white/5"
+                                className="flex-1 py-4 bg-slate-800/50 text-slate-300 rounded-2xl font-black text-[11px] uppercase tracking-widest border border-slate-600/50 hover:bg-slate-700 hover:text-white transition-all"
                             >
                                 رجوع
                             </button>
