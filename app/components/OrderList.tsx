@@ -104,7 +104,7 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
                 <p className="text-muted-foreground max-w-xs mx-auto font-bold leading-relaxed opacity-70">لم يتم العثور على أي بيانات تطابق معايير الفهرسة الحالية.</p>
                 <Link
                     href="/orders/new"
-                    className="inline-flex items-center gap-3 mt-10 px-10 py-4 rounded-[1.5rem] bg-foreground text-background font-black text-sm shadow-xl hover:scale-105 active:scale-95 transition-all"
+                    className="inline-flex items-center gap-3 mt-10 px-10 py-4 rounded-[1.5rem] bg-primary text-white font-black text-sm shadow-xl hover:scale-105 active:scale-95 transition-all"
                 >
                     إنشاء طلب جديد
                 </Link>
@@ -193,7 +193,7 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
                                         {hasPermission(PERMISSIONS.ORDERS_EDIT) && (
                                             <Link
                                                 href={`/orders/${order.id}/edit`}
-                                                className="w-12 h-12 rounded-2xl bg-muted/50 hover:bg-foreground hover:text-white flex items-center justify-center transition-all duration-500 group/edit"
+                                                className="w-12 h-12 rounded-2xl bg-muted/50 hover:bg-primary hover:text-white flex items-center justify-center transition-all duration-500 group/edit"
                                                 title="تعديل سريع"
                                             >
                                                 <Edit3 className="w-5 h-5 group-hover/edit:scale-110 transition-transform" />

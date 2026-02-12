@@ -108,7 +108,7 @@ export default function DashboardPage() {
                             <Calendar className="w-5 h-5 text-primary" />
                             <span>آخر 30 يوم</span>
                         </button>
-                        <button className="h-14 px-8 rounded-2xl bg-foreground text-background font-black text-sm flex items-center gap-3 shadow-gold transition-all hover:scale-105 active:scale-95">
+                        <button className="h-14 px-8 rounded-2xl bg-primary text-white font-black text-sm flex items-center gap-3 shadow-gold transition-all hover:scale-105 active:scale-95">
                             <Download className="w-5 h-5" />
                             <span>تصدير</span>
                         </button>
