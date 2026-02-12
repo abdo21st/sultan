@@ -83,14 +83,14 @@ export default function OrdersPage() {
                     <div className="flex flex-wrap gap-3 w-full md:w-auto">
                         <button
                             onClick={() => setIsSidebarOpen(true)}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest bg-primary text-white hover:bg-primary/90 hover:scale-105 shadow-sm"
+                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest bg-amber-700 text-white hover:bg-amber-600 hover:scale-105 shadow-sm"
                         >
-                            <Menu className="w-5 h-5 text-primary" />
+                            <Menu className="w-5 h-5 text-white" />
                             <span>الأقسام</span>
                         </button>
                         <button
                             onClick={() => setShowFilters(!showFilters)}
-                            className={`flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest border ${showFilters ? 'bg-primary text-white border-primary shadow-gold scale-105' : 'bg-primary text-white hover:bg-primary/90 hover:scale-105 border-primary shadow-sm'}`}
+                            className={`flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest border ${showFilters ? 'bg-amber-700 text-white border-amber-700 shadow-gold scale-105' : 'bg-amber-700 text-white hover:bg-amber-600 hover:scale-105 border-amber-700 shadow-sm'}`}
                         >
                             <Filter className="w-5 h-5" />
                             <span>فلاتر متقدمة</span>

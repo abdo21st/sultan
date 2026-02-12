@@ -369,7 +369,7 @@ export default function EditOrderPage() {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="px-6 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 hover:scale-105 rounded-lg shadow-sm transition-all disabled:opacity-50"
+                            className="px-6 py-2.5 text-sm font-medium text-white bg-amber-700 hover:bg-amber-600 hover:scale-105 rounded-lg shadow-sm transition-all disabled:opacity-50"
                         >
                             {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
                         </button>
