@@ -57,9 +57,9 @@ export default function OrderFilters({ isOpen, onClose, onApply, initialFilters 
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-card w-full max-w-lg rounded-3xl shadow-2xl border border-border overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between p-6 border-b border-border bg-muted/30">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in duration-500">
+            <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-border/40 overflow-hidden animate-in zoom-in-95 duration-500">
+                <div className="flex items-center justify-between p-8 border-b border-border/40 bg-white">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-xl text-primary">
                             <Filter className="w-5 h-5" />
@@ -157,16 +157,16 @@ export default function OrderFilters({ isOpen, onClose, onApply, initialFilters 
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-border bg-muted/30 flex gap-3">
+                <div className="p-8 border-t border-border/40 bg-white flex gap-4">
                     <button
                         onClick={handleReset}
-                        className="flex-1 py-3 bg-background border border-border rounded-xl text-foreground font-bold hover:bg-muted transition-colors"
+                        className="flex-1 py-4 bg-muted/30 border border-border/40 rounded-2xl text-foreground font-black text-xs uppercase tracking-widest hover:bg-muted transition-all active:scale-95"
                     >
                         إعادة تعيين
                     </button>
                     <button
                         onClick={handleApply}
-                        className="flex-[2] py-3 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        className="flex-[2] py-4 bg-gradient-to-br from-primary to-amber-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:shadow-gold hover:scale-[1.02] active:scale-95 transition-all"
                     >
                         تطبيق الفلاتر
                     </button>
