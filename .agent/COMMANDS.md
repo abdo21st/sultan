@@ -206,10 +206,10 @@ npm test -- --coverage   # تقرير التغطية
 
 ```bash
 # فحص المستخدمين مباشرة (Bypass Prisma)
-node scripts/check-users-direct.js
+npx tsx scripts/check-users-direct.ts
 
 # اختبار مطابقة كلمة المرور برمجياً
-node scripts/test-bcrypt.js
+npx tsx scripts/test-bcrypt.ts
 
 # اختبار نقطة النهاية التشخيصية برمجياً
 node -e "const http = require('http'); const data = JSON.stringify({username: 'master', password: 'any'}); const options = { hostname: 'localhost', port: 3000, path: '/api/auth-debug', method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': data.length } }; const req = http.request(options, (res) => { let body = ''; res.on('data', (d) => body += d); res.on('end', () => { console.log('STATUS:', res.statusCode); console.log('BODY:', body); }); }); req.on('error', (e) => console.error(e)); req.write(data); req.end();"
@@ -221,5 +221,5 @@ npx prisma db pull --print
 ### تنظيف الملفات المؤقتة (PowerShell)
 
 ```powershell
-Remove-Item -Path "app/api/auth-debug/route.ts", "scripts/check-users-direct.js", "scripts/test-bcrypt.js" -ErrorAction SilentlyContinue
+Remove-Item -Path "app/api/auth-debug/route.ts", "scripts/check-users-direct.ts", "scripts/test-bcrypt.ts" -ErrorAction SilentlyContinue
 ```
