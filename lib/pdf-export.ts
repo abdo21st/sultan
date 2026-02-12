@@ -1,7 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import arabicReshaper from 'arabic-reshaper';
-import { isRtl } from 'rtl-detect';
 
 // Note: jsPDF needs a font that supports Arabic characters to be added to its virtual file system.
 // Since we cannot easily bundle a large TTF here, we use a basic approach that reshapes the text.
@@ -31,7 +30,7 @@ export const exportOrdersToPDF = (orders: OrderExportData[], title: string) => {
                 return reshaped.split('').reverse().join('');
             }
             return text;
-        } catch (e) {
+        } catch {
             return text;
         }
     };

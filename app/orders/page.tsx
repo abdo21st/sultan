@@ -141,9 +141,9 @@ export default function OrdersPage() {
                     </div>
                 </div>
 
-                {/* Advanced Filters Panel */}
+                {/* Advanced Filters Panel - Matte Design */}
                 {showFilters && (
-                    <div className="bg-card border border-border rounded-3xl p-8 shadow-2xl mb-12 animate-in slide-in-from-top duration-500">
+                    <div className="bg-white border border-border/40 rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.15)] mb-12 animate-in slide-in-from-top-6 duration-700">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest flex items-center gap-2">
