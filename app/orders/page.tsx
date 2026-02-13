@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import NavBar from '../components/NavBar';
 import OrderList from '../components/OrderList';
 import Link from 'next/link';
-import { Plus, Filter, Search, Calendar, Factory as FactoryIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Filter, Search, Calendar, Factory as FactoryIcon, ChevronDown, ChevronUp, FileDown } from 'lucide-react';
 import { usePermission } from '@/lib/usePermission';
 import { PERMISSIONS } from '@/lib/permissions';
 import { ORDER_STATUS, ORDER_STATUS_LABELS } from '@/lib/constants';
@@ -114,10 +114,10 @@ export default function OrdersPage() {
                                     showToast('حدث خطأ غير متوقع ❌', 'error');
                                 }
                             }}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest bg-emerald-700 text-white hover:bg-emerald-600 hover:scale-105 shadow-lg shadow-emerald-900/20"
+                            className="flex-1 md:flex-none flex items-center justify-center gap-3 px-8 py-4 rounded-2xl transition-all duration-300 font-black text-sm tracking-wide bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-500 hover:to-red-600 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/30 shadow-lg border-2 border-red-800/20"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><path d="M10 13a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2" /><path d="M12 13h1a1.5 1.5 0 0 1 1.5 1.5v0a1.5 1.5 0 0 1-1.5 1.5h-1" /><path d="M16 13h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2" /></svg>
-                            <span>تصدير ملف PDF</span>
+                            <FileDown className="w-6 h-6" strokeWidth={2.5} />
+                            <span>تصدير PDF</span>
                         </button>
                         <button
                             onClick={() => setShowFilters(!showFilters)}

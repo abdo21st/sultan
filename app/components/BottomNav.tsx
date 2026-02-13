@@ -2,23 +2,28 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlusCircle, Bell, User, LayoutDashboard, ChevronUp, ChevronDown } from "lucide-react";
+import { Home, PlusCircle, Bell, User, LayoutDashboard, Menu, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { PERMISSIONS } from "@/lib/permissions";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function BottomNav() {
     const pathname = usePathname();
     const { data: session } = useSession();
+    const [isOpen, setIsOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const [position, setPosition] = useState(() => ({
+        x: 20,
+        y: typeof window !== 'undefined' ? window.innerHeight - 100 : 100
+    }));
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const buttonRef = useRef<HTMLDivElement>(null);
 
-    // القائمة تكون مفتوحة في صفحة تسجيل الطلبات، ومغلقة في باقي الصفحات
-    const isOrdersNewPage = pathname === "/orders/new";
-    const [isOpen, setIsOpen] = useState(isOrdersNewPage);
-
-    // تحديث حالة القائمة عند تغيير الصفحة
+    // Prevent hydration mismatch by only rendering after mount
     useEffect(() => {
-        setIsOpen(isOrdersNewPage);
-    }, [isOrdersNewPage]);
+        setMounted(true);
+    }, []);
 
     const tabs = [
         { icon: Home, label: "الرئيسية", href: "/" },
@@ -39,65 +44,147 @@ export default function BottomNav() {
         { icon: User, label: "حسابي", href: "/profile" },
     ];
 
+    // Handle drag start
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if ((e.target as HTMLElement).closest('a')) return; // Don't drag when clicking links
+        setIsDragging(true);
+        setDragStart({
+            x: e.clientX - position.x,
+            y: e.clientY - position.y
+        });
+    };
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if ((e.target as HTMLElement).closest('a')) return;
+        setIsDragging(true);
+        const touch = e.touches[0];
+        setDragStart({
+            x: touch.clientX - position.x,
+            y: touch.clientY - position.y
+        });
+    };
+
+    // Handle drag move
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isDragging) return;
+
+            const newX = e.clientX - dragStart.x;
+            const newY = e.clientY - dragStart.y;
+
+            // Keep within screen bounds
+            const maxX = window.innerWidth - 70;
+            const maxY = window.innerHeight - 70;
+
+            setPosition({
+                x: Math.max(10, Math.min(newX, maxX)),
+                y: Math.max(10, Math.min(newY, maxY))
+            });
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (!isDragging) return;
+
+            const touch = e.touches[0];
+            const newX = touch.clientX - dragStart.x;
+            const newY = touch.clientY - dragStart.y;
+
+            const maxX = window.innerWidth - 70;
+            const maxY = window.innerHeight - 70;
+
+            setPosition({
+                x: Math.max(10, Math.min(newX, maxX)),
+                y: Math.max(10, Math.min(newY, maxY))
+            });
+        };
+
+        const handleEnd = () => {
+            setIsDragging(false);
+        };
+
+        if (isDragging) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleEnd);
+            document.addEventListener('touchmove', handleTouchMove);
+            document.addEventListener('touchend', handleEnd);
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleEnd);
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleEnd);
+        };
+    }, [isDragging, dragStart]);
+
+    // Don't render on server to avoid hydration mismatch
+    if (!mounted) {
+        return null;
+    }
+
     return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
-            {/* شريط السحب */}
+        <div className="md:hidden">
+            {/* Floating Button */}
             <div
-                onClick={() => setIsOpen(!isOpen)}
-                className="flex justify-center items-center py-2 cursor-pointer active:scale-95 transition-transform"
+                ref={buttonRef}
+                style={{
+                    position: 'fixed',
+                    left: `${position.x}px`,
+                    top: `${position.y}px`,
+                    zIndex: 9999,
+                    touchAction: 'none'
+                }}
+                onMouseDown={handleMouseDown}
+                onTouchStart={handleTouchStart}
+                className={`${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
             >
-                <div className="glass-panel rounded-t-2xl px-8 py-1.5 shadow-lg border border-white/50 border-b-0 flex items-center gap-2">
+                <button
+                    onClick={(e) => {
+                        if (!isDragging) {
+                            e.stopPropagation();
+                            setIsOpen(!isOpen);
+                        }
+                    }}
+                    className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-amber-800 text-white shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform border-4 border-white/20"
+                >
                     {isOpen ? (
-                        <ChevronDown className="w-5 h-5 text-primary animate-bounce" />
+                        <X className="w-7 h-7" strokeWidth={2.5} />
                     ) : (
-                        <ChevronUp className="w-5 h-5 text-primary animate-bounce" />
+                        <Menu className="w-7 h-7" strokeWidth={2.5} />
                     )}
-                    <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
-                </div>
-            </div>
+                </button>
 
-            {/* القائمة السفلية */}
-            <div
-                className={`transition-all duration-500 ease-in-out ${isOpen
-                        ? 'translate-y-0 opacity-100'
-                        : 'translate-y-full opacity-0'
-                    }`}
-            >
-                <nav className="glass-panel rounded-t-3xl p-4 pb-6 shadow-premium flex items-center justify-around border border-white/50 border-b-0 mx-4">
-                    {tabs.map((tab) => {
-                        const isActive = pathname === tab.href;
-                        const Icon = tab.icon;
+                {/* Popup Menu */}
+                {isOpen && (
+                    <div className="absolute bottom-20 left-0 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 p-3 min-w-[200px] animate-in fade-in slide-in-from-bottom-2 duration-200">
+                        <div className="space-y-2">
+                            {tabs.map((tab) => {
+                                const isActive = pathname === tab.href;
+                                const Icon = tab.icon;
 
-                        // Permission check
-                        if (tab.permission && !session?.user?.permissions?.includes(tab.permission as string)) {
-                            return null;
-                        }
+                                // Permission check
+                                if (tab.permission && !session?.user?.permissions?.includes(tab.permission as string)) {
+                                    return null;
+                                }
 
-                        if (tab.primary) {
-                            return (
-                                <Link
-                                    key={tab.href}
-                                    href={tab.href}
-                                    className="relative -top-3 w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-amber-800 text-white flex items-center justify-center shadow-gold transition-transform hover:scale-105 active:scale-90 border-4 border-background"
-                                >
-                                    <Icon className="w-7 h-7" strokeWidth={2.5} />
-                                </Link>
-                            );
-                        }
-
-                        return (
-                            <Link
-                                key={tab.href}
-                                href={tab.href}
-                                className={`flex flex-col items-center gap-1 p-2 transition-all duration-300 ${isActive ? "text-primary scale-110" : "text-muted-foreground"
-                                    }`}
-                            >
-                                <Icon className={`w-6 h-6 ${isActive ? "fill-primary/10" : ""}`} strokeWidth={isActive ? 2.5 : 2} />
-                                <span className="text-[10px] font-black uppercase tracking-tight">{tab.label}</span>
-                            </Link>
-                        );
-                    })}
-                </nav>
+                                return (
+                                    <Link
+                                        key={tab.href}
+                                        href={tab.href}
+                                        onClick={() => setIsOpen(false)}
+                                        className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${isActive
+                                            ? "bg-gradient-to-r from-primary/10 to-amber-100 text-primary border-2 border-primary/20"
+                                            : "hover:bg-gray-100 text-gray-700"
+                                            } ${tab.primary ? "bg-gradient-to-r from-primary to-amber-700 text-white hover:from-primary/90 hover:to-amber-600" : ""}`}
+                                    >
+                                        <Icon className={`w-5 h-5 ${tab.primary ? "text-white" : ""}`} strokeWidth={2.5} />
+                                        <span className="text-sm font-bold">{tab.label}</span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
