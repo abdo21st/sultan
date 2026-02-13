@@ -9,7 +9,7 @@ import { usePermission } from '@/lib/usePermission';
 import { PERMISSIONS } from '@/lib/permissions';
 import { ORDER_STATUS, ORDER_STATUS_LABELS } from '@/lib/constants';
 import { exportOrdersToPDF, type OrderExportData } from '@/lib/pdf-export';
-import { toast } from 'react-hot-toast';
+import { useToast } from '../components/ToastProvider';
 /* FACILITY_TYPE was not used directly here */
 
 interface Facility {
@@ -19,7 +19,8 @@ interface Facility {
 }
 
 export default function OrdersPage() {
-    const [activeTab, setActiveTab] = useState('ALL');
+    const [activeTab] = useState('ALL');
+    const { showToast } = useToast();
     const { hasPermission } = usePermission();
     const [showFilters, setShowFilters] = useState(false);
     const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -84,11 +85,18 @@ export default function OrdersPage() {
                     <div className="flex flex-wrap gap-3 w-full md:w-auto">
                         <button
                             onClick={async () => {
+                                console.log('Exporting PDF... Query:', buildQuery());
                                 try {
                                     const url = `/api/orders?${buildQuery()}`;
                                     const res = await fetch(url);
+                                    console.log('API Response:', res.status);
                                     if (res.ok) {
                                         const data = await res.json();
+                                        console.log('Orders data received:', data.length);
+                                        if (data.length === 0) {
+                                            showToast('لا توجد طلبات لتصديرها ⚠️', 'warning');
+                                            return;
+                                        }
                                         const exportData: OrderExportData[] = data.map((o: { serialNumber: number; customerName: string; totalAmount: number; status: string; dueDate: string }) => ({
                                             serialNumber: o.serialNumber,
                                             customerName: o.customerName,
@@ -97,11 +105,13 @@ export default function OrdersPage() {
                                             dueDate: o.dueDate
                                         }));
                                         exportOrdersToPDF(exportData, 'تقرير طلبات سلطان');
-                                        toast.success('تم تصدير ملف PDF بنجاح 📄✅');
+                                        showToast('تم تصدير ملف PDF بنجاح 📄✅', 'success');
+                                    } else {
+                                        showToast('فشل في جلب بيانات الطلبات ❌', 'error');
                                     }
                                 } catch (err) {
                                     console.error('Export PDF Error:', err);
-                                    toast.error('فشل في تصدير ملف PDF ❌');
+                                    showToast('حدث خطأ غير متوقع ❌', 'error');
                                 }
                             }}
                             className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-3 rounded-2xl transition-all duration-300 font-black text-xs uppercase tracking-widest bg-emerald-700 text-white hover:bg-emerald-600 hover:scale-105 shadow-lg shadow-emerald-900/20"

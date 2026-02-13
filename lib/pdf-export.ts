@@ -1,10 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import arabicReshaper from 'arabic-reshaper';
-
-// Note: jsPDF needs a font that supports Arabic characters to be added to its virtual file system.
-// Since we cannot easily bundle a large TTF here, we use a basic approach that reshapes the text.
-// For a production environment, you would typically add a custom TTF font.
+import { AmiriRegularBase64 } from './amiri-font-raw';
 
 export interface OrderExportData {
     serialNumber: number;
@@ -21,9 +18,15 @@ export const exportOrdersToPDF = (orders: OrderExportData[], title: string) => {
         format: 'a4'
     });
 
+    // Add Amiri font to vFS and register it
+    doc.addFileToVFS('Amiri-Regular.ttf', AmiriRegularBase64);
+    doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+    doc.setFont('Amiri');
+
     // Handle Arabic Text Reshaping
     const reshape = (text: string) => {
         try {
+            if (!text) return '';
             // Check if text has Arabic characters
             if (/[\u0600-\u06FF]/.test(text)) {
                 const reshaped = arabicReshaper.reshape(text);
@@ -55,8 +58,6 @@ export const exportOrdersToPDF = (orders: OrderExportData[], title: string) => {
 
     // Add Title
     doc.setFontSize(22);
-    // Note: Standard fonts don't support Arabic well. For full support, a custom font must be added.
-    // We try to render as best as possible with standard fonts for now.
     doc.text(reshape(title), 105, 20, { align: 'center' });
 
     // Generate Table
@@ -65,7 +66,7 @@ export const exportOrdersToPDF = (orders: OrderExportData[], title: string) => {
         body: rows,
         startY: 30,
         styles: {
-            font: 'helvetica', // Placeholder, custom font needed for real Arabic
+            font: 'Amiri',
             fontSize: 10,
             halign: 'right',
             cellPadding: 5,
@@ -73,7 +74,7 @@ export const exportOrdersToPDF = (orders: OrderExportData[], title: string) => {
         headStyles: {
             fillColor: [180, 83, 9], // sultan amber-700
             textColor: [255, 255, 255],
-            fontStyle: 'bold',
+            fontStyle: 'normal', // Bold might not work with custom font unless specifically added
             halign: 'center'
         },
         alternateRowStyles: {
