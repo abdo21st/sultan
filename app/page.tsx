@@ -3,7 +3,8 @@
 import Link from "next/link";
 import OrderList from "./components/OrderList";
 import {
-  PlusCircle
+  PlusCircle,
+  FileDown
 } from "lucide-react";
 import NavBar from "./components/NavBar";
 import { usePermission } from "@/lib/usePermission";
@@ -11,9 +12,13 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { useState } from "react";
 import DateTabs, { GroupingMode } from "./components/DateTabs"; // Changed import to include GroupingMode and removed DateRangeType
 import OrderFilters, { FilterState } from "./components/OrderFilters";
+import { exportOrdersToPDF, type OrderExportData } from '@/lib/pdf-export';
+import { useToast } from './components/ToastProvider';
+import { ORDER_STATUS_LABELS } from '@/lib/constants';
 
 export default function Home() {
   const { hasPermission } = usePermission();
+  const { showToast } = useToast();
   const [showFilters, setShowFilters] = useState(false);
   const [queryParams, setQueryParams] = useState("");
   const [activeFilters, setActiveFilters] = useState<Partial<FilterState>>({});
@@ -74,6 +79,40 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
+            <button
+              onClick={async () => {
+                try {
+                  const url = `/api/orders?${queryParams}`;
+                  const res = await fetch(url);
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data.length === 0) {
+                      showToast('لا توجد طلبات لتصديرها ⚠️', 'warning');
+                      return;
+                    }
+                    const exportData: OrderExportData[] = data.map((o: { serialNumber: number; customerName: string; totalAmount: number; status: string; dueDate: string }) => ({
+                      serialNumber: o.serialNumber,
+                      customerName: o.customerName,
+                      totalAmount: o.totalAmount,
+                      status: ORDER_STATUS_LABELS[o.status] || o.status,
+                      dueDate: o.dueDate
+                    }));
+                    exportOrdersToPDF(exportData, 'تقرير طلبات سلطان');
+                    showToast('تم تصدير ملف PDF بنجاح 📄✅', 'success');
+                  } else {
+                    showToast('فشل في جلب بيانات الطلبات ❌', 'error');
+                  }
+                } catch (err) {
+                  console.error('Export PDF Error:', err);
+                  showToast('حدث خطأ غير متوقع ❌', 'error');
+                }
+              }}
+              className="h-14 px-8 rounded-2xl transition-all duration-300 font-black text-sm tracking-wide bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-500 hover:to-red-600 hover:scale-105 hover:shadow-2xl hover:shadow-red-500/30 shadow-lg border-2 border-red-800/20 flex items-center gap-3 active:scale-95"
+            >
+              <FileDown className="w-6 h-6" strokeWidth={2.5} />
+              <span>تصدير PDF</span>
+            </button>
+
             <button
               onClick={() => setShowFilters(true)}
               className={`h-14 px-6 rounded-2xl border-2 transition-all duration-300 flex items-center gap-3 font-black text-sm active:scale-95 ${hasActiveFilters

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { Calendar, ArrowRight, Edit3, ShoppingBag, ChevronDown } from "lucide-react";
+import { Calendar, ArrowRight, Edit3, ShoppingBag, ChevronDown, FileText } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { PERMISSIONS } from "@/lib/permissions";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
@@ -212,15 +212,26 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
                                             <ArrowRight className="w-4 h-4" strokeWidth={3} />
                                         </Link>
 
-                                        {hasPermission(PERMISSIONS.ORDERS_EDIT) && (
+                                        <div className="flex items-center gap-2">
                                             <Link
-                                                href={`/orders/${order.id}/edit`}
-                                                className="w-12 h-12 rounded-2xl bg-amber-700 text-white hover:bg-amber-600 hover:scale-110 flex items-center justify-center transition-all duration-500 shadow-sm group/edit"
-                                                title="تعديل سريع"
+                                                href={`/orders/print/${order.id}`}
+                                                target="_blank"
+                                                className="w-12 h-12 rounded-2xl bg-blue-600 text-white hover:bg-blue-500 hover:scale-110 flex items-center justify-center transition-all duration-500 shadow-sm group/pdf"
+                                                title="طباعة PDF"
                                             >
-                                                <Edit3 className="w-5 h-5 group-hover/edit:scale-110 transition-transform" />
+                                                <FileText className="w-5 h-5 group-hover/pdf:scale-110 transition-transform" />
                                             </Link>
-                                        )}
+
+                                            {hasPermission(PERMISSIONS.ORDERS_EDIT) && (
+                                                <Link
+                                                    href={`/orders/${order.id}/edit`}
+                                                    className="w-12 h-12 rounded-2xl bg-amber-700 text-white hover:bg-amber-600 hover:scale-110 flex items-center justify-center transition-all duration-500 shadow-sm group/edit"
+                                                    title="تعديل سريع"
+                                                >
+                                                    <Edit3 className="w-5 h-5 group-hover/edit:scale-110 transition-transform" />
+                                                </Link>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
