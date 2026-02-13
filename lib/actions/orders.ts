@@ -8,6 +8,47 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { createStatusChangeNotification } from "@/lib/services/notification-service";
 
 /**
+ * Send WhatsApp notification with document link
+ */
+async function sendWhatsAppNotification(order: { id: string; serialNumber: number; customerName: string; customerPhone: string }, status: string) {
+    try {
+        const settings = await prisma.systemSettings.findFirst();
+
+        if (!settings?.whatsappAutoSend || !settings.whatsappApiUrl || !settings.whatsappApiKey) {
+            return; // WhatsApp not configured or disabled
+        }
+
+        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+        const documentUrl = `${baseUrl}/orders/share/${order.id}`;
+
+        let message = '';
+        if (status === ORDER_STATUS.PROCESSING) {
+            message = `مرحباً ${order.customerName}،\n\nتم تسجيل طلبك رقم #${order.serialNumber} بنجاح وهو الآن قيد التجهيز.\n\nيمكنك الاطلاع على تفاصيل الطلب من خلال الرابط التالي:\n${documentUrl}\n\nشكراً لثقتكم`;
+        } else if (status === ORDER_STATUS.SHOP_READY) {
+            message = `مرحباً ${order.customerName}،\n\nطلبك رقم #${order.serialNumber} جاهز للتسليم!\n\nيمكنك الاطلاع على تفاصيل الطلب من خلال الرابط التالي:\n${documentUrl}\n\nشكراً لثقتكم`;
+        }
+
+        if (!message) return;
+
+        // Send WhatsApp message
+        await fetch(settings.whatsappApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${settings.whatsappApiKey}`,
+            },
+            body: JSON.stringify({
+                phone: order.customerPhone,
+                message: message,
+            }),
+        });
+    } catch (error) {
+        console.error('WhatsApp notification error:', error);
+        // Don't throw - we don't want to fail the status update if WhatsApp fails
+    }
+}
+
+/**
  * Update the status of an order and notify relevant users
  */
 export async function updateOrderStatus(id: string, newStatus: string, rejectionReason?: string) {
@@ -62,6 +103,11 @@ export async function updateOrderStatus(id: string, newStatus: string, rejection
 
         // Trigger Notification Service
         await createStatusChangeNotification(order, newStatus, rejectionReason);
+
+        // Send WhatsApp notification for specific statuses
+        if (newStatus === ORDER_STATUS.PROCESSING || newStatus === ORDER_STATUS.SHOP_READY) {
+            await sendWhatsAppNotification(order, newStatus);
+        }
 
         revalidatePath(`/orders/${id}`);
         revalidatePath('/orders');

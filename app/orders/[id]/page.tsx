@@ -5,7 +5,6 @@ import Link from "next/link";
 import { PERMISSIONS } from "@/lib/permissions";
 import OrderActions from "./OrderActions";
 import { ArrowLeft, Edit } from "lucide-react";
-import Image from "next/image";
 import { getStatusInfo, formatCurrency, formatDate } from "@/lib/utils";
 import AnimatedOrderImage from "@/app/components/ui/AnimatedOrderImage";
 
