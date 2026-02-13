@@ -7,7 +7,7 @@ import { useToast } from '@/app/components/ToastProvider';
 
 export default function SettingsPage() {
     const { showToast } = useToast();
-    const [activeTab, setActiveTab] = useState<'general' | 'facilities' | 'actions'>('general');
+    const [activeTab, setActiveTab] = useState<'general' | 'whatsapp' | 'facilities' | 'actions'>('general');
     const [loading, setLoading] = useState(false);
     const [facilities, setFacilities] = useState<{ id: string; name: string; type: string; location: string; createdAt: string }[]>([]);
     const [newFacility, setNewFacility] = useState({ name: '', type: 'FACTORY', location: '' });
@@ -16,7 +16,10 @@ export default function SettingsPage() {
         logoUrl: '',
         printHeader: '',
         printFooter: '',
-        themeColor: '#d97706'
+        themeColor: '#d97706',
+        whatsappAutoSend: false,
+        whatsappApiUrl: '',
+        whatsappApiKey: ''
     });
 
     // Fetch initial settings
@@ -30,7 +33,10 @@ export default function SettingsPage() {
                         logoUrl: data.logoUrl || '',
                         printHeader: data.printHeader || '',
                         printFooter: data.printFooter || '',
-                        themeColor: data.themeColor || '#d97706'
+                        themeColor: data.themeColor || '#d97706',
+                        whatsappAutoSend: data.whatsappAutoSend || false,
+                        whatsappApiUrl: data.whatsappApiUrl || '',
+                        whatsappApiKey: data.whatsappApiKey || ''
                     });
                 }
             });
@@ -187,6 +193,12 @@ export default function SettingsPage() {
                         الإعدادات العامة
                     </button>
                     <button
+                        onClick={() => setActiveTab('whatsapp')}
+                        className={`pb-3 px-4 font-medium transition-colors border-b-2 ${activeTab === 'whatsapp' ? 'border-green-500 text-green-600' : 'border-transparent text-muted-foreground hover:text-gray-700'}`}
+                    >
+                        الواتساب
+                    </button>
+                    <button
                         onClick={() => setActiveTab('facilities')}
                         className={`pb-3 px-4 font-medium transition-colors border-b-2 ${activeTab === 'facilities' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-gray-700'}`}
                     >
@@ -275,6 +287,64 @@ export default function SettingsPage() {
                                 >
                                     {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                     حفظ التغييرات
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                ) : activeTab === 'whatsapp' ? (
+                    <div className="bg-white p-6 rounded-xl shadow-sm border">
+                        <form onSubmit={handleSaveSettings} className="space-y-6">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                                    <div>
+                                        <h3 className="font-bold text-green-800">إرسال المستندات تلقائياً عبر الواتساب</h3>
+                                        <p className="text-sm text-gray-600 mt-1">عند تسجيل الطلب أو جاهزيته للتسليم، سيتم إرسال المستند تلقائياً لرقم العميل</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={settings.whatsappAutoSend}
+                                            onChange={e => setSettings({ ...settings, whatsappAutoSend: e.target.checked })}
+                                            className="sr-only peer"
+                                            aria-label="تفعيل إرسال المستندات تلقائياً عبر الواتساب"
+                                        />
+                                        <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600"></div>
+                                    </label>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">رابط WhatsApp API</label>
+                                    <input
+                                        value={settings.whatsappApiUrl}
+                                        onChange={e => setSettings({ ...settings, whatsappApiUrl: e.target.value })}
+                                        className="w-full border p-2 rounded-lg text-left"
+                                        dir="ltr"
+                                        placeholder="https://api.whatsapp.com/send"
+                                    />
+                                    <p className="text-xs text-gray-500">يمكنك استخدام WhatsApp Business API أو خدمات مثل Twilio</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">مفتاح API</label>
+                                    <input
+                                        type="password"
+                                        value={settings.whatsappApiKey}
+                                        onChange={e => setSettings({ ...settings, whatsappApiKey: e.target.value })}
+                                        className="w-full border p-2 rounded-lg text-left"
+                                        dir="ltr"
+                                        placeholder="your-api-key-here"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-4 flex justify-end">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
+                                >
+                                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    حفظ إعدادات الواتساب
                                 </button>
                             </div>
                         </form>

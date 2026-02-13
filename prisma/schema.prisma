@@ -40,13 +40,16 @@ model CustomRole {
 }
 
 model SystemSettings {
-  id          String   @id @default("default") // Singleton row
-  appName     String   @default("سلطان")
-  logoUrl     String?
-  printHeader String?
-  printFooter String?
-  themeColor  String   @default("#d97706") // Default amber
-  updatedAt   DateTime @updatedAt
+  id               String   @id @default("default") // Singleton row
+  appName          String   @default("سلطان")
+  logoUrl          String?
+  printHeader      String?
+  printFooter      String?
+  themeColor       String   @default("#d97706") // Default amber
+  whatsappAutoSend Boolean  @default(false) // تفعيل/تعطيل الإرسال التلقائي
+  whatsappApiUrl   String? // رابط WhatsApp API
+  whatsappApiKey   String? // مفتاح API
+  updatedAt        DateTime @updatedAt
 }
 
 model Facility {

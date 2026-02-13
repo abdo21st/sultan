@@ -51,6 +51,9 @@ export async function PATCH(request: Request) {
                 printHeader: body.printHeader,
                 printFooter: body.printFooter,
                 themeColor: body.themeColor,
+                whatsappAutoSend: body.whatsappAutoSend,
+                whatsappApiUrl: body.whatsappApiUrl,
+                whatsappApiKey: body.whatsappApiKey,
             },
             create: {
                 id: "default",
@@ -59,6 +62,9 @@ export async function PATCH(request: Request) {
                 printHeader: body.printHeader,
                 printFooter: body.printFooter,
                 themeColor: body.themeColor,
+                whatsappAutoSend: body.whatsappAutoSend || false,
+                whatsappApiUrl: body.whatsappApiUrl,
+                whatsappApiKey: body.whatsappApiKey,
             }
         });
 
