@@ -68,13 +68,13 @@ export default function Home() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="h-1 w-12 bg-primary rounded-full" />
-              <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary/60">منصة الإدارة الذكية</span>
+              <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary/60">نظام سلطان المتكامل</span>
             </div>
             <h1 className="text-5xl font-black text-foreground tracking-tight antialiased">
               سجل <span className="text-gradient-gold">الطلبات</span>
             </h1>
             <p className="text-muted-foreground font-semibold text-lg max-w-xl leading-relaxed">
-              نظام متكامل لإدارة الطلبات، تتبع دقيق للمسار، وتحكم شامل في كافة العمليات.
+              إدارة شاملة، تتبع دقيق، وتحكم كامل في كافة العمليات.
             </p>
           </div>
 

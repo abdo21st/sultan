@@ -3,7 +3,7 @@
 import { PERMISSIONS } from '../../lib/permissions';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LogOut, User, Menu, X, List, PlusCircle, LayoutDashboard, BarChart3, Calendar, DollarSign, Users, Shield, Bell, Settings } from 'lucide-react';
+import { LogOut, User, Menu, X, List, PlusCircle, BarChart3, Calendar, DollarSign, Users, Bell, Settings } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
@@ -41,12 +41,10 @@ export default function NavBar() {
     }, []);
 
     const adminLinks = [
-        { href: '/admin/dashboard', label: 'لوحة المعلومات', icon: LayoutDashboard },
-        { href: '/admin/analytics', label: 'التقارير', icon: BarChart3 },
+        { href: '/admin/analytics', label: 'التقارير الذكية', icon: BarChart3 },
         { href: '/admin/booking', label: 'نظام الحجز', icon: Calendar },
         { href: '/transactions', label: 'المعاملات', icon: DollarSign },
-        { href: '/admin/users', label: 'المستخدمين', icon: Users },
-        { href: '/admin/roles', label: 'الأدوار', icon: Shield },
+        { href: '/admin/users', label: 'إدارة النظام', icon: Users },
         { href: '/admin/alerts', label: 'التنبيهات', icon: Bell },
         { href: '/admin/settings', label: 'الإعدادات', icon: Settings },
     ];
@@ -81,9 +79,9 @@ export default function NavBar() {
                         </Link>
 
                         <div className="hidden lg:flex items-center gap-6">
-                            <Link href="/" className={`text-sm font-bold transition-colors ${pathname === '/' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>الطلبات</Link>
+                            <Link href="/" className={`text-sm font-bold transition-colors ${pathname === '/' || pathname.startsWith('/orders') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>الطلبات</Link>
                             {user && (user.role === 'ADMIN' || user.permissions?.includes(PERMISSIONS.DASHBOARD_VIEW)) && (
-                                <Link href="/admin/dashboard" className={`text-sm font-bold transition-colors ${pathname === '/admin/dashboard' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>الإحصائيات</Link>
+                                <Link href="/admin/analytics" className={`text-sm font-bold transition-colors ${pathname === '/admin/analytics' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>الإحصائيات</Link>
                             )}
                         </div>
                     </div>

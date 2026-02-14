@@ -12,17 +12,25 @@ export default function BottomNav() {
     const { data: session } = useSession();
     const [isOpen, setIsOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const [position, setPosition] = useState(() => ({
+
+    // Use ref for position to avoid re-renders and inline styles
+    const position = useRef({
         x: 20,
         y: typeof window !== 'undefined' ? window.innerHeight - 100 : 100
-    }));
+    });
+
     const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const dragStart = useRef({ x: 0, y: 0 });
     const buttonRef = useRef<HTMLDivElement>(null);
 
-    // Prevent hydration mismatch by only rendering after mount
+    // Prevent hydration mismatch
     useEffect(() => {
+        // eslint-disable-next-line
         setMounted(true);
+        // Set initial position
+        if (buttonRef.current) {
+            buttonRef.current.style.transform = `translate(${position.current.x}px, ${position.current.y}px)`;
+        }
     }, []);
 
     const tabs = [
@@ -37,65 +45,70 @@ export default function BottomNav() {
         },
         {
             icon: LayoutDashboard,
-            label: "المعلومات",
-            href: "/admin/dashboard",
+            label: "الإحصائيات",
+            href: "/admin/analytics",
             permission: PERMISSIONS.DASHBOARD_VIEW
         },
         { icon: User, label: "حسابي", href: "/profile" },
     ];
 
-    // Handle drag start
     const handleMouseDown = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest('a')) return; // Don't drag when clicking links
+        if ((e.target as HTMLElement).closest('a')) return;
         setIsDragging(true);
-        setDragStart({
-            x: e.clientX - position.x,
-            y: e.clientY - position.y
-        });
+        dragStart.current = {
+            x: e.clientX - position.current.x,
+            y: e.clientY - position.current.y
+        };
     };
 
     const handleTouchStart = (e: React.TouchEvent) => {
         if ((e.target as HTMLElement).closest('a')) return;
         setIsDragging(true);
         const touch = e.touches[0];
-        setDragStart({
-            x: touch.clientX - position.x,
-            y: touch.clientY - position.y
-        });
+        dragStart.current = {
+            x: touch.clientX - position.current.x,
+            y: touch.clientY - position.current.y
+        };
     };
 
-    // Handle drag move
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             if (!isDragging) return;
 
-            const newX = e.clientX - dragStart.x;
-            const newY = e.clientY - dragStart.y;
+            const newX = e.clientX - dragStart.current.x;
+            const newY = e.clientY - dragStart.current.y;
 
-            // Keep within screen bounds
             const maxX = window.innerWidth - 70;
             const maxY = window.innerHeight - 70;
 
-            setPosition({
-                x: Math.max(10, Math.min(newX, maxX)),
-                y: Math.max(10, Math.min(newY, maxY))
-            });
+            const x = Math.max(10, Math.min(newX, maxX));
+            const y = Math.max(10, Math.min(newY, maxY));
+
+            position.current = { x, y };
+
+            if (buttonRef.current) {
+                buttonRef.current.style.transform = `translate(${x}px, ${y}px)`;
+            }
         };
 
         const handleTouchMove = (e: TouchEvent) => {
             if (!isDragging) return;
 
             const touch = e.touches[0];
-            const newX = touch.clientX - dragStart.x;
-            const newY = touch.clientY - dragStart.y;
+            const newX = touch.clientX - dragStart.current.x;
+            const newY = touch.clientY - dragStart.current.y;
 
             const maxX = window.innerWidth - 70;
             const maxY = window.innerHeight - 70;
 
-            setPosition({
-                x: Math.max(10, Math.min(newX, maxX)),
-                y: Math.max(10, Math.min(newY, maxY))
-            });
+            const x = Math.max(10, Math.min(newX, maxX));
+            const y = Math.max(10, Math.min(newY, maxY));
+
+            position.current = { x, y };
+
+            if (buttonRef.current) {
+                buttonRef.current.style.transform = `translate(${x}px, ${y}px)`;
+            }
         };
 
         const handleEnd = () => {
@@ -115,28 +128,19 @@ export default function BottomNav() {
             document.removeEventListener('touchmove', handleTouchMove);
             document.removeEventListener('touchend', handleEnd);
         };
-    }, [isDragging, dragStart]);
+    }, [isDragging]);
 
-    // Don't render on server to avoid hydration mismatch
     if (!mounted) {
         return null;
     }
 
     return (
         <div className="md:hidden">
-            {/* Floating Button */}
             <div
                 ref={buttonRef}
-                style={{
-                    position: 'fixed',
-                    left: `${position.x}px`,
-                    top: `${position.y}px`,
-                    zIndex: 9999,
-                    touchAction: 'none'
-                }}
+                className={`fixed z-[9999] touch-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                 onMouseDown={handleMouseDown}
                 onTouchStart={handleTouchStart}
-                className={`${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
             >
                 <button
                     onClick={(e) => {
@@ -154,7 +158,6 @@ export default function BottomNav() {
                     )}
                 </button>
 
-                {/* Popup Menu */}
                 {isOpen && (
                     <div className="absolute bottom-20 left-0 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 p-3 min-w-[200px] animate-in fade-in slide-in-from-bottom-2 duration-200">
                         <div className="space-y-2">
@@ -162,7 +165,6 @@ export default function BottomNav() {
                                 const isActive = pathname === tab.href;
                                 const Icon = tab.icon;
 
-                                // Permission check
                                 if (tab.permission && !session?.user?.permissions?.includes(tab.permission as string)) {
                                     return null;
                                 }

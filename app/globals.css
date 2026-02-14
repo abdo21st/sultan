@@ -1,6 +1,32 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #92400e;
+  /* Gold 800 for better contrast with white text */
+  --color-primary-foreground: #ffffff;
+  --color-background: #fafaf9;
+  --color-foreground: #1c1917;
+  --color-card: #ffffff;
+  --color-border: #e7e5e4;
+  --color-muted: #f5f5f4;
+  --color-muted-foreground: #78716c;
+  --color-accent: #fef3c7;
+
+  --color-gold-50: #fffbeb;
+  --color-gold-100: #fef3c7;
+  --color-gold-200: #fde68a;
+  --color-gold-300: #fcd34d;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+  --color-gold-600: #d97706;
+  --color-gold-700: #b45309;
+  --color-gold-800: #92400e;
+  --color-gold-900: #78350f;
+
+  --background-image-gold-gradient: linear-gradient(135deg, #d97706 0%, #78350f 100%);
+}
+
 :root {
   color-scheme: light;
 
@@ -17,13 +43,13 @@
   --popover-foreground: #1c1917;
 
   /* Sultan Gold Palette */
-  --primary: #b45309;
+  --primary: #92400e;
   /* Amber 700 */
   --primary-foreground: #ffffff;
 
   --gold-light: #fcd34d;
-  --gold-dark: #b45309;
-  --gold-gradient: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+  --gold-dark: #78350f;
+  --gold-gradient: linear-gradient(135deg, #d97706 0%, #78350f 100%);
 
   --secondary: #44403c;
   /* Stone 700 */
@@ -41,7 +67,7 @@
 
   --border: #e7e5e4;
   --input: #e7e5e4;
-  --ring: #b45309;
+  --ring: #92400e;
 
   --radius: 1rem;
 
@@ -86,8 +112,28 @@ h4,
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05), 0 4px 10px -5px rgba(180, 83, 9, 0.05);
 }
 
-.shadow-gold {
-  box-shadow: 0 10px 20px -5px rgba(180, 83, 9, 0.2);
+@layer utilities {
+  .bg-gradient-gold {
+    background-image: linear-gradient(135deg, #d97706 0%, #78350f 100%);
+  }
+
+  .shadow-gold {
+    box-shadow: 0 10px 25px -5px rgba(120, 53, 15, 0.4);
+  }
+
+  .shadow-gold-lg {
+    box-shadow: 0 20px 35px -5px rgba(120, 53, 15, 0.5);
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
 }
 
 /* Custom Scrollbar */

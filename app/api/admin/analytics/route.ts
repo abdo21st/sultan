@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 
 export async function GET() {
     try {
@@ -9,28 +9,61 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        // 1. Sales over time (last 6 months)
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        // Parallelize requests for maximum performance
+        const [
+            monthlyOrders,
+            factoryGroups,
+            statusGroups,
+            totalAggregates,
+            factories
+        ] = await Promise.all([
+            // 1. Sales over time (last 6 months only) - Optimized Select
+            prisma.order.findMany({
+                where: {
+                    createdAt: { gte: new Date(new Date().setMonth(new Date().getMonth() - 6)) }
+                },
+                select: {
+                    createdAt: true,
+                    totalAmount: true,
+                    paidAmount: true
+                },
+                orderBy: { createdAt: 'asc' }
+            }),
 
-        const orders = await prisma.order.findMany({
-            where: {
-                createdAt: { gte: sixMonthsAgo }
-            },
-            select: {
-                createdAt: true,
-                totalAmount: true,
-                paidAmount: true,
-                factoryId: true,
-                status: true
-            }
-        });
+            // 2. Factory Performance (All Time) - DB GroupBy
+            prisma.order.groupBy({
+                by: ['factoryId'],
+                _count: { id: true },
+                _sum: { totalAmount: true }
+            }),
 
-        // Group by month
+            // 3. Status Distribution (All Time) - DB GroupBy
+            prisma.order.groupBy({
+                by: ['status'],
+                _count: { status: true }
+            }),
+
+            // 4. Global Summary (All Time) - DB Aggregate
+            prisma.order.aggregate({
+                _count: { id: true },
+                _sum: {
+                    totalAmount: true,
+                    paidAmount: true
+                }
+            }),
+
+            // Fetch factory info to map names
+            prisma.facility.findMany({
+                where: { type: 'FACTORY' },
+                select: { id: true, name: true }
+            })
+        ]);
+
+        // --- Process Monthly Sales ---
         const monthlySales: Record<string, { month: string, total: number, paid: number }> = {};
         const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
 
-        orders.forEach((order: { createdAt: Date | string | number; totalAmount: number; paidAmount: number }) => {
+        monthlyOrders.forEach(order => {
             const date = new Date(order.createdAt);
             const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
             if (!monthlySales[monthKey]) {
@@ -44,24 +77,20 @@ export async function GET() {
             monthlySales[monthKey].paid += order.paidAmount;
         });
 
-        // 2. Factory Performance
-        const factories = await prisma.facility.findMany({
-            where: { type: 'FACTORY' }
-        });
-
-        const factoryStats = factories.map((f: { id: string; name: string }) => {
-            const factoryOrders = orders.filter((o: { factoryId: string | null }) => o.factoryId === f.id);
+        // --- Process Factory Stats ---
+        const factoryStats = factories.map(f => {
+            const stats = factoryGroups.find(g => g.factoryId === f.id);
             return {
                 name: f.name,
-                count: factoryOrders.length,
-                value: factoryOrders.reduce((sum: number, o: { totalAmount: number }) => sum + o.totalAmount, 0)
+                count: stats?._count.id || 0,
+                value: stats?._sum.totalAmount || 0
             };
-        });
+        }).sort((a, b) => b.value - a.value); // Sort by value desc
 
-        // 3. Status Distribution
+        // --- Process Status Counts ---
         const statusCounts: Record<string, number> = {};
-        orders.forEach((o: { status: string }) => {
-            statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
+        statusGroups.forEach(group => {
+            statusCounts[group.status] = group._count.status;
         });
 
         return NextResponse.json({
@@ -69,14 +98,14 @@ export async function GET() {
             factoryStats,
             statusCounts,
             summary: {
-                totalOrders: orders.length,
-                totalRevenue: orders.reduce((sum: number, o: { totalAmount: number }) => sum + o.totalAmount, 0),
-                totalCollected: orders.reduce((sum: number, o: { paidAmount: number }) => sum + o.paidAmount, 0)
+                totalOrders: totalAggregates._count.id,
+                totalRevenue: totalAggregates._sum.totalAmount || 0,
+                totalCollected: totalAggregates._sum.paidAmount || 0
             }
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("Analytics Error:", error);
         return NextResponse.json({ error: "Failed to fetch analytics" }, { status: 500 });
     }
 }

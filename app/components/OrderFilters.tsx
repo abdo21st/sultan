@@ -10,6 +10,7 @@ export interface FilterState {
     startDate: string;
     endDate: string;
     paymentStatus: string;
+    factoryId: string;
 }
 
 interface OrderFiltersProps {
@@ -25,7 +26,19 @@ export default function OrderFilters({ isOpen, onClose, onApply, initialFilters 
         status: initialFilters.status || [],
         startDate: initialFilters.startDate || "",
         endDate: initialFilters.endDate || "",
-        paymentStatus: initialFilters.paymentStatus || ""
+        paymentStatus: initialFilters.paymentStatus || "",
+        factoryId: initialFilters.factoryId || ""
+    });
+
+    const [facilities, setFacilities] = useState<{ id: string, name: string, type: string }[]>([]);
+
+    useState(() => {
+        fetch('/api/facilities')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data)) setFacilities(data.filter(f => f.type === 'FACTORY' || f.type === 'ورشة'));
+            })
+            .catch(err => console.error('Error fetching facilities:', err));
     });
 
     // Effect removed as we rely on mounting to reset state (controlled by parent)
@@ -52,7 +65,8 @@ export default function OrderFilters({ isOpen, onClose, onApply, initialFilters 
             status: [],
             startDate: "",
             endDate: "",
-            paymentStatus: ""
+            paymentStatus: "",
+            factoryId: ""
         });
     };
 
@@ -106,6 +120,23 @@ export default function OrderFilters({ isOpen, onClose, onApply, initialFilters 
                                 </button>
                             ))}
                         </div>
+                    </div>
+
+                    {/* Factory Filter */}
+                    <div className="space-y-3">
+                        <label className="text-sm font-bold text-foreground">المصنع / الورشة</label>
+                        <select
+                            title="المصنع / الورشة"
+                            aria-label="اختر المصنع أو الورشة"
+                            value={filters.factoryId}
+                            onChange={(e) => setFilters(prev => ({ ...prev, factoryId: e.target.value }))}
+                            className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-sm text-sm font-bold appearance-none cursor-pointer"
+                        >
+                            <option value="">الكل</option>
+                            {facilities.map(f => (
+                                <option key={f.id} value={f.id}>{f.name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     {/* Dates */}

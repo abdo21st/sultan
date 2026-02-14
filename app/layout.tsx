@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Cairo } from "next/font/google";
 import "./globals.css";
-import { auth } from "../auth";
+import { auth } from "@/lib/auth";
 import { Providers } from "./providers";
 import BottomNav from "./components/BottomNav";
 import { ToastProvider } from "./components/ToastProvider";

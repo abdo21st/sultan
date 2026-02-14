@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { PERMISSIONS } from "@/lib/permissions";
 import OrderActions from "./OrderActions";
