@@ -195,16 +195,30 @@ export default function TransactionsPage() {
 
                 {/* Pay Order Modal */}
                 {showPaymentModal && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-card w-full max-w-lg rounded-xl shadow-xl p-6 relative">
-                            <button onClick={() => setShowPaymentModal(false)} className="absolute top-4 left-4 text-muted-foreground hover:text-foreground">✕</button>
-                            <h3 className="text-lg font-bold mb-4">استلام دفعة لطلب</h3>
-                            <form onSubmit={handlePaymentSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">اختر الطلب</label>
+                    <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 animate-in fade-in duration-500">
+                        <div className="bg-[#0f172a] w-full max-w-xl rounded-[2.5rem] border border-slate-800 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] p-12 relative overflow-hidden">
+                            {/* Decorative subtle header line */}
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500/20 to-transparent" />
+
+                            <button
+                                onClick={() => setShowPaymentModal(false)}
+                                className="absolute top-8 left-8 w-10 h-10 flex items-center justify-center bg-slate-900 border border-slate-800 rounded-full text-slate-500 hover:text-white hover:bg-slate-800 transition-all z-10"
+                            >✕</button>
+
+                            <div className="mb-10">
+                                <h3 className="text-3xl font-black text-white tracking-tight">استلام دفعة لطلب</h3>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2">تسجيل إيراد جديد من مديونية عميل للسلطان.</p>
+                            </div>
+
+                            <form onSubmit={handlePaymentSubmit} className="space-y-8">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 px-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                        اختر الطلب المعلق
+                                    </label>
                                     <select
                                         required
-                                        className="w-full p-2 border rounded-lg bg-background"
+                                        className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl p-4 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none transition-all duration-300 shadow-inner appearance-none cursor-pointer"
                                         value={selectedOrder}
                                         onChange={e => {
                                             setSelectedOrder(e.target.value);
@@ -213,29 +227,50 @@ export default function TransactionsPage() {
                                         }}
                                         aria-label="اختر الطلب"
                                     >
-                                        <option value="">اختر الطلب...</option>
+                                        <option value="" className="bg-slate-900">اختر من القائمة...</option>
                                         {unpaidOrders.map(o => (
-                                            <option key={o.id} value={o.id}>
-                                                #{o.serialNumber} - {o.customerName} (باقي: {o.remainingAmount})
+                                            <option key={o.id} value={o.id} className="bg-slate-900">
+                                                طلب رقم #{o.serialNumber} - {o.customerName} (المتبقي: {o.remainingAmount} د.ل)
                                             </option>
                                         ))}
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">المبلغ المستلم</label>
-                                    <input
-                                        type="number"
-                                        required
-                                        step="0.01"
-                                        className="w-full p-2 border rounded-lg bg-background"
-                                        value={paymentAmount}
-                                        onChange={e => setPaymentAmount(e.target.value)}
-                                        aria-label="المبلغ المستلم"
-                                    />
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 px-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                        المبلغ المورد للخزينة
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            required
+                                            step="0.01"
+                                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl p-6 text-2xl font-black font-mono text-green-400 focus:border-green-500/30 outline-none transition-all duration-300 placeholder:text-slate-800 shadow-inner"
+                                            placeholder="0.00"
+                                            value={paymentAmount}
+                                            onChange={e => setPaymentAmount(e.target.value)}
+                                            aria-label="المبلغ المستلم"
+                                        />
+                                        <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-700 font-bold text-xs">دينار ليبي</span>
+                                    </div>
                                 </div>
-                                <button type="submit" className="w-full py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700">
-                                    تأكيد الاستلام
-                                </button>
+
+                                <div className="pt-4 flex gap-4">
+                                    <button
+                                        type="submit"
+                                        className="flex-[2] py-5 bg-gradient-to-br from-green-600 to-green-900 text-white rounded-[1.5rem] font-black text-[12px] uppercase tracking-widest shadow-xl shadow-green-900/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50"
+                                    >
+                                        تأكيد تحصيل الدفعة
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPaymentModal(false)}
+                                        className="flex-1 py-5 bg-slate-900 text-slate-400 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest border border-slate-800 hover:bg-slate-800 hover:text-white transition-all"
+                                    >
+                                        إلغاء
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>

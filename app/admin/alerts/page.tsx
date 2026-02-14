@@ -27,6 +27,13 @@ interface AlertSetting {
     recipientPhones: string[];
 }
 
+interface User {
+    id: string;
+    username: string;
+    displayName: string;
+    phoneNumber?: string;
+}
+
 interface Order {
     id: string;
     serialNumber: number;
@@ -36,13 +43,16 @@ interface Order {
     status: string;
 }
 
-import { ORDER_STATUS_LABELS } from "@/lib/constants";
+import { ORDER_STATUS_LABELS, ORDER_STATUS } from "@/lib/constants";
 
 export default function AlertsPage() {
     const [activeTab, setActiveTab] = useState<'current' | 'settings'>('current');
     const [settings, setSettings] = useState<AlertSetting[]>([]);
     const [matchingOrders, setMatchingOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [users, setUsers] = useState<User[]>([]);
+    const [selectedUserId, setSelectedUserId] = useState<string>("");
+
     const [newSetting, setNewSetting] = useState({
         name: "",
         triggerStatus: "REGISTERED",
@@ -52,13 +62,25 @@ export default function AlertsPage() {
     });
 
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/admin/alerts');
-            const data = await res.json();
-            setSettings(data);
+            const [alertsRes, usersRes] = await Promise.all([
+                fetch('/api/admin/alerts'),
+                fetch('/api/users')
+            ]);
+
+            const alertsData = await alertsRes.json();
+            const usersData = await usersRes.json();
+
+            setSettings(alertsData);
+            setUsers(Array.isArray(usersData) ? usersData : []);
 
             if (activeTab === 'current') {
                 const ordersRes = await fetch('/api/orders');
@@ -77,6 +99,14 @@ export default function AlertsPage() {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    const handleUserSelect = (userId: string) => {
+        setSelectedUserId(userId);
+        const user = users.find(u => u.id === userId);
+        if (user && user.phoneNumber) {
+            setNewSetting(prev => ({ ...prev, phone: user.phoneNumber || "" }));
+        }
+    };
 
     const handleAddSetting = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -102,6 +132,7 @@ export default function AlertsPage() {
                     whatsappEnabled: false,
                     phone: ""
                 });
+                setSelectedUserId("");
                 setEditingId(null);
                 fetchData();
             }
@@ -109,6 +140,8 @@ export default function AlertsPage() {
             setLoading(false);
         }
     };
+
+    // ... handleEdit logic needs update to clear user selection or match phone ...
 
     const handleEdit = (setting: AlertSetting) => {
         setNewSetting({
@@ -118,6 +151,11 @@ export default function AlertsPage() {
             whatsappEnabled: setting.whatsappEnabled,
             phone: setting.recipientPhones[0] || ""
         });
+
+        // Try to find user by phone (optional optimization)
+        const foundUser = users.find(u => u.phoneNumber === setting.recipientPhones[0]);
+        setSelectedUserId(foundUser ? foundUser.id : "");
+
         setEditingId(setting.id);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -125,11 +163,21 @@ export default function AlertsPage() {
     const handleDelete = async (id: string) => {
         if (!confirm('هل أنت متأكد من حذف هذا التنبيه؟')) return;
         setLoading(true);
+        console.log(`Deleting alert: /api/admin/alerts/${id}`);
         try {
             const res = await fetch(`/api/admin/alerts/${id}`, { method: 'DELETE' });
             if (res.ok) {
+                alert("تم حذف التنبيه بنجاح");
                 fetchData();
+                if (editingId === id) handleCancelEdit();
+            } else {
+                const error = await res.json().catch(() => ({}));
+                console.error('Delete failed:', res.status, error);
+                alert(error.error || `خطأ في الحذف (الحالة: ${res.status})`);
             }
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert("حدث خطأ في الاتصال بالخادم");
         } finally {
             setLoading(false);
         }
@@ -143,6 +191,7 @@ export default function AlertsPage() {
             whatsappEnabled: false,
             phone: ""
         });
+        setSelectedUserId("");
         setEditingId(null);
     };
 
@@ -181,6 +230,10 @@ export default function AlertsPage() {
                     <div className="space-y-4">
                         {loading ? (
                             <div className="flex justify-center py-20"><Loader2 className="animate-spin" /></div>
+                        ) : !mounted ? (
+                            <div className="space-y-3 animate-pulse">
+                                {[1, 2, 3].map(i => <div key={i} className="h-20 bg-muted rounded-xl" />)}
+                            </div>
                         ) : matchingOrders.length === 0 ? (
                             <div className="text-center py-20 bg-card border border-border border-dashed rounded-2xl">
                                 <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-10" />
@@ -231,6 +284,25 @@ export default function AlertsPage() {
                                     {editingId ? 'تعديل التنبيه' : 'إضافة تنبيه آلي'}
                                 </h3>
                                 <form onSubmit={handleAddSetting} className="space-y-4">
+                                    {/* User Selection */}
+                                    <div>
+                                        <label className="text-xs font-bold mb-1 block">اختيار مستخدم (اختياري)</label>
+                                        <select
+                                            aria-label="اختيار مستخدم"
+                                            className="w-full bg-muted/50 border-none rounded-xl p-3 text-sm"
+                                            value={selectedUserId}
+                                            onChange={(e) => handleUserSelect(e.target.value)}
+                                        >
+                                            <option value="">-- اختر مستخدم --</option>
+                                            {users.map(user => (
+                                                <option key={user.id} value={user.id}>
+                                                    {user.displayName} ({user.username})
+                                                    {user.phoneNumber ? ' 📱' : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
                                     <div>
                                         <label className="text-xs font-bold mb-1 block">اسم التنبيه</label>
                                         <input
@@ -250,8 +322,8 @@ export default function AlertsPage() {
                                             value={newSetting.triggerStatus}
                                             onChange={e => setNewSetting({ ...newSetting, triggerStatus: e.target.value })}
                                         >
-                                            {Object.entries(ORDER_STATUS_LABELS).map(([val, label]) => (
-                                                <option key={val} value={val}>{label}</option>
+                                            {(Object.values(ORDER_STATUS) as string[]).map((status) => (
+                                                <option key={status} value={status}>{ORDER_STATUS_LABELS[status]}</option>
                                             ))}
                                         </select>
                                     </div>

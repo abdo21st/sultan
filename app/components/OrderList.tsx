@@ -129,115 +129,7 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
     return (
         <div className="space-y-16">
             {Object.entries(groupedOrders).map(([groupName, groupOrders]) => (
-                <div key={groupName} className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
-                    {/* Group Header */}
-                    <div className="flex items-center gap-4 group/header">
-                        <div className="h-10 w-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-sm group-hover/header:scale-110 transition-transform duration-500">
-                            <ChevronDown className="w-5 h-5 text-primary" strokeWidth={3} />
-                        </div>
-                        <div className="flex flex-col">
-                            <h2 className="text-xl font-black text-foreground tracking-tight antialiased">{groupName}</h2>
-                            <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{groupOrders.length} طلبات</p>
-                        </div>
-                        <div className="h-px flex-1 bg-gradient-to-l from-transparent via-border/60 to-transparent" />
-                    </div>
-
-                    {/* Order Cards Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {groupOrders.map((order) => (
-                            <div
-                                key={order.id}
-                                className="group relative bg-card rounded-[2.5rem] border border-border/40 hover:border-primary/30 transition-all duration-500 shadow-premium hover:shadow-gold overflow-hidden"
-                            >
-                                {/* Status Accent Bar */}
-                                <div className="absolute top-0 right-0 left-0 h-2 bg-muted/20" />
-
-                                {order.images && (order.images as string[]).length > 0 && (
-                                    <div className="absolute top-4 left-4 z-10">
-                                        <div className="w-10 h-10 rounded-xl bg-white/90 backdrop-blur-md border border-white/50 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500">
-                                            <span className="text-[10px] font-black text-amber-700">+{(order.images as string[]).length}</span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="p-8 space-y-8">
-                                    <div className="flex justify-between items-start">
-                                        <div className="space-y-2">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">التسلسل الرقمي</span>
-                                                <span className="text-[11px] font-black text-primary bg-primary/5 px-3 py-1 rounded-xl border border-primary/10 shadow-sm">
-                                                    #{order.serialNumber}
-                                                </span>
-                                            </div>
-                                            <h3 className="text-2xl font-black text-foreground tracking-tight line-clamp-1 group-hover:text-primary transition-colors">
-                                                {order.customerName}
-                                            </h3>
-                                        </div>
-
-                                        <div className={`px-5 py-2 rounded-2xl text-[10px] font-black tracking-widest border transition-all duration-500 shadow-sm ${order.status.includes('completed') ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                                            order.status.includes('pending') ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                                                'bg-primary/10 text-primary border-primary/30'
-                                            }`}>
-                                            {ORDER_STATUS_LABELS[order.status] || order.status}
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500 shadow-sm">
-                                            <span className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-wider mb-2">القيمة الإجمالية</span>
-                                            <p className="text-xl font-black text-foreground tracking-tighter">
-                                                {Number(order.totalAmount).toLocaleString()} <span className="text-xs text-muted-foreground/60">د.ل</span>
-                                            </p>
-                                        </div>
-                                        <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500">
-                                            <span className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-wider mb-2">الاستحقاق</span>
-                                            <div className="flex items-center gap-2 text-foreground font-black">
-                                                <Calendar className="w-4 h-4 text-primary" strokeWidth={3} />
-                                                <span className="text-sm">
-                                                    {order.dueDate ? new Date(order.dueDate).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }) : '---'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between pt-6 border-t border-border/40">
-                                        <Link
-                                            href={`/orders/${order.id}`}
-                                            className="flex items-center gap-2.5 text-xs font-black text-primary hover:gap-4 transition-all group/link"
-                                        >
-                                            <span className="relative">
-                                                مراجعة الطلب
-                                                <span className="absolute bottom-[-2px] right-0 w-0 h-0.5 bg-primary group-hover/link:w-full transition-all duration-300" />
-                                            </span>
-                                            <ArrowRight className="w-4 h-4" strokeWidth={3} />
-                                        </Link>
-
-                                        <div className="flex items-center gap-2">
-                                            <Link
-                                                href={`/orders/print/${order.id}`}
-                                                target="_blank"
-                                                className="w-12 h-12 rounded-2xl bg-blue-600 text-white hover:bg-blue-500 hover:scale-110 flex items-center justify-center transition-all duration-500 shadow-sm group/pdf"
-                                                title="طباعة PDF"
-                                            >
-                                                <FileText className="w-5 h-5 group-hover/pdf:scale-110 transition-transform" />
-                                            </Link>
-
-                                            {hasPermission(PERMISSIONS.ORDERS_EDIT) && (
-                                                <Link
-                                                    href={`/orders/${order.id}/edit`}
-                                                    className="w-12 h-12 rounded-2xl bg-amber-700 text-white hover:bg-amber-600 hover:scale-110 flex items-center justify-center transition-all duration-500 shadow-sm group/edit"
-                                                    title="تعديل سريع"
-                                                >
-                                                    <Edit3 className="w-5 h-5 group-hover/edit:scale-110 transition-transform" />
-                                                </Link>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <CollapsibleGroup key={groupName} title={groupName} orders={groupOrders} hasPermission={hasPermission} />
             ))}
 
             {/* Pagination */}
@@ -273,6 +165,124 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
                     >
                         <span>التالي</span>
                     </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function CollapsibleGroup({ title, orders, hasPermission }: { title: string, orders: Order[], hasPermission: (p: string) => boolean | undefined }) {
+    const [isOpen, setIsOpen] = useState(true);
+
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+            {/* Group Header */}
+            <div
+                className="flex items-center gap-4 group/header cursor-pointer select-none"
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <div className={`h-10 w-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-sm group-hover/header:scale-110 transition-all duration-500 ${!isOpen ? '-rotate-90' : ''}`}>
+                    <ChevronDown className="w-5 h-5 text-primary" strokeWidth={3} />
+                </div>
+                <div className="flex flex-col">
+                    <h2 className="text-xl font-black text-foreground tracking-tight antialiased">{title}</h2>
+                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{orders.length} طلبات</p>
+                </div>
+                <div className="h-px flex-1 bg-gradient-to-l from-transparent via-border/60 to-transparent" />
+            </div>
+
+            {/* Order Cards Grid */}
+            {isOpen && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                    {orders.map((order) => (
+                        <div
+                            key={order.id}
+                            className="group relative bg-card rounded-[2.5rem] border border-border/40 hover:border-primary/30 transition-all duration-500 shadow-premium hover:shadow-gold overflow-hidden"
+                        >
+                            {/* Status Accent Bar */}
+                            <div className="absolute top-0 right-0 left-0 h-2 bg-muted/20" />
+
+                            {order.images && (order.images as string[]).length > 0 && (
+                                <div className="absolute top-4 left-4 z-10">
+                                    <div className="w-10 h-10 rounded-xl bg-white/90 backdrop-blur-md border border-white/50 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500">
+                                        <span className="text-[10px] font-black text-amber-700">+{(order.images as string[]).length}</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="p-8 space-y-8">
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">التسلسل الرقمي</span>
+                                            <span className="text-[11px] font-black text-primary bg-primary/5 px-3 py-1 rounded-xl border border-primary/10 shadow-sm">
+                                                #{order.serialNumber}
+                                            </span>
+                                        </div>
+                                        <h3 className="text-2xl font-black text-foreground tracking-tight line-clamp-1 group-hover:text-primary transition-colors">
+                                            {order.customerName}
+                                        </h3>
+                                    </div>
+
+                                    <div className={`px-5 py-2 rounded-2xl text-[10px] font-black tracking-widest border transition-all duration-500 shadow-sm ${order.status.includes('completed') ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                                        order.status.includes('pending') ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                            'bg-primary/10 text-primary border-primary/30'
+                                        }`}>
+                                        {ORDER_STATUS_LABELS[order.status] || order.status}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500 shadow-sm">
+                                        <span className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-wider mb-2">القيمة الإجمالية</span>
+                                        <p className="text-xl font-black text-foreground tracking-tighter">
+                                            {Number(order.totalAmount).toLocaleString()} <span className="text-xs text-muted-foreground/60">د.ل</span>
+                                        </p>
+                                    </div>
+                                    <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500">
+                                        <span className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-wider mb-2">الاستحقاق</span>
+                                        <div className="flex items-center gap-2 text-foreground font-black">
+                                            <Calendar className="w-4 h-4 text-primary" strokeWidth={3} />
+                                            <span className="text-sm">
+                                                {order.dueDate ? new Date(order.dueDate).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }) : '---'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-6 border-t border-slate-800/60">
+                                    <Link
+                                        href={`/orders/${order.id}`}
+                                        className="flex items-center gap-3 px-6 py-3.5 bg-gradient-to-br from-primary to-amber-800 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-wider shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:scale-105 active:scale-95 transition-all group/review"
+                                    >
+                                        <span>مراجعة الطلب</span>
+                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" strokeWidth={3} />
+                                    </Link>
+
+                                    <div className="flex items-center gap-3">
+                                        <Link
+                                            href={`/orders/print/${order.id}`}
+                                            target="_blank"
+                                            className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-blue-400 hover:bg-blue-600 hover:text-white hover:border-blue-500 hover:scale-110 flex items-center justify-center transition-all duration-500 shadow-sm group/pdf"
+                                            title="طباعة PDF"
+                                        >
+                                            <FileText className="w-5 h-5 group-hover/pdf:scale-110 transition-transform" />
+                                        </Link>
+
+                                        {hasPermission(PERMISSIONS.ORDERS_EDIT) && (
+                                            <Link
+                                                href={`/orders/${order.id}/edit`}
+                                                className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-amber-500 hover:bg-amber-700 hover:text-white hover:border-amber-600 hover:scale-110 flex items-center justify-center transition-all duration-500 shadow-sm group/edit"
+                                                title="تعديل سريع"
+                                            >
+                                                <Edit3 className="w-5 h-5 group-hover/edit:scale-110 transition-transform" />
+                                            </Link>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
         </div>

@@ -2,16 +2,7 @@
 
 import { useState, useEffect } from "react";
 import NavBar from "../../components/NavBar";
-import {
-    Calendar,
-    Trash2,
-    Plus,
-    Factory,
-    ShieldAlert,
-    Loader2,
-    CalendarDays,
-    Clock
-} from "lucide-react";
+import { Plus, Trash2, CalendarDays, Calendar, Clock, Loader2, Factory, ShieldAlert, Settings } from 'lucide-react';
 
 interface CapacityRule {
     id: string;
@@ -42,8 +33,11 @@ export default function BookingPage() {
         specificDate: "",
         maxCapacity: 10
     });
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         fetchData();
     }, []);
 
@@ -70,8 +64,11 @@ export default function BookingPage() {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await fetch('/api/admin/capacity', {
-                method: 'POST',
+            const url = editingId ? `/api/admin/capacity/${editingId}` : '/api/admin/capacity';
+            const method = editingId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     factoryId: form.factoryId || null,
@@ -82,7 +79,14 @@ export default function BookingPage() {
             });
             if (res.ok) {
                 fetchData();
-                setForm({ ...form, specificDate: "" });
+                setForm({
+                    factoryId: "",
+                    type: "dayOfWeek",
+                    dayOfWeek: "0",
+                    specificDate: "",
+                    maxCapacity: 10
+                });
+                setEditingId(null);
             } else {
                 const error = await res.json();
                 alert(error.error || "حدث خطأ");
@@ -92,12 +96,47 @@ export default function BookingPage() {
         }
     };
 
+    const handleEdit = (rule: CapacityRule) => {
+        setForm({
+            factoryId: rule.factoryId || "",
+            type: rule.specificDate ? 'specificDate' : 'dayOfWeek',
+            dayOfWeek: rule.dayOfWeek !== null ? rule.dayOfWeek.toString() : "0",
+            specificDate: rule.specificDate ? new Date(rule.specificDate).toISOString().split('T')[0] : "",
+            maxCapacity: rule.maxCapacity
+        });
+        setEditingId(rule.id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleCancelEdit = () => {
+        setForm({
+            factoryId: "",
+            type: "dayOfWeek",
+            dayOfWeek: "0",
+            specificDate: "",
+            maxCapacity: 10
+        });
+        setEditingId(null);
+    };
+
     const handleDelete = async (id: string) => {
         if (!confirm("هل أنت متأكد من حذف هذه القاعدة؟")) return;
         setLoading(true);
+        console.log(`Deleting capacity rule: /api/admin/capacity/${id}`);
         try {
             const res = await fetch(`/api/admin/capacity/${id}`, { method: 'DELETE' });
-            if (res.ok) fetchData();
+            if (res.ok) {
+                alert("تم حذف القاعدة بنجاح");
+                fetchData();
+                if (editingId === id) handleCancelEdit();
+            } else {
+                const error = await res.json().catch(() => ({}));
+                console.error('Delete failed:', res.status, error);
+                alert(error.error || `خطأ في الحذف (الحالة: ${res.status})`);
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert("حدث خطأ في الاتصال بالخادم");
         } finally {
             setLoading(false);
         }
@@ -194,14 +233,25 @@ export default function BookingPage() {
                                     />
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full bg-primary text-primary-foreground p-2 rounded-lg font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                                    حفظ القاعدة
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="flex-1 bg-primary text-primary-foreground p-2 rounded-lg font-medium hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                        {editingId ? "تحديث القاعدة" : "حفظ القاعدة"}
+                                    </button>
+                                    {editingId && (
+                                        <button
+                                            type="button"
+                                            onClick={handleCancelEdit}
+                                            className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-muted"
+                                        >
+                                            إلغاء
+                                        </button>
+                                    )}
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -216,6 +266,10 @@ export default function BookingPage() {
                             <div className="text-center py-12 bg-card border border-border border-dashed rounded-xl">
                                 <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-20" />
                                 <p className="text-muted-foreground">لا توجد قواعد حجز مفعلة حالياً.</p>
+                            </div>
+                        ) : !mounted ? (
+                            <div className="space-y-3 animate-pulse">
+                                {[1, 2, 3].map(i => <div key={i} className="h-20 bg-muted rounded-xl" />)}
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -246,13 +300,22 @@ export default function BookingPage() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <button
-                                            title="delete rule"
-                                            onClick={() => handleDelete(rule.id)}
-                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                title="تعديل القاعدة"
+                                                onClick={() => handleEdit(rule)}
+                                                className="p-2 text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                                            >
+                                                <Settings className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                title="delete rule"
+                                                onClick={() => handleDelete(rule.id)}
+                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

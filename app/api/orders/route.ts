@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 import { PERMISSIONS } from "@/lib/permissions";
 import { ORDER_STATUS, LEGACY_STATUS_MAPPING } from "@/lib/constants";

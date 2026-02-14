@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "../../../../../auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "../../../../../lib/prisma";
 
 export async function PUT(
@@ -8,8 +8,12 @@ export async function PUT(
 ) {
     try {
         const session = await auth();
-        if (!session?.user || session.user.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+        if (!session?.user) {
+            return NextResponse.json({ error: 'الرجاء تسجيل الدخول' }, { status: 401 });
+        }
+        if (session.user.role !== 'ADMIN') {
+            console.warn(`Unauthorized alerts update attempt by ${session.user.username} (Role: ${session.user.role})`);
+            return NextResponse.json({ error: `غير مصرح. دورك الحالي (${session.user.role}) لا يسمح بالتعديل.` }, { status: 403 });
         }
 
         const body = await req.json();
@@ -39,8 +43,12 @@ export async function DELETE(
 ) {
     try {
         const session = await auth();
-        if (!session?.user || session.user.role !== 'ADMIN') {
-            return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+        if (!session?.user) {
+            return NextResponse.json({ error: 'الرجاء تسجيل الدخول' }, { status: 401 });
+        }
+        if (session.user.role !== 'ADMIN') {
+            console.warn(`Unauthorized alerts delete attempt by ${session.user.username} (Role: ${session.user.role})`);
+            return NextResponse.json({ error: `غير مصرح. دورك الحالي (${session.user.role}) لا يسمح بالحذف.` }, { status: 403 });
         }
 
         const { id } = await params;

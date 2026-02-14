@@ -18,7 +18,7 @@ interface PrintAndShareButtonsProps {
 }
 
 export default function PrintAndShareButtons({ orderData }: PrintAndShareButtonsProps) {
-    const [loading, setLoading] = useState(false);
+    const [loading] = useState(false);
 
     const handlePrint = () => {
         window.print();

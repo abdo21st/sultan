@@ -7,7 +7,9 @@
     "build": "npx prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "npx prisma generate"
+    "postinstall": "npx prisma generate",
+    "test": "jest --config config/jest/jest.config.js",
+    "test:e2e": "playwright test --config config/playwright/playwright.config.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.2",
