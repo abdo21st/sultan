@@ -9,6 +9,7 @@ import NavBar from "../../../components/NavBar";
 export default function NewUserPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const [formData, setFormData] = useState({
         username: '',
         password: '',
@@ -19,6 +20,11 @@ export default function NewUserPage() {
         permissions: [] as string[],
         roleIds: [] as string[]
     });
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const [facilities, setFacilities] = useState<{ id: string, name: string, type: string }[]>([]);
     const [availableRoles, setAvailableRoles] = useState<{ id: string, displayName: string }[]>([]);
     const [error, setError] = useState('');
@@ -74,6 +80,8 @@ export default function NewUserPage() {
             setLoading(false);
         }
     }
+
+    if (!mounted) return null;
 
     return (
         <div className="min-h-screen bg-background">
@@ -190,9 +198,14 @@ export default function NewUserPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-8 py-2 bg-primary text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50"
+                            className="px-12 py-4 bg-gradient-to-br from-primary to-amber-800 text-white rounded-2xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-500 font-bold text-base transform hover:-translate-y-0.5 hover:scale-105 disabled:opacity-50 disabled:transform-none shadow-lg shadow-primary/20"
                         >
-                            {loading ? 'جاري الإنشاء...' : 'إنشاء المستخدم'}
+                            {loading ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <span>جاري الإنشاء...</span>
+                                </div>
+                            ) : 'إنشاء المستخدم'}
                         </button>
                     </div>
                 </form>
