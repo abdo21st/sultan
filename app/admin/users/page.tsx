@@ -71,8 +71,11 @@ export default function UsersPage() {
                             <p className="text-muted-foreground">صلاحيات وأدوار الموظفين</p>
                         </div>
                         {hasPermission(PERMISSIONS.USERS_ADD) && (
-                            <Link href="/admin/users/new" className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-amber-600 transition-colors">
-                                <Plus className="w-4 h-4" />
+                            <Link
+                                href="/admin/users/new"
+                                className="flex items-center gap-3 px-8 py-4 bg-gradient-to-br from-primary to-amber-800 text-white rounded-2xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-500 font-black text-sm uppercase tracking-widest gold-glow transform hover:-translate-y-0.5 hover:scale-105"
+                            >
+                                <Plus className="w-6 h-6" strokeWidth={3} />
                                 <span>مستخدم جديد</span>
                             </Link>
                         )}
