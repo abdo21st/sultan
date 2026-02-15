@@ -177,6 +177,32 @@ export default function NavBar() {
                                 </button>
                             </div>
                             <div className="space-y-8">
+                                {user && (
+                                    <div className="bg-slate-800/40 rounded-2xl p-4 border border-slate-800">
+                                        <div className="flex items-center gap-4 mb-4">
+                                            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
+                                                <User className="w-6 h-6 text-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-white">{user.displayName || user.name || user.username}</p>
+                                                <p className="text-[10px] uppercase font-bold text-amber-500/80">
+                                                    {user.role === 'ADMIN' ? 'مدير النظام' :
+                                                        user.role === 'MANAGER' ? 'مدير' :
+                                                            user.role === 'ACCOUNTANT' ? 'محاسب' :
+                                                                user.role}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Link
+                                            href="/profile"
+                                            onClick={() => setIsMenuOpen(false)}
+                                            className="flex items-center justify-center gap-2 w-full py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-bold transition-all border border-primary/20"
+                                        >
+                                            <User className="w-4 h-4" />
+                                            <span>عرض الملف الشخصي</span>
+                                        </Link>
+                                    </div>
+                                )}
                                 <div>
                                     <h3 className="text-[11px] font-black text-amber-500 uppercase tracking-[0.2em] mb-4 px-2">الطلبات</h3>
                                     <div className="space-y-2">
