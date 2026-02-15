@@ -102,20 +102,28 @@ export default function NavBar() {
 
                             {user ? (
                                 <div className="relative group/menu">
-                                    <div className="flex items-center gap-3 cursor-pointer p-1 rounded-2xl hover:bg-muted/50 transition-all duration-300">
-                                        <div className="text-right hidden sm:block mr-2">
-                                            <p className="text-sm font-black text-foreground antialiased tracking-tight">{user.displayName || user.name || user.username}</p>
-                                            <p className="text-[10px] uppercase font-bold tracking-widest text-primary/80">
-                                                {user.role === 'ADMIN' ? 'مدير النظام' :
-                                                    user.role === 'MANAGER' ? 'مدير' :
-                                                        user.role === 'ACCOUNTANT' ? 'محاسب' :
-                                                            user.role || 'زائر'}
-                                            </p>
-                                        </div>
-                                        <div className="w-12 h-12 rounded-2xl bg-white border-2 border-border text-foreground flex items-center justify-center font-bold shadow-sm overflow-hidden group-hover/menu:border-primary/50 transition-all">
-                                            <User className="w-6 h-6 text-primary" />
+                                    <div className="hidden sm:block">
+                                        <div className="flex items-center gap-3 cursor-pointer p-1 rounded-2xl hover:bg-muted/50 transition-all duration-300">
+                                            <div className="text-right hidden sm:block mr-2">
+                                                <p className="text-sm font-black text-foreground antialiased tracking-tight">{user.displayName || user.name || user.username}</p>
+                                                <p className="text-[10px] uppercase font-bold tracking-widest text-primary/80">
+                                                    {user.role === 'ADMIN' ? 'مدير النظام' :
+                                                        user.role === 'MANAGER' ? 'مدير' :
+                                                            user.role === 'ACCOUNTANT' ? 'محاسب' :
+                                                                user.role || 'زائر'}
+                                                </p>
+                                            </div>
+                                            <div className="w-12 h-12 rounded-2xl bg-white border-2 border-border text-foreground flex items-center justify-center font-bold shadow-sm overflow-hidden group-hover/menu:border-primary/50 transition-all">
+                                                <User className="w-6 h-6 text-primary" />
+                                            </div>
                                         </div>
                                     </div>
+
+                                    <Link href="/profile" className="sm:hidden block">
+                                        <div className="w-12 h-12 rounded-2xl bg-white border-2 border-border text-foreground flex items-center justify-center font-bold shadow-sm overflow-hidden active:scale-95 transition-all">
+                                            <User className="w-6 h-6 text-primary" />
+                                        </div>
+                                    </Link>
 
                                     <div className="absolute left-0 top-full mt-3 w-56 bg-white border border-border rounded-[1.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-300 transform translate-y-2 group-hover/menu:translate-y-0 origin-top-left z-50 overflow-hidden">
                                         <div className="p-2.5">
