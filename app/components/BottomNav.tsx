@@ -149,12 +149,12 @@ export default function BottomNav() {
                             setIsOpen(!isOpen);
                         }
                     }}
-                    className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-amber-800 text-white shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform border-4 border-white/20"
+                    className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-amber-900 text-white shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex items-center justify-center hover:scale-110 active:scale-95 transition-transform border-[3px] border-white/30 backdrop-blur-sm"
                 >
                     {isOpen ? (
-                        <X className="w-7 h-7" strokeWidth={2.5} />
+                        <X className="w-8 h-8" strokeWidth={3} />
                     ) : (
-                        <Menu className="w-7 h-7" strokeWidth={2.5} />
+                        <Menu className="w-8 h-8" strokeWidth={3} />
                     )}
                 </button>
 
