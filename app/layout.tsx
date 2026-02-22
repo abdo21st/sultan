@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 import { Providers } from "./providers";
 import BottomNav from "./components/BottomNav";
 import { ToastProvider } from "./components/ToastProvider";
+import OfflineSyncProvider from "./components/OfflineSyncProvider";
+import { Toaster } from "react-hot-toast";
 
 const cairo = Cairo({
   subsets: ["arabic"],
@@ -47,8 +49,11 @@ export default async function RootLayout({
       >
         <Providers session={session}>
           <ToastProvider>
-            {children}
-            <BottomNav />
+            <OfflineSyncProvider>
+              {children}
+              <BottomNav />
+            </OfflineSyncProvider>
+            <Toaster position="top-center" />
           </ToastProvider>
         </Providers>
       </body>

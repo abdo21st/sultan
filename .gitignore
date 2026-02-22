@@ -37,6 +37,8 @@ android-app-module-backup/
 # misc
 .DS_Store
 *.pem
+.pnpm/
+Untitled-1.txt
 
 # debug
 npm-debug.log*

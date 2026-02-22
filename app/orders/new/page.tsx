@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Wifi, WifiOff } from "lucide-react";
 import Image from "next/image";
+import { db } from "@/lib/db";
 
 export default function NewOrderPage() {
     const router = useRouter();
@@ -13,6 +14,21 @@ export default function NewOrderPage() {
     const [facilities, setFacilities] = useState<{ id: string, name: string, type: string }[]>([]);
     const [images, setImages] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
+    const [isOnline, setIsOnline] = useState(true);
+
+    useEffect(() => {
+        setIsOnline(navigator.onLine);
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     useEffect(() => {
         // Fetch session
@@ -81,6 +97,34 @@ export default function NewOrderPage() {
             formData.set('shopId', userShopId);
         }
 
+        if (!isOnline) {
+            try {
+                // Save to IndexedDB via Dexie
+                await db.orders.add({
+                    customerName: formData.get('customerName') as string,
+                    customerPhone: formData.get('customerPhone') as string,
+                    description: formData.get('description') as string,
+                    totalAmount: formData.get('totalAmount') as string,
+                    paidAmount: formData.get('paidAmount') as string,
+                    dueDate: formData.get('dueDate') as string,
+                    factoryId: formData.get('factoryId') as string,
+                    shopId: (isRestricted ? userShopId : formData.get('shopId')) as string,
+                    images: images, // Already Blobs essentially (File extends Blob)
+                    status: 'pending',
+                    createdAt: Date.now()
+                });
+
+                alert("تم حفظ الطلب محلياً! سيتم إرساله تلقائياً عند عودة الإنترنت.");
+                router.push("/");
+                return;
+            } catch (offlineErr) {
+                console.error("Offline save failed", offlineErr);
+                setError("فشل الحفظ المحلي أيضاً");
+                setLoading(false);
+                return;
+            }
+        }
+
         try {
             const res = await fetch("/api/orders", {
                 method: "POST",
@@ -106,7 +150,13 @@ export default function NewOrderPage() {
     return (
         <div className="min-h-screen bg-background p-6 flex flex-col items-center">
             <div className="w-full max-w-2xl bg-card rounded-xl shadow-sm border border-border p-8">
-                <h1 className="text-2xl font-bold mb-6 text-foreground">إنشاء طلب جديد</h1>
+                <div className="flex items-center justify-between mb-6">
+                    <h1 className="text-2xl font-bold text-foreground">إنشاء طلب جديد</h1>
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isOnline ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500 animate-pulse'}`}>
+                        {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                        {isOnline ? 'متصل' : 'بدون إنترنت'}
+                    </div>
+                </div>
 
                 {error && (
                     <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-600 rounded-lg text-sm flex items-center gap-2">

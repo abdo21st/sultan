@@ -5,6 +5,7 @@ import { Plus, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import NavBar from '../components/NavBar';
 import { usePermission } from '../../lib/usePermission';
 import { PERMISSIONS } from '../../lib/permissions';
+import { formatCurrency } from '../../lib/utils';
 
 interface Transaction {
     id: string;
@@ -146,25 +147,25 @@ export default function TransactionsPage() {
                     <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
                         <p className="text-sm text-muted-foreground mb-1">الخزينة (الكاش)</p>
                         <p className={`text-2xl font-bold font-mono ${stats.treasuryBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {stats.treasuryBalance.toLocaleString()} د.ل
+                            {formatCurrency(stats.treasuryBalance)}
                         </p>
                     </div>
                     <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
                         <p className="text-sm text-muted-foreground mb-1">ديون العملاء</p>
                         <p className="text-2xl font-bold font-mono text-orange-600">
-                            {stats.totalDebt.toLocaleString()} د.ل
+                            {formatCurrency(stats.totalDebt)}
                         </p>
                     </div>
                     <div className="bg-card border border-border p-4 rounded-xl shadow-sm opacity-75">
                         <p className="text-sm text-muted-foreground mb-1">إجمالي المقبوضات</p>
                         <p className="text-xl font-bold font-mono text-foreground">
-                            {stats.totalIncome.toLocaleString()} د.ل
+                            {formatCurrency(stats.totalIncome)}
                         </p>
                     </div>
                     <div className="bg-card border border-border p-4 rounded-xl shadow-sm opacity-75">
                         <p className="text-sm text-muted-foreground mb-1">إجمالي المصروفات</p>
                         <p className="text-xl font-bold font-mono text-foreground">
-                            {stats.totalExpense.toLocaleString()} د.ل
+                            {formatCurrency(stats.totalExpense)}
                         </p>
                     </div>
                 </div>
@@ -404,7 +405,7 @@ export default function TransactionsPage() {
                                 </div>
                                 <div className="text-right">
                                     <p className={`font-bold font-mono ${tx.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`} dir="ltr">
-                                        {tx.type === 'INCOME' ? '+' : '-'}{tx.amount.toLocaleString()} د.ل
+                                        {tx.type === 'INCOME' ? '+' : '-'}{formatCurrency(tx.amount)}
                                     </p>
                                     <p className="text-xs text-muted-foreground">{new Date(tx.date).toLocaleDateString()}</p>
                                 </div>

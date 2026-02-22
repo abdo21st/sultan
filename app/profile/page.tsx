@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import NavBar from '../components/NavBar';
-import { User, Shield, LogOut, Save, Lock, Loader2, Eye, EyeOff } from 'lucide-react'; // Removed unused Phone
+import { User, Shield, LogOut, Save, Lock, Loader2, Eye, EyeOff, Pencil } from 'lucide-react'; // Added Pencil
 import { type User as NextAuthUser } from "next-auth";
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -159,8 +159,9 @@ export default function ProfilePage() {
                                         {!isEditingInfo && (
                                             <button
                                                 onClick={() => setIsEditingInfo(true)}
-                                                className="text-xs font-bold text-primary hover:text-primary/80 transition-colors"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-bold transition-all hover:scale-105"
                                             >
+                                                <Pencil className="w-3.5 h-3.5" />
                                                 تعديل
                                             </button>
                                         )}
@@ -222,7 +223,7 @@ export default function ProfilePage() {
                                             </div>
                                             <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                                                 <span className="text-sm text-muted-foreground">رقم الهاتف</span>
-                                                <span className="font-semibold" dir="ltr">{(user as any).phoneNumber || '-'}</span>
+                                                <span className="font-semibold" dir="ltr">{(user as { phoneNumber?: string }).phoneNumber || '-'}</span>
                                             </div>
                                         </div>
                                     )}

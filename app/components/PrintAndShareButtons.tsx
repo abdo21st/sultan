@@ -2,6 +2,7 @@
 
 import { Printer, Share2, Download } from 'lucide-react';
 import { useState } from 'react';
+import { formatCurrency } from '@/lib/utils';
 
 interface PrintAndShareButtonsProps {
     orderData: {
@@ -15,9 +16,10 @@ interface PrintAndShareButtonsProps {
         dueDate: Date;
         orderId: string;
     };
+    canViewFinancials?: boolean;
 }
 
-export default function PrintAndShareButtons({ orderData }: PrintAndShareButtonsProps) {
+export default function PrintAndShareButtons({ orderData, canViewFinancials }: PrintAndShareButtonsProps) {
     const [loading] = useState(false);
 
     const handlePrint = () => {
@@ -31,7 +33,13 @@ export default function PrintAndShareButtons({ orderData }: PrintAndShareButtons
 
     const handleWhatsApp = () => {
         // إرسال رسالة نصية مع رابط المستند
-        const message = `📋 *مستند الطلب #${orderData.serialNumber}*\n\n👤 العميل: ${orderData.customerName}\n📞 الهاتف: ${orderData.customerPhone}\n\n📝 التفاصيل:\n${orderData.description || 'لا توجد تفاصيل'}\n\n💰 المبلغ الإجمالي: ${orderData.totalAmount.toLocaleString()} د.ل\n✅ المدفوع: ${orderData.paidAmount.toLocaleString()} د.ل\n⏳ المتبقي: ${orderData.remainingAmount.toLocaleString()} د.ل\n\n📅 موعد التسليم: ${new Date(orderData.dueDate).toLocaleDateString('ar-LY')}\n\n🔗 رابط المستند:\n${window.location.href}`;
+        let message = `📋 *مستند الطلب #${orderData.serialNumber}*\n\n👤 العميل: ${orderData.customerName}\n📞 الهاتف: ${orderData.customerPhone}\n\n📝 التفاصيل:\n${orderData.description || 'لا توجد تفاصيل'}\n\n`;
+
+        if (canViewFinancials) {
+            message += `💰 المبلغ الإجمالي: ${formatCurrency(orderData.totalAmount)}\n✅ المدفوع: ${formatCurrency(orderData.paidAmount)}\n⏳ المتبقي: ${formatCurrency(orderData.remainingAmount)}\n\n`;
+        }
+
+        message += `📅 موعد التسليم: ${new Date(orderData.dueDate).toLocaleDateString('ar-LY')}\n\n🔗 رابط المستند:\n${window.location.href}`;
 
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');

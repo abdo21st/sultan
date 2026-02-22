@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { PERMISSIONS } from "../../../lib/permissions";
 import { exportToPDF } from "@/lib/pdf-export";
 import toast from "react-hot-toast";
+import { formatCurrency } from "@/lib/utils";
 
 interface Facility {
     id: string;
@@ -180,7 +181,7 @@ export default function FlexibleReportsPage() {
                     date: new Date(t.date).toLocaleDateString('ar-EG'),
                     type: t.type === "INCOME" ? "دخل" : "مصروف",
                     category: t.category,
-                    amount: t.amount.toLocaleString(),
+                    amount: formatCurrency(t.amount),
                     description: t.description || ""
                 }));
                 break;
@@ -197,7 +198,7 @@ export default function FlexibleReportsPage() {
                     id: o.id.slice(-6),
                     customer: o.customerName,
                     status: STATUS_MAP[o.status] || o.status,
-                    amount: o.totalAmount.toLocaleString(),
+                    amount: formatCurrency(o.totalAmount),
                     date: new Date(o.createdAt).toLocaleDateString('ar-EG')
                 }));
                 break;
@@ -211,7 +212,7 @@ export default function FlexibleReportsPage() {
                 rows = (reportData.details as ProductionDetail[]).map(f => ({
                     name: f.name,
                     count: f.count,
-                    value: f.value.toLocaleString()
+                    value: formatCurrency(f.value)
                 }));
                 break;
             case "users":
@@ -224,7 +225,7 @@ export default function FlexibleReportsPage() {
                 rows = (reportData.details as UserDetail[]).map(u => ({
                     id: u.name || u.id,
                     count: u.transactionCount,
-                    volume: u.volume.toLocaleString()
+                    volume: formatCurrency(u.volume)
                 }));
                 break;
         }
@@ -433,7 +434,7 @@ function FinancialView({ data }: { data: ReportData }) {
                                         </span>
                                     </td>
                                     <td className="py-5 px-4 text-muted-foreground font-bold">{t.category}</td>
-                                    <td className="py-5 px-4 font-black text-left" dir="ltr">{(t.amount || 0).toLocaleString()} د.ل</td>
+                                    <td className="py-5 px-4 font-black text-left" dir="ltr">{formatCurrency(t.amount || 0)}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -515,7 +516,7 @@ function ProductionView({ data }: { data: ReportData }) {
                             </div>
                             <div>
                                 <p className="text-[10px] font-black text-muted-foreground uppercase opacity-60">القيمة</p>
-                                <p className="text-xl font-black text-emerald-600">{(f.value || 0).toLocaleString()} د.ل</p>
+                                <p className="text-xl font-black text-emerald-600">{formatCurrency(f.value || 0)}</p>
                             </div>
                         </div>
                     </div>
@@ -542,7 +543,7 @@ function UserActivityView({ data }: { data: ReportData }) {
                             </div>
                         </div>
                         <div className="text-right">
-                            <p className="text-lg font-black text-emerald-600">{(u.volume || 0).toLocaleString()} د.ل</p>
+                            <p className="text-lg font-black text-emerald-600">{formatCurrency(u.volume || 0)}</p>
                             <p className="text-[10px] font-black text-muted-foreground/40 uppercase">حجم العمليات</p>
                         </div>
                     </div>
@@ -557,7 +558,7 @@ function StatCardSmall({ title, value, color, bg, icon: Icon }: { title: string;
         <div className={`${bg} rounded-3xl p-8 border border-border/20 flex items-center justify-between gap-4`}>
             <div className="space-y-1">
                 <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">{title}</p>
-                <h5 className={`text-3xl font-black ${color}`} dir="ltr">{(value || 0).toLocaleString()} <span className="text-xs opacity-60">د.ل</span></h5>
+                <h5 className={`text-3xl font-black ${color}`} dir="ltr">{formatCurrency(value || 0)}</h5>
             </div>
             <div className={`p-4 rounded-2xl bg-white/80 ${color} shadow-sm`}>
                 <Icon className="w-6 h-6" />
