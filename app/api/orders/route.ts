@@ -107,9 +107,28 @@ export async function GET(request: Request) {
             }
         }
 
+        const canViewFinancials = isMaster || userPermissions.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
+
         const orders = await prisma.order.findMany({
             where,
             orderBy: { createdAt: "desc" },
+            select: {
+                id: true,
+                serialNumber: true,
+                customerName: true,
+                customerPhone: true,
+                description: true,
+                status: true,
+                dueDate: true,
+                createdAt: true,
+                factoryId: true,
+                shopId: true,
+                images: true,
+                // Only include financial fields if authorized
+                totalAmount: canViewFinancials,
+                paidAmount: canViewFinancials,
+                remainingAmount: canViewFinancials,
+            }
         });
         return NextResponse.json(orders);
     } catch (error) {

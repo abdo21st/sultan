@@ -3,25 +3,33 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import PrintAndShareButtons from "../../../components/PrintAndShareButtons";
 import QRCode from "qrcode";
+import { formatCurrency } from "../../../../lib/utils";
+import { auth } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export default async function PrintOrderPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
 
-    const order = await prisma.order.findUnique({
-        where: { id },
-        include: {
-            factory: true,
-            shop: true
-        }
-    });
+    const [order, settings, session] = await Promise.all([
+        prisma.order.findUnique({
+            where: { id },
+            include: {
+                factory: true,
+                shop: true
+            }
+        }),
+        prisma.systemSettings.findFirst(),
+        auth()
+    ]);
 
-    const settings = await prisma.systemSettings.findFirst();
+    if (!order) return notFound();
+    const currentOrder = order!;
 
-    if (!order) notFound();
+    const canViewFinancials = session?.user?.role === 'ADMIN' || session?.user?.permissions?.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
 
     // Generate QR Code data (linking to the digital order page)
     const baseUrl = process.env.NEXTAUTH_URL || "https://sultan23.vercel.app";
-    const orderUrl = `${baseUrl}/orders/${order.id}`;
+    const orderUrl = `${baseUrl}/orders/${currentOrder.id}`;
     const qrCodeDataUrl = await QRCode.toDataURL(orderUrl, {
         margin: 1,
         width: 120,
@@ -60,7 +68,7 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                 <div className="flex flex-col items-end gap-3">
                     <div className="bg-zinc-900 text-white px-6 py-3 rounded-2xl text-center shadow-lg">
                         <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5">رقم الطلب التسلسلي</p>
-                        <p className="text-2xl font-black font-mono">#{order.serialNumber}</p>
+                        <p className="text-2xl font-black font-mono">#{currentOrder.serialNumber}</p>
                     </div>
                     <div className="text-right">
                         <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">تاريخ الاستخراج</p>
@@ -79,8 +87,8 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                                 بيانات العميل المعتمد
                             </h2>
                             <div className="p-5 bg-zinc-50 rounded-2xl border border-zinc-200/60 shadow-inner">
-                                <p className="font-black text-xl text-zinc-900 mb-1">{order.customerName}</p>
-                                <p className="text-zinc-500 font-bold font-mono text-sm tracking-tight" dir="ltr">{order.customerPhone}</p>
+                                <p className="font-black text-xl text-zinc-900 mb-1">{currentOrder.customerName}</p>
+                                <p className="text-zinc-500 font-bold font-mono text-sm tracking-tight" dir="ltr">{currentOrder.customerPhone}</p>
                             </div>
                         </section>
 
@@ -92,11 +100,11 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                             <div className="p-5 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex flex-col justify-center gap-2">
                                 <div className="flex justify-between items-center">
                                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">التسليم:</span>
-                                    <span className="font-black text-zinc-900 text-sm whitespace-nowrap">{new Date(order.dueDate).toLocaleDateString("ar-LY", { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                    <span className="font-black text-zinc-900 text-sm whitespace-nowrap">{new Date(currentOrder.dueDate).toLocaleDateString("ar-LY", { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">المقر:</span>
-                                    <span className="font-black text-amber-700 text-sm">{order.factory?.name || 'مقر عام'}</span>
+                                    <span className="font-black text-amber-700 text-sm">{currentOrder.factory?.name || 'مقر عام'}</span>
                                 </div>
                             </div>
                         </section>
@@ -108,7 +116,7 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                             الوصف التقني والطلبات الخاصة
                         </h2>
                         <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-200/60 min-h-[160px] shadow-inner">
-                            <p className="text-sm font-medium text-zinc-800 leading-loose whitespace-pre-wrap">{order.description}</p>
+                            <p className="text-sm font-medium text-zinc-800 leading-loose whitespace-pre-wrap">{currentOrder.description}</p>
                         </div>
                     </section>
                 </div>
@@ -125,23 +133,25 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
             </div>
 
             {/* Financial Summary */}
-            <div className="bg-zinc-900 text-white rounded-[2rem] p-10 flex flex-wrap justify-between items-center mb-12 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-600/10 rounded-full blur-2xl -mr-10 -mt-10" />
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-600/10 rounded-full blur-2xl -ml-10 -mb-10" />
+            {canViewFinancials && (
+                <div className="bg-zinc-900 text-white rounded-[2rem] p-10 flex flex-wrap justify-between items-center mb-12 shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-600/10 rounded-full blur-2xl -mr-10 -mt-10" />
+                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-600/10 rounded-full blur-2xl -ml-10 -mb-10" />
 
-                <div className="relative">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-2">إجمالي الالتزام المالي</p>
-                    <p className="text-4xl font-black font-mono tracking-tighter" dir="ltr">{order.totalAmount.toLocaleString()} <span className="text-xs text-white/50 tracking-normal opacity-100">د.ل</span></p>
+                    <div className="relative">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-2">إجمالي الالتزام المالي</p>
+                        <p className="text-4xl font-black font-mono tracking-tighter" dir="ltr">{formatCurrency(currentOrder.totalAmount)}</p>
+                    </div>
+                    <div className="relative border-x border-white/10 px-12 group-hover:px-16 transition-all duration-700">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-green-500 mb-2">ما تم تحصيله</p>
+                        <p className="text-4xl font-black font-mono text-green-500 tracking-tighter" dir="ltr">{formatCurrency(currentOrder.paidAmount)}</p>
+                    </div>
+                    <div className="relative text-left">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 text-right mb-2">الرصيد المتبقي</p>
+                        <p className="text-4xl font-black font-mono text-red-500 tracking-tighter" dir="ltr">{formatCurrency(currentOrder.remainingAmount)}</p>
+                    </div>
                 </div>
-                <div className="relative border-x border-white/10 px-12 group-hover:px-16 transition-all duration-700">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-green-500 mb-2">ما تم تحصيله</p>
-                    <p className="text-4xl font-black font-mono text-green-500 tracking-tighter" dir="ltr">{order.paidAmount.toLocaleString()} <span className="text-xs text-green-500/50 tracking-normal">د.ل</span></p>
-                </div>
-                <div className="relative text-left">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 text-right mb-2">الرصيد المتبقي</p>
-                    <p className="text-4xl font-black font-mono text-red-500 tracking-tighter" dir="ltr">{order.remainingAmount.toLocaleString()} <span className="text-xs text-red-500/50 tracking-normal">د.ل</span></p>
-                </div>
-            </div>
+            )}
 
             {/* Terms and Signatures */}
             <div className="mt-auto pt-10 grid grid-cols-2 gap-10 items-end">
@@ -179,7 +189,7 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                     {settings?.printFooter ? (
                         <p className="text-[10px] font-bold text-zinc-500 whitespace-pre-line leading-relaxed">{settings.printFooter}</p>
                     ) : (
-                        <p className="text-[10px] font-bold text-zinc-500">شكراً لاختياركم فخامة سلطان • 2026</p>
+                        <p className="text-[10px] font-bold text-zinc-500">شكراً لاختياركم فخامة سلطان • {new Date().getFullYear()}</p>
                     )}
                 </div>
             </div>
@@ -201,20 +211,20 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
 
             <div className="no-print mt-12 flex justify-center">
                 <PrintAndShareButtons
+                    canViewFinancials={canViewFinancials}
                     orderData={{
-                        serialNumber: order.serialNumber,
-                        customerName: order.customerName,
-                        customerPhone: order.customerPhone,
-                        description: order.description,
-                        totalAmount: order.totalAmount,
-                        paidAmount: order.paidAmount,
-                        remainingAmount: order.remainingAmount,
-                        dueDate: order.dueDate,
-                        orderId: order.id
+                        serialNumber: currentOrder.serialNumber,
+                        customerName: currentOrder.customerName,
+                        customerPhone: currentOrder.customerPhone,
+                        description: currentOrder.description,
+                        totalAmount: currentOrder.totalAmount,
+                        paidAmount: currentOrder.paidAmount,
+                        remainingAmount: currentOrder.remainingAmount,
+                        dueDate: currentOrder.dueDate,
+                        orderId: currentOrder.id
                     }}
                 />
             </div>
         </div>
     );
 }
-

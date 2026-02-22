@@ -13,8 +13,8 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function formatCurrency(amount: number): string {
     return new Intl.NumberFormat("ar-LY", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
     }).format(amount) + " د.ل";
 }
 

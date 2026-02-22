@@ -16,8 +16,27 @@ export async function GET(
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
         const { id } = await params;
+        const canViewFinancials = session?.user?.role === 'ADMIN' || session?.user?.permissions?.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
+
         const order = await prisma.order.findUnique({
             where: { id },
+            select: {
+                id: true,
+                serialNumber: true,
+                customerName: true,
+                customerPhone: true,
+                description: true,
+                status: true,
+                dueDate: true,
+                createdAt: true,
+                factoryId: true,
+                shopId: true,
+                images: true,
+                // Only include financial fields if authorized
+                totalAmount: canViewFinancials,
+                paidAmount: canViewFinancials,
+                remainingAmount: canViewFinancials,
+            }
         });
 
         if (!order) {

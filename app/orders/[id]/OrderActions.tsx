@@ -7,6 +7,7 @@ import { Printer, XCircle, CheckCircle, Truck, Package, RefreshCw } from 'lucide
 import Link from 'next/link';
 import { ORDER_STATUS, ORDER_WORKFLOW, ORDER_STATUS_LABELS } from '@/lib/constants';
 import { useToast } from '@/app/components/ToastProvider';
+import { formatCurrency } from '@/lib/utils';
 /* formatCurrency and formatDate are not used in this component */
 
 interface Order {
@@ -244,9 +245,8 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">المبلغ المكتوب فى الإيصال</span>
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-5xl font-black text-amber-500 font-mono tracking-tighter" dir="ltr">
-                                        {order.remainingAmount.toLocaleString()}
+                                        {formatCurrency(order.remainingAmount)}
                                     </span>
-                                    <span className="text-sm font-bold text-slate-600">د.ل</span>
                                 </div>
                             </div>
                         </div>

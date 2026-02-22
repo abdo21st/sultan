@@ -6,12 +6,15 @@ import { Calendar, ArrowRight, Edit3, ShoppingBag, ChevronDown, FileText } from 
 import { useSession } from "next-auth/react";
 import { PERMISSIONS } from "@/lib/permissions";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
+import { formatCurrency } from "@/lib/utils";
 import { GroupingMode } from "./DateTabs";
 
 interface Order {
     id: string;
     customerName: string;
     totalAmount: number;
+    paidAmount: number;
+    remainingAmount: number;
     status: string;
     dueDate: string;
     serialNumber: number;
@@ -31,8 +34,10 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
     const ordersPerPage = 20;
 
     const hasPermission = (permission: string) => {
-        return session?.user?.permissions?.includes(permission);
+        return session?.user?.role === 'ADMIN' || session?.user?.permissions?.includes(permission);
     };
+
+    const canViewFinancials = hasPermission(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
 
     useEffect(() => {
         async function fetchOrders() {
@@ -129,7 +134,7 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
     return (
         <div className="space-y-16">
             {Object.entries(groupedOrders).map(([groupName, groupOrders]) => (
-                <CollapsibleGroup key={groupName} title={groupName} orders={groupOrders} hasPermission={hasPermission} />
+                <CollapsibleGroup key={groupName} title={groupName} orders={groupOrders} hasPermission={hasPermission} canViewFinancials={canViewFinancials} />
             ))}
 
             {/* Pagination */}
@@ -171,7 +176,7 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
     );
 }
 
-function CollapsibleGroup({ title, orders, hasPermission }: { title: string, orders: Order[], hasPermission: (p: string) => boolean | undefined }) {
+function CollapsibleGroup({ title, orders, hasPermission, canViewFinancials }: { title: string, orders: Order[], hasPermission: (p: string) => boolean | undefined, canViewFinancials: boolean | undefined }) {
     const [isOpen, setIsOpen] = useState(true);
 
     return (
@@ -232,13 +237,24 @@ function CollapsibleGroup({ title, orders, hasPermission }: { title: string, ord
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500 shadow-sm">
-                                        <span className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-wider mb-2">القيمة الإجمالية</span>
-                                        <p className="text-xl font-black text-foreground tracking-tighter">
-                                            {Number(order.totalAmount).toLocaleString()} <span className="text-xs text-muted-foreground/60">د.ل</span>
-                                        </p>
+                                {canViewFinancials && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500 shadow-sm">
+                                            <span className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-wider mb-2">القيمة الإجمالية</span>
+                                            <p className="text-xl font-black text-foreground tracking-tighter">
+                                                {formatCurrency(order.totalAmount)}
+                                            </p>
+                                        </div>
+                                        <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500">
+                                            <span className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-wider mb-2">الرصيد المتبقي</span>
+                                            <p className={`text-xl font-black tracking-tighter ${order.remainingAmount > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                                                {formatCurrency(order.remainingAmount)}
+                                            </p>
+                                        </div>
                                     </div>
+                                )}
+
+                                <div className="grid grid-cols-1 gap-4 mt-4">
                                     <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500">
                                         <span className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-wider mb-2">الاستحقاق</span>
                                         <div className="flex items-center gap-2 text-foreground font-black">
