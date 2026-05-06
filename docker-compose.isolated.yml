@@ -1,0 +1,35 @@
+services:
+  sultan-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sultan-web-app
+    restart: always
+    networks:
+      - sultan-private-net
+    env_file:
+      - .env
+    depends_on:
+      - sultan-db
+
+  sultan-db:
+    image: postgres:15-alpine
+    container_name: sultan-postgres-db
+    restart: always
+    environment:
+      - POSTGRES_DB=sultan_db
+      - POSTGRES_USER=sultan_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-sultan_pass}
+    networks:
+      - sultan-private-net
+    volumes:
+      - sultan_db_data:/var/lib/postgresql/data
+
+networks:
+  sultan-private-net:
+    name: sultan_isolated_network
+    driver: bridge
+
+volumes:
+  sultan_db_data:
+    name: sultan_persistent_storage
