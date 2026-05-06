@@ -1,12 +1,5 @@
 import { useSession } from "next-auth/react";
 
-interface User {
-    id: string;
-    role: string;
-    permissions?: string[];
-    facilityId?: string;
-}
-
 export function usePermission() {
     const { data: session } = useSession();
 
@@ -21,5 +14,5 @@ export function usePermission() {
         return userPerms.includes(permission);
     };
 
-    return { hasPermission, user: session?.user as User | undefined };
+    return { hasPermission, user: session?.user };
 }
