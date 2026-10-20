@@ -115,6 +115,10 @@ model Transaction {
   facilityId     String?
   facility       Facility? @relation(fields: [facilityId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   idempotencyKey String?   @unique
+  reversalOfId   String?   @unique
+  reversalOf     Transaction? @relation("TransactionReversal", fields: [reversalOfId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  reversedBy     Transaction? @relation("TransactionReversal")
+  reversalReason String?
   customerId     String? // Link to specific Customer (if we normalize customers later)
   date           DateTime  @default(now())
   createdBy      String?

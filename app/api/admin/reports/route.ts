@@ -97,7 +97,7 @@ async function handleFinancialReport(
     const [page, income, expense, orderPayments] = await Promise.all([
         prisma.transaction.findMany({
             where: pageWhere,
-            select: { id: true, date: true, type: true, category: true, amount: true, description: true },
+            select: { id: true, date: true, type: true, category: true, amount: true, description: true, reversalOfId: true, reversalReason: true },
             orderBy: [{ date: "desc" }, { id: "desc" }],
             take: limit + 1,
         }),

@@ -40,6 +40,8 @@ interface FinancialDetail {
     category: string;
     amount: number;
     description: string | null;
+    reversalOfId?: string | null;
+    reversalReason?: string | null;
 }
 
 interface OperationalDetail {
@@ -235,10 +237,10 @@ export default function FlexibleReportsPage() {
                 ];
                 rows = (exportDetails as FinancialDetail[]).map(t => ({
                     date: new Date(t.date).toLocaleDateString('ar-EG'),
-                    type: t.type === "INCOME" ? "دخل" : "مصروف",
+                    type: `${t.reversalOfId ? 'قيد عكسي / ' : ''}${t.type === "INCOME" ? "دخل" : "مصروف"}`,
                     category: t.category,
                     amount: formatCurrency(t.amount),
-                    description: t.description || ""
+                    description: t.reversalReason || t.description || ""
                 }));
                 break;
             case "operational":
@@ -474,8 +476,8 @@ function FinancialView({ data }: { data: ReportData }) {
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCardSmall title="إجمالي الدخل" value={data.summary.totalIncome || 0} color="text-emerald-600" bg="bg-emerald-50" icon={TrendingUp} />
-                <StatCardSmall title="إجمالي المصروفات" value={data.summary.totalExpense || 0} color="text-rose-600" bg="bg-rose-50" icon={Banknote} />
+                <StatCardSmall title="صافي الدخل" value={data.summary.totalIncome || 0} color="text-emerald-600" bg="bg-emerald-50" icon={TrendingUp} />
+                <StatCardSmall title="صافي المصروفات" value={data.summary.totalExpense || 0} color="text-rose-600" bg="bg-rose-50" icon={Banknote} />
                 <StatCardSmall title="صافي الأرباح" value={data.summary.netProfit || 0} color="text-primary" bg="bg-primary/10" icon={DollarSign} />
             </div>
 
@@ -497,7 +499,7 @@ function FinancialView({ data }: { data: ReportData }) {
                                     <td className="py-5 px-4 font-bold">{new Date(t.date).toLocaleDateString('ar-EG')}</td>
                                     <td className="py-5 px-4 font-black">
                                         <span className={t.type === "INCOME" ? "text-emerald-600" : "text-rose-600"}>
-                                            {t.type === "INCOME" ? "دخل" : "مصروف"}
+                                            {t.reversalOfId ? 'قيد عكسي / ' : ''}{t.type === "INCOME" ? "دخل" : "مصروف"}
                                         </span>
                                     </td>
                                     <td className="py-5 px-4 text-muted-foreground font-bold">{t.category}</td>

@@ -252,6 +252,14 @@ async function dropRestoreDatabase(container: string, connection: DatabaseConnec
   await runProcess("docker", ["exec", container, "dropdb", "-U", connection.username, database], process.env);
 }
 
+async function financialRecordFingerprint(container: string, connection: DatabaseConnection, database: string) {
+  const auditExists = await runProcess('docker', ['exec', container, 'psql', '-U', connection.username, '-d', database, '-tAc', `SELECT to_regclass('"AuditLog"') IS NOT NULL`], process.env, undefined, true);
+  const tables = ['Order', 'Transaction', ...(auditExists === 't' ? ['AuditLog'] : [])];
+  // Fingerprints compare records across a quiescent self-test. AES-GCM authenticates the archive separately.
+  const expressions = tables.map(table => `(SELECT md5(COALESCE(string_agg(md5(row_to_json(t)::text), '' ORDER BY t.id), '')) FROM "${table}" t)`);
+  return runProcess('docker', ['exec', container, 'psql', '-U', connection.username, '-d', database, '-tAc', `SELECT ${expressions.join(" || ',' || ")}`], process.env, undefined, true);
+}
+
 async function getAvailablePort() {
   const server = createServer();
   await new Promise<void>((resolveListen, rejectListen) => {
@@ -348,6 +356,8 @@ async function runSelfTest(container: string | null, startApplication: boolean) 
 
   try {
     await mkdir(dirname(output), { recursive: true, mode: 0o700 });
+    stage = "fingerprint_source_records";
+    const sourceFingerprint = await financialRecordFingerprint(container, connection, connection.database);
     stage = "create_encrypted_dump";
     await createEncryptedBackup(output, container, key);
     stage = "decrypt_and_authenticate";
@@ -364,11 +374,12 @@ async function runSelfTest(container: string | null, startApplication: boolean) 
     if (![orders, transactions, ledgerMismatches].every(Number.isFinite) || ledgerMismatches !== 0) {
       throw new Error("Restored backup failed the financial consistency check.");
     }
+    if (sourceFingerprint !== await financialRecordFingerprint(container, connection, targetDatabase)) throw new Error('Restored financial records or audit entries differ from the self-test source.');
     stage = "start_application_on_restored_database";
     const applicationHealth = startApplication
       ? await checkRestoredApplication(process.env.DIRECT_URL || process.env.DATABASE_URL || "", targetDatabase)
       : undefined;
-    console.log(JSON.stringify({ mode: "self-test", encrypted: true, authenticated: true, archiveEntries, restoredCounts: { orders, transactions, ledgerMismatches }, ...(applicationHealth ? { applicationHealth } : {}) }));
+    console.log(JSON.stringify({ mode: "self-test", encrypted: true, authenticated: true, financialRecordsAndAuditMatched: true, archiveEntries, restoredCounts: { orders, transactions, ledgerMismatches }, ...(applicationHealth ? { applicationHealth } : {}) }));
   } catch {
     throw new Error(`Backup self-test failed at ${stage}.`);
   } finally {

@@ -27,6 +27,7 @@ export const PERMISSIONS = {
     // Transactions
     TRANSACTIONS_VIEW: 'transactions:view',
     TRANSACTIONS_ADD: 'transactions:add',
+    TRANSACTIONS_REVERSE: 'transactions:reverse',
 
     // Roles (Admin)
     ROLES_MANAGE: 'roles:manage',
@@ -80,6 +81,7 @@ export const PERMISSION_LABELS: Record<string, string> = {
 
     [PERMISSIONS.TRANSACTIONS_VIEW]: 'عرض الحركات المالية',
     [PERMISSIONS.TRANSACTIONS_ADD]: 'إضافة حركة مالية',
+    [PERMISSIONS.TRANSACTIONS_REVERSE]: 'عكس حركة مالية مع حفظ الأصل',
 
     [PERMISSIONS.ROLES_MANAGE]: 'إدارة الأدوار والصلاحيات',
     [PERMISSIONS.SETTINGS_MANAGE]: 'إدارة إعدادات النظام',

@@ -47,6 +47,7 @@ export async function GET(request: Request) {
             where,
             orderBy: [{ date: "desc" }, { id: "desc" }],
             take: limit + 1,
+            include: { reversedBy: { select: { id: true } } },
         });
         const hasMore = transactions.length > limit;
         const page = hasMore ? transactions.slice(0, limit) : transactions;

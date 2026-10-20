@@ -52,6 +52,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
     const shop = currentOrder.shopId ? await prisma.facility.findUnique({ where: { id: currentOrder.shopId } }) : null;
     const transactions = canViewFinancials ? await prisma.transaction.findMany({
         where: { orderId: id },
+        include: { reversedBy: { select: { id: true } } },
         orderBy: { date: 'desc' }
     }) : [];
 
@@ -194,8 +195,10 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                                     <div>
                                                         <p className="text-[10px] font-bold text-muted-foreground/40 uppercase">{formatDate(t.date)}</p>
                                                         <p className="text-sm font-bold text-foreground">{t.category}</p>
+                                                        {t.reversalOfId && <p className="text-xs text-muted-foreground">قيد عكسي — {t.reversalReason}</p>}
+                                                        {t.reversedBy && <p className="text-xs text-muted-foreground">حركة معكوسة مع حفظ الأصل</p>}
                                                     </div>
-                                                    <span className="text-sm font-black text-green-600" dir="ltr">+{formatCurrency(t.amount)}</span>
+                                                    <span className={`text-sm font-black ${Number(t.amount) < 0 ? 'text-red-600' : 'text-green-600'}`} dir="ltr">{Number(t.amount) > 0 ? '+' : ''}{formatCurrency(t.amount)}</span>
                                                 </div>
                                             ))}
                                         </div>

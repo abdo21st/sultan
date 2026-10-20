@@ -7,6 +7,7 @@ import { usePermission } from '../../lib/usePermission';
 import { PERMISSIONS } from '../../lib/permissions';
 import { formatCurrency } from '../../lib/utils';
 import { fetchAllPages } from '@/lib/fetch-all-pages';
+import ReverseTransaction from './ReverseTransaction';
 
 interface Transaction {
     id: string;
@@ -15,6 +16,10 @@ interface Transaction {
     category: string;
     description?: string;
     date: string;
+    orderId?: string | null;
+    reversalOfId?: string | null;
+    reversalReason?: string | null;
+    reversedBy?: { id: string } | null;
 }
 
 interface UnpaidOrder {
@@ -177,13 +182,13 @@ export default function TransactionsPage() {
                         </p>
                     </div>
                     <div className="bg-card border border-border p-4 rounded-xl shadow-sm opacity-75">
-                        <p className="text-sm text-muted-foreground mb-1">إجمالي المقبوضات</p>
+                        <p className="text-sm text-muted-foreground mb-1">صافي المقبوضات</p>
                         <p className="text-xl font-bold font-mono text-foreground">
                             {formatCurrency(stats.totalIncome)}
                         </p>
                     </div>
                     <div className="bg-card border border-border p-4 rounded-xl shadow-sm opacity-75">
-                        <p className="text-sm text-muted-foreground mb-1">إجمالي المصروفات</p>
+                        <p className="text-sm text-muted-foreground mb-1">صافي المصروفات</p>
                         <p className="text-xl font-bold font-mono text-foreground">
                             {formatCurrency(stats.totalExpense)}
                         </p>
@@ -426,11 +431,14 @@ export default function TransactionsPage() {
                                                                     tx.category}
                                         </h4>
                                         <p className="text-xs text-muted-foreground">{tx.description || '-'}</p>
+                                        {tx.reversalOfId && <p className="text-xs font-bold text-primary">قيد عكسي — {tx.reversalReason}</p>}
+                                        {tx.reversedBy && <p className="text-xs font-bold text-muted-foreground">عُكست هذه الحركة مع حفظ الأصل</p>}
+                                        {tx.amount > 0 && !tx.reversedBy && hasPermission(PERMISSIONS.TRANSACTIONS_REVERSE) && <ReverseTransaction transaction={tx} onSuccess={() => { void fetchTransactions(); void fetchStats(); }} />}
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className={`font-bold font-mono ${tx.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`} dir="ltr">
-                                        {tx.type === 'INCOME' ? '+' : '-'}{formatCurrency(tx.amount)}
+                                    <p className={`font-bold font-mono ${(tx.type === 'INCOME' ? tx.amount : -tx.amount) >= 0 ? 'text-green-600' : 'text-red-600'}`} dir="ltr">
+                                        {(tx.type === 'INCOME' ? tx.amount : -tx.amount) > 0 ? '+' : ''}{formatCurrency(tx.type === 'INCOME' ? tx.amount : -tx.amount)}
                                     </p>
                                     <p className="text-xs text-muted-foreground">{new Date(tx.date).toLocaleDateString()}</p>
                                 </div>

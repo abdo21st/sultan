@@ -84,6 +84,7 @@ async function main() {
 
     fixture = new Client({ connectionString: isolatedUrl.toString(), connectionTimeoutMillis: 10_000 });
     await fixture.connect();
+    await fixture.query('BEGIN');
     const factoryId = `restore_factory_${suffix}`;
     const shopId = `restore_shop_${suffix}`;
     const orderId = `restore_order_${suffix}`;
@@ -98,17 +99,33 @@ async function main() {
       [orderId, factoryId, shopId],
     );
     await fixture.query(
+      `INSERT INTO "Transaction" (id, type, amount, category, "orderId", "facilityId", "updatedAt")
+       VALUES ($1, 'INCOME', 100.00, 'PAYMENT', $2, $3, NOW())`,
+      [`${transactionId}_mistaken`, orderId, shopId],
+    );
+    await fixture.query(
+      `INSERT INTO "Transaction" (id, type, amount, category, "orderId", "facilityId", "reversalOfId", "reversalReason", "updatedAt")
+       VALUES ($1, 'INCOME', -100.00, 'PAYMENT', $2, $3, $4, 'Synthetic full reversal before replacement payment', NOW())`,
+      [`${transactionId}_reversal`, orderId, shopId, `${transactionId}_mistaken`],
+    );
+    await fixture.query(
       `INSERT INTO "Transaction" (id, type, amount, category, description, "orderId", "facilityId", date, "createdAt", "updatedAt")
        VALUES ($1, 'INCOME', 70.00, 'PAYMENT', 'Synthetic restore acceptance payment', $2, $3, NOW(), NOW(), NOW())`,
       [transactionId, orderId, shopId],
     );
+    await fixture.query(
+      `INSERT INTO "AuditLog" (id, "entityType", "entityId", action, "after")
+       VALUES ($1, 'TRANSACTION', $2, 'REVERSAL_CREATED', jsonb_build_object('originalTransactionId', $3::text, 'amount', -100, 'reason', 'Synthetic backup audit acceptance'))`,
+      [`restore_audit_${suffix}`, `${transactionId}_reversal`, `${transactionId}_mistaken`],
+    );
+    await fixture.query('COMMIT');
     const invariant = await fixture.query<{ orders: string; transactions: string; mismatches: string }>(
       `SELECT
          (SELECT count(*) FROM "Order")::text AS orders,
          (SELECT count(*) FROM "Transaction")::text AS transactions,
          (SELECT count(*) FROM "Order" o WHERE round(o."paidAmount"::numeric, 2) <> round(COALESCE((SELECT sum(t.amount::numeric) FROM "Transaction" t WHERE t."orderId" = o.id AND t.type = 'INCOME'), 0), 2))::text AS mismatches`,
     );
-    if (invariant.rows[0]?.orders !== "1" || invariant.rows[0]?.transactions !== "1" || invariant.rows[0]?.mismatches !== "0") {
+    if (invariant.rows[0]?.orders !== "1" || invariant.rows[0]?.transactions !== "3" || invariant.rows[0]?.mismatches !== "0") {
       throw new Error("The synthetic restore source failed its financial consistency check.");
     }
     await fixture.end();

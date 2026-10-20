@@ -60,7 +60,7 @@ async function sendWhatsAppNotification(
 
         attemptId = await prisma.$transaction(async (tx) => {
             // Serialize sends for one actor so concurrent status changes cannot bypass the rate limit.
-            await tx.$queryRaw`SELECT pg_advisory_xact_lock(0, hashtext(${actorId}))`;
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(0, hashtext(${actorId}))`;
             const since = new Date(Date.now() - WHATSAPP_SEND_WINDOW_MS);
             const recentAttempts = await tx.auditLog.count({
                 where: { actorId, action: "WHATSAPP_SEND_ATTEMPT", createdAt: { gte: since } },

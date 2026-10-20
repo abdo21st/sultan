@@ -210,7 +210,7 @@ async function main() {
     await cp(path.resolve(process.cwd(), "public"), path.resolve(process.cwd(), ".next/standalone/public"), { recursive: true });
 
     const playwrightCli = path.resolve(process.cwd(), "node_modules/@playwright/test/cli.js");
-    const tests = spawnSync(process.execPath, [playwrightCli, "test", "--config", "config/playwright/playwright.config.ts"], {
+    const tests = spawnSync(process.execPath, [playwrightCli, "test", "--config", "config/playwright/playwright.config.ts", "--grep-invert", "@reversal"], {
       cwd: process.cwd(),
       env: testEnv,
       stdio: "inherit",
@@ -329,6 +329,53 @@ async function main() {
       throw new Error("Isolated E2E database did not match expected payment and retention invariants.");
     }
     console.log("Isolated E2E database invariants passed; fixture data remained isolated.");
+    const reversalTests = spawnSync(process.execPath, [playwrightCli, 'test', '--config', 'config/playwright/playwright.config.ts', '--grep', '@reversal'], {
+      cwd: process.cwd(), env: testEnv, stdio: 'inherit', timeout: 10 * 60 * 1000,
+    });
+    if (reversalTests.error || reversalTests.status !== 0) throw new Error('Financial reversal acceptance failed.');
+    const reversalInvariant = await prisma!.$queryRaw<{ mismatches: bigint; reversals: bigint }[]>`
+      SELECT (SELECT count(*) FROM "Order" o WHERE o."paidAmount" <> COALESCE((SELECT sum(amount) FROM "Transaction" t WHERE t."orderId"=o.id AND t.type='INCOME'),0)) AS mismatches,
+        (SELECT count(*) FROM "Transaction" WHERE "reversalOfId" IS NOT NULL) AS reversals`;
+    console.log(JSON.stringify({ reversalLedger: { mismatches: Number(reversalInvariant[0].mismatches), reversals: Number(reversalInvariant[0].reversals) } }));
+    if (Number(reversalInvariant[0].mismatches) !== 0 || Number(reversalInvariant[0].reversals) !== 5) throw new Error('Reversal ledger invariant failed.');
+
+    const original = await prisma!.transaction.findFirstOrThrow({ where: { orderId: fixtures.ownOrderId, amount: { gt: 0 } } });
+    async function mustReject(operation: () => Promise<unknown>, expected: RegExp) {
+      try { await operation(); return false; }
+      catch (error) { if (error instanceof Error && expected.test(error.message)) return true; throw error; }
+    }
+    const databaseGuards = {
+      negativeWithoutSource: await mustReject(() => prisma!.transaction.create({ data: { type: 'INCOME', amount: -1, category: 'SALES' } }), /Transaction_signed_amount_check/),
+      wrongReversalScope: await mustReject(() => prisma!.transaction.create({ data: { type: 'EXPENSE', amount: original.amount.negated(), category: original.category, reversalOfId: original.id, reversalReason: 'Invalid ledger scope acceptance' } }), /exactly negate one original/),
+      originalImmutable: await mustReject(() => prisma!.transaction.update({ where: { id: original.id }, data: { amount: original.amount.plus(1) } }), /Posted transactions are immutable/),
+      inconsistentOrderBalance: await mustReject(() => prisma!.order.update({ where: { id: fixtures.ownOrderId }, data: { paidAmount: { increment: 1 }, remainingAmount: { decrement: 1 } } }), /Order paid amount does not match/),
+      invalidType: await mustReject(() => prisma!.transaction.create({ data: { type: 'UNKNOWN', amount: 1, category: 'SALES' } }), /Transaction_type_check/),
+    };
+    console.log(JSON.stringify({ databaseReversalGuards: databaseGuards }));
+    if (!Object.values(databaseGuards).every(Boolean)) throw new Error('A database reversal guard was bypassed.');
+    const preflight = spawnSync(process.execPath, [path.resolve('node_modules/tsx/dist/cli.mjs'), 'scripts/financial-preflight.ts'], {
+      cwd: process.cwd(), env: testEnv, encoding: 'utf8', timeout: 30_000,
+    });
+    if (preflight.error || preflight.status !== 0) throw new Error('Financial preflight rejected a valid signed reversal ledger.');
+    const financial = JSON.parse(preflight.stdout) as { metrics: { reversalCount: number; paymentLedgerMismatchCount: number } };
+    if (financial.metrics.reversalCount !== 5 || financial.metrics.paymentLedgerMismatchCount !== 0) throw new Error('Financial preflight missed reversal entries.');
+    console.log(JSON.stringify({ reversalPreflight: financial.metrics }));
+    const beforeReset = { orders: await prisma!.order.count(), transactions: await prisma!.transaction.count() };
+    let resetRollback = false;
+    try {
+      await prisma!.$transaction(async tx => {
+        await tx.transaction.deleteMany({});
+        await tx.order.deleteMany({});
+        await tx.$executeRaw`SET CONSTRAINTS ALL IMMEDIATE`;
+        if (await tx.order.count() !== 0 || await tx.transaction.count() !== 0) throw new Error('Synthetic reset did not clear its own rows.');
+        throw new Error('ROLL_BACK_SYNTHETIC_RESET');
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'ROLL_BACK_SYNTHETIC_RESET') resetRollback = true;
+      else throw error;
+    }
+    if (!resetRollback || await prisma!.order.count() !== beforeReset.orders || await prisma!.transaction.count() !== beforeReset.transactions) throw new Error('Synthetic reset rollback failed.');
+    console.log(JSON.stringify({ destructiveResetCompatibility: true, rolledBack: true, restoredFixtureCounts: beforeReset }));
   } finally {
     try {
       await cleanupDatabase();
@@ -339,7 +386,8 @@ async function main() {
   }
 }
 
-main().catch(() => {
+main().catch((error: unknown) => {
   console.error("Isolated E2E run failed; its temporary database was scheduled for cleanup.");
+  if (error instanceof Error) console.error(error.message.replace(/postgres(?:ql)?:\/\/[^\s]+/g, '<redacted>'));
   process.exitCode = 1;
 });

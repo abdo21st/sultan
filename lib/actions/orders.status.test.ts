@@ -5,8 +5,9 @@ jest.mock("@/lib/prisma", () => ({
       updateMany: jest.fn(),
       findUniqueOrThrow: jest.fn(),
     },
-    systemSettings: { findUnique: jest.fn() },
-    auditLog: { create: jest.fn() },
+    systemSettings: { findUnique: jest.fn(), findFirst: jest.fn() },
+    auditLog: { create: jest.fn(), count: jest.fn() },
+    $executeRaw: jest.fn(),
     $transaction: jest.fn(),
   },
 }));
@@ -21,6 +22,7 @@ jest.mock("@/lib/services/notification-service", () => ({
 }));
 
 jest.mock("@/lib/audit", () => ({ writeAudit: jest.fn().mockResolvedValue(undefined) }));
+jest.mock("@/lib/order-sharing", () => ({ issueOrderShareToken: jest.fn().mockResolvedValue('synthetic-share-token') }));
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
 
 import { prisma } from "@/lib/prisma";
@@ -37,6 +39,9 @@ const mockPrisma = prisma as unknown as {
     findUniqueOrThrow: jest.Mock;
   };
   $transaction: jest.Mock;
+  $executeRaw: jest.Mock;
+  systemSettings: { findFirst: jest.Mock };
+  auditLog: { count: jest.Mock; create: jest.Mock };
 };
 
 const manager = {
@@ -65,6 +70,34 @@ beforeEach(() => {
 });
 
 describe("updateOrderStatus", () => {
+  it('uses an execution-only advisory lock before a configured WhatsApp send', async () => {
+    const previousFetch = global.fetch;
+    const previousHosts = process.env.WHATSAPP_API_ALLOWED_HOSTS;
+    const previousBase = process.env.AUTH_URL;
+    const previousNextBase = process.env.NEXTAUTH_URL;
+    try {
+      process.env.WHATSAPP_API_ALLOWED_HOSTS = 'provider.example.test';
+      process.env.AUTH_URL = 'https://sultan.example.test';
+      process.env.NEXTAUTH_URL = 'https://sultan.example.test';
+      global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+      (getRequestUser as jest.Mock).mockResolvedValue({ ...manager, permissions: [PERMISSIONS.STATUS_CHANGE_PROCESSING, PERMISSIONS.WHATSAPP_SEND] });
+      mockPrisma.order.findUnique.mockResolvedValue({ status: ORDER_STATUS.DELIVERING_TO_FACTORY, factoryId: 'factory-1', shopId: 'shop-1' });
+      mockPrisma.order.findUniqueOrThrow.mockResolvedValue({ id: 'order-1', serialNumber: 1, customerName: 'Synthetic', customerPhone: '0910000000', factoryId: 'factory-1', shopId: 'shop-1' });
+      mockPrisma.systemSettings.findFirst.mockResolvedValue({ whatsappAutoSend: true, whatsappApiUrl: 'https://provider.example.test/send', whatsappApiKey: 'synthetic-key' });
+      mockPrisma.auditLog.count.mockResolvedValue(0);
+      (writeAudit as jest.Mock).mockResolvedValue('attempt-1');
+      expect((await updateOrderStatus('order-1', ORDER_STATUS.PROCESSING)).success).toBe(true);
+      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: 'WHATSAPP_SEND_RESULT', after: { status: 'SENT', httpStatus: 200 } }) }));
+    } finally {
+      global.fetch = previousFetch;
+      if (previousHosts === undefined) delete process.env.WHATSAPP_API_ALLOWED_HOSTS; else process.env.WHATSAPP_API_ALLOWED_HOSTS = previousHosts;
+      if (previousBase === undefined) delete process.env.AUTH_URL; else process.env.AUTH_URL = previousBase;
+      if (previousNextBase === undefined) delete process.env.NEXTAUTH_URL; else process.env.NEXTAUTH_URL = previousNextBase;
+    }
+  });
+
   it("rejects a transition outside the workflow before writing", async () => {
     const result = await updateOrderStatus("order-1", ORDER_STATUS.SHOP_READY);
 

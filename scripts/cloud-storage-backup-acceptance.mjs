@@ -114,9 +114,9 @@ async function main() {
     if (enroll(randomBytes(24).toString('hex')).status !== 'preserved' || readFlag() !== 'f') throw new Error('Enrollment changed an account with different credentials.');
     if (enroll(password).status !== 'enrolled' || readFlag() !== 't' || enroll(password).status !== 'already_required') throw new Error('Legacy initial password enrollment was not safe and idempotent.');
     run('docker', ['run', '--rm', '--network', 'none', '--mount', `type=volume,src=${imagesVolume},dst=/app/storage/order-images`, image, 'node', '-e', `require('fs').writeFileSync('/app/storage/order-images/${imageFile}',Buffer.from('${png.toString('base64')}','base64'),{mode:0o600})`]);
-    const sql = `INSERT INTO "Facility" (id,name,type) VALUES ('storage_factory','Synthetic factory','FACTORY'),('storage_shop','Synthetic shop','SHOP');
+    const sql = `BEGIN; INSERT INTO "Facility" (id,name,type) VALUES ('storage_factory','Synthetic factory','FACTORY'),('storage_shop','Synthetic shop','SHOP');
       INSERT INTO "Order" (id,"customerName","customerPhone",description,"dueDate","totalAmount","paidAmount","remainingAmount",images,"factoryId","shopId","updatedAt") VALUES ('storage_acceptance_order','Synthetic customer','0910000000','Cloud storage backup acceptance',NOW()+INTERVAL '7 days',100,70,30,ARRAY['sultan-local://orders/${imageFile}'],'storage_factory','storage_shop',NOW());
-      INSERT INTO "Transaction" (id,type,amount,category,"orderId","facilityId","updatedAt") VALUES ('storage_acceptance_payment','INCOME',70,'PAYMENT','storage_acceptance_order','storage_shop',NOW());`;
+      INSERT INTO "Transaction" (id,type,amount,category,"orderId","facilityId","updatedAt") VALUES ('storage_acceptance_payment','INCOME',70,'PAYMENT','storage_acceptance_order','storage_shop',NOW()); COMMIT;`;
     run('docker', ['exec', db, 'psql', '-v', 'ON_ERROR_STOP=1', '-U', 'sultan_user', '-d', 'sultan_db', '-c', sql]);
     await healthy(base);
     await readAuthenticatedImage(base, credentials, png);
