@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, X, Wifi, WifiOff } from "lucide-react";
 import Image from "next/image";
-import { db, type OfflineFacility } from "@/lib/db";
+import { db, facilityDb, type OfflineFacility } from "@/lib/db";
 import { useSession } from "next-auth/react";
 
 export default function NewOrderPage() {
@@ -48,17 +48,17 @@ export default function NewOrderPage() {
             setFacilities([]);
             setUsingCachedFacilities(false);
             let cached;
-            try { cached = await db.facilityCache.get('current'); } catch { /* Online creation remains available if local storage is unavailable. */ }
+            try { cached = await facilityDb.facilityCache.get('current'); } catch { /* Online creation remains available if local storage is unavailable. */ }
             if (!active) return;
             if (cached && (cached.scope !== scope || Date.now() - cached.updatedAt > 24 * 60 * 60 * 1000 || cached.updatedAt > Date.now())) {
                 cached = undefined;
-                try { await db.facilityCache.delete('current'); } catch { /* Never use an incompatible snapshot. */ }
+                try { await facilityDb.facilityCache.delete('current'); } catch { /* Never use an incompatible snapshot. */ }
             }
             try {
                 const response = await fetch('/api/facilities');
                 if (!active) return;
                 if (response.status === 401 || response.status === 403) {
-                    await db.facilityCache.clear();
+                    await facilityDb.facilityCache.clear();
                     if (active) { setFacilities([]); setError('يلزم تسجيل الدخول بصلاحية عرض المنشآت.'); }
                     return;
                 }
@@ -69,7 +69,7 @@ export default function NewOrderPage() {
                 if (!active) return;
                 setFacilities(minimal);
                 setUsingCachedFacilities(false);
-                try { await db.facilityCache.put({ key: 'current', scope, updatedAt: Date.now(), facilities: minimal }); }
+                try { await facilityDb.facilityCache.put({ key: 'current', scope, updatedAt: Date.now(), facilities: minimal }); }
                 catch { /* A storage quota failure must not disable an online form. */ }
             } catch {
                 if (!active) return;

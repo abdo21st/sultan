@@ -36,10 +36,11 @@ async function saveOffline(page: Page, name: string) {
     await expect(page.getByRole('heading', { name: 'إنشاء طلب جديد' })).toBeVisible();
     await expect(page.locator('select[name="factoryId"] option').nth(1)).toBeAttached();
     await page.waitForFunction(() => new Promise<boolean>((resolve) => {
-        const open = indexedDB.open('SultanAppDB');
+        const open = indexedDB.open('SultanFacilityCache');
         open.onerror = () => resolve(false);
         open.onsuccess = () => {
             const database = open.result;
+            if (!database.objectStoreNames.contains('facilityCache')) { database.close(); resolve(false); return; }
             const request = database.transaction('facilityCache', 'readonly').objectStore('facilityCache').get('current');
             request.onsuccess = () => { database.close(); resolve(Boolean(request.result)); };
             request.onerror = () => { database.close(); resolve(false); };
@@ -128,7 +129,7 @@ test.describe('offline image acceptance @offline_images', () => {
         await page.reload();
         await expect(page.getByText('تُعرض آخر قائمة منشآت محفوظة لهذا الحساب. ستُراجع الصلاحيات عند الإرسال.', { exact: true })).toBeVisible();
         const cachedShape = await page.evaluate(() => new Promise<{ keys: string[]; fields: string[][]; scope: string }>((resolve, reject) => {
-            const open = indexedDB.open('SultanAppDB');
+            const open = indexedDB.open('SultanFacilityCache');
             open.onerror = () => reject(open.error);
             open.onsuccess = () => {
                 const database = open.result;
@@ -201,7 +202,7 @@ test.describe('offline image acceptance @offline_images', () => {
         await page.goto('/orders/new');
         await expect(page.locator('select[name="factoryId"] option').nth(1)).toBeAttached();
         const snapshot = await page.evaluate(() => new Promise<object>((resolve, reject) => {
-            const open = indexedDB.open('SultanAppDB');
+            const open = indexedDB.open('SultanFacilityCache');
             open.onsuccess = () => {
                 const database = open.result;
                 const request = database.transaction('facilityCache', 'readonly').objectStore('facilityCache').get('current');
@@ -213,7 +214,7 @@ test.describe('offline image acceptance @offline_images', () => {
         expect(snapshot).toBeTruthy();
         async function replaceSnapshot(change: object) {
             await page.evaluate(({ original, change }) => new Promise<void>((resolve, reject) => {
-                const open = indexedDB.open('SultanAppDB');
+                const open = indexedDB.open('SultanFacilityCache');
                 open.onsuccess = () => {
                     const database = open.result;
                     const transaction = database.transaction('facilityCache', 'readwrite');
@@ -239,10 +240,10 @@ test.describe('offline image acceptance @offline_images', () => {
         await expect(page.locator('select[name="factoryId"] option')).toHaveCount(1);
     });
 
-    test('the previous local queue schema upgrades without losing a saved image', async ({ page }) => {
+    test('an existing saved image remains readable by the previous queue client', async ({ page }) => {
         await login(page.request);
         await page.goto('/offline.html');
-        const name = `E2E Offline Image Schema Upgrade ${randomUUID()}`;
+        const name = `E2E Offline Image Compatible Client ${randomUUID()}`;
         const key = randomUUID();
         await page.evaluate(({ name, key, bytes, factoryId, shopId }) => new Promise<void>((resolve, reject) => {
             const open = indexedDB.open('SultanAppDB', 20); // Dexie version 2 uses native IndexedDB version 20.
@@ -263,6 +264,12 @@ test.describe('offline image acceptance @offline_images', () => {
         await expect(page.getByRole('button', { name: 'إعادة المحاولة', exact: true })).toBeVisible();
         expect((await queue(page))[0].idempotencyKey).toBe(key);
         expect(Buffer.from((await queue(page))[0].bytes).equals(png)).toBe(true);
+        const previousClientQueue = await page.evaluate(() => new Promise<{ opened: boolean; version?: number; error?: string }>(resolve => {
+            const open = indexedDB.open('SultanAppDB', 20);
+            open.onerror = () => resolve({ opened: false, error: open.error?.name });
+            open.onsuccess = () => { const version = open.result.version; open.result.close(); resolve({ opened: true, version }); };
+        }));
+        expect(previousClientQueue).toEqual({ opened: true, version: 20 });
         await page.getByRole('button', { name: 'إعادة المحاولة', exact: true }).click();
         await expect.poll(async () => (await queue(page)).length).toBe(0);
         await checkSaved(page.request, name, key);

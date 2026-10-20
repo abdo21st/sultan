@@ -36,7 +36,6 @@ export interface OfflineOrder {
 
 export class AppDatabase extends Dexie {
     orders!: Table<OfflineOrder>;
-    facilityCache!: Table<FacilitySnapshot, string>;
 
     constructor() {
         super('SultanAppDB');
@@ -56,11 +55,20 @@ export class AppDatabase extends Dexie {
                 }
             });
         });
-        this.version(3).stores({
-            orders: '++id, status, createdAt, nextAttemptAt',
-            facilityCache: '&key',
-        });
     }
 }
 
 export const db = new AppDatabase();
+
+// Keep auxiliary cache schema changes separate from the queue so older releases
+// can still open pending orders and image Blobs after an application rollback.
+export class FacilityDatabase extends Dexie {
+    facilityCache!: Table<FacilitySnapshot, string>;
+
+    constructor() {
+        super('SultanFacilityCache');
+        this.version(1).stores({ facilityCache: '&key' });
+    }
+}
+
+export const facilityDb = new FacilityDatabase();

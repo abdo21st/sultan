@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { db } from "@/lib/db";
+import { db, facilityDb } from "@/lib/db";
 import { toast } from "react-hot-toast";
 import { Wifi, RefreshCw } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -147,7 +147,7 @@ export default function OfflineSyncProvider({ children }: { children: React.Reac
 
     useEffect(() => {
         if (sessionStatus === "unauthenticated" || session?.user.mustChangePassword) {
-            void db.facilityCache.clear().catch(() => {
+            void facilityDb.facilityCache.clear().catch(() => {
                 console.error("Failed to clear offline facility cache");
             });
         }

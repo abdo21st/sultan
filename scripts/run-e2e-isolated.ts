@@ -401,7 +401,7 @@ async function main() {
     const imagesAdded = (await readdir(imageDirectory!)).filter(name => !imagesBefore.has(name));
     const offlineCreatedAudits = await prisma!.auditLog.count({ where: { entityType: 'ORDER', action: 'CREATED', entityId: { in: offlineOrders.map(order => order.id) } } });
     if (offlineOrders.length !== 5 || new Set(offlineOrders.map(order => order.clientRequestId)).size !== 5 || offlineOrders.some(order => !order.clientRequestId || order.images.length !== 1 || !order.paidAmount.eq(0)) || imagesAdded.length !== 5 || offlineCreatedAudits !== 5) throw new Error('Offline image acceptance created duplicate records, missing images, or orphaned files.');
-    console.log(JSON.stringify({ offlineImageAcceptance: { orders: offlineOrders.length, uniqueClientKeys: 5, imageFilesAdded: imagesAdded.length, creationAudits: offlineCreatedAudits, disposableProfileRestart: true, localQueueSchemaUpgrade: true } }));
+    console.log(JSON.stringify({ offlineImageAcceptance: { orders: offlineOrders.length, uniqueClientKeys: 5, imageFilesAdded: imagesAdded.length, creationAudits: offlineCreatedAudits, disposableProfileRestart: true, previousClientQueueCompatible: true } }));
   } finally {
     try {
       await cleanupDatabase();
