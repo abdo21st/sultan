@@ -1,0 +1,3 @@
+Defaults:sultan-operator env_reset, !setenv
+Defaults:sultan-operator secure_path="/usr/sbin:/usr/bin:/sbin:/bin"
+sultan-operator ALL=(root) NOPASSWD: /usr/local/sbin/sultan-operate status, /usr/local/sbin/sultan-operate health, /usr/local/sbin/sultan-operate restart, /usr/local/sbin/sultan-operate backup
