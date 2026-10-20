@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "npx prisma generate && next build",
+    "build": "npx prisma generate && next build && node scripts/sanitize-standalone.mjs",
     "start": "next start",
     "db:financial-preflight": "tsx scripts/financial-preflight.ts",
     "db:migrate:deploy": "prisma migrate deploy",
