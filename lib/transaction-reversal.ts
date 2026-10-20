@@ -2,11 +2,10 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { PERMISSIONS } from '@/lib/permissions';
 import { canAccessOrderFacility, type RequestUser } from '@/lib/request-user';
-import { ORDER_STATUS } from '@/lib/constants';
 import { writeAudit } from '@/lib/audit';
 import { toMoneyNumber } from '@/lib/money';
 
-type ErrorCode = 'NOT_FOUND' | 'FORBIDDEN' | 'ALREADY_REVERSED' | 'REVERSAL_OF_REVERSAL' | 'IDEMPOTENCY_CONFLICT' | 'COMPLETED_ORDER' | 'LEDGER_MISMATCH' | 'CONCURRENT_CHANGE';
+type ErrorCode = 'NOT_FOUND' | 'FORBIDDEN' | 'ALREADY_REVERSED' | 'REVERSAL_OF_REVERSAL' | 'IDEMPOTENCY_CONFLICT' | 'LEDGER_MISMATCH' | 'CONCURRENT_CHANGE';
 export class ReversalError extends Error {
     constructor(public readonly code: ErrorCode) { super(code); }
 }
@@ -51,12 +50,10 @@ export async function reverseTransaction(user: RequestUser, id: string, reason: 
 
             const order = original.order;
             if (order) {
-                // Completed-order correction policy is kept at the existing restriction until agreed.
-                if (order.status === ORDER_STATUS.COMPLETED) throw new ReversalError('COMPLETED_ORDER');
                 const ledger = await tx.transaction.aggregate({ where: { orderId: order.id, type: 'INCOME' }, _sum: { amount: true } });
                 if (!(ledger._sum.amount ?? new Prisma.Decimal(0)).eq(order.paidAmount)) throw new ReversalError('LEDGER_MISMATCH');
                 const updated = await tx.order.updateMany({
-                    where: { id: order.id, paidAmount: { gte: original.amount }, status: { not: ORDER_STATUS.COMPLETED } },
+                    where: { id: order.id, paidAmount: { gte: original.amount } },
                     data: { paidAmount: { decrement: original.amount }, remainingAmount: { increment: original.amount } },
                 });
                 if (updated.count !== 1) throw new ReversalError('CONCURRENT_CHANGE');

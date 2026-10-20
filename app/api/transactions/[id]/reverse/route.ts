@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             const errors = {
                 NOT_FOUND: [404, 'الحركة غير متاحة'], FORBIDDEN: [403, 'لا تملك صلاحية عكس هذه الحركة'],
                 ALREADY_REVERSED: [409, 'سبق عكس هذه الحركة'], REVERSAL_OF_REVERSAL: [409, 'لا يمكن عكس قيد عكسي؛ سجّل حركة صحيحة جديدة'],
-                IDEMPOTENCY_CONFLICT: [409, 'استُخدم مفتاح العملية لطلب مختلف'], COMPLETED_ORDER: [409, 'لا يُسمح بعكس دفعة طلب مكتمل وفق السياسة الحالية'],
+                IDEMPOTENCY_CONFLICT: [409, 'استُخدم مفتاح العملية لطلب مختلف'],
                 LEDGER_MISMATCH: [409, 'رصيد الطلب لا يطابق سجل التحصيل؛ يلزم إجراء مصالحة قبل التصحيح'],
                 CONCURRENT_CHANGE: [409, 'تزامنت عملية أخرى؛ أعد المحاولة بنفس مفتاح العملية'],
             } as const;

@@ -4,6 +4,8 @@ umask 077
 
 # Linux-only acceptance: all database writes use this disposable container.
 image=${1:-sultan-plan-verification:20261020}
+rollback_image=${2:-sultan-release:bc216ce}
+case "$rollback_image" in sultan-release:*) ;; *) exit 2 ;; esac
 port=${SULTAN_ACCEPTANCE_DB_PORT:-55437}
 case "$port" in *[!0-9]*|'') exit 2 ;; esac
 if ss -ltn | awk '{print $4}' | grep -Eq ":${port}$"; then
@@ -31,6 +33,7 @@ until docker exec "$container" pg_isready -U sultan_user -d sultan_acceptance >/
   sleep 1
 done
 printf 'DATABASE_URL=postgresql://sultan_user:%s@127.0.0.1:%s/sultan_acceptance\nDIRECT_URL=postgresql://sultan_user:%s@127.0.0.1:%s/sultan_acceptance\nACCEPTANCE_DB_CONTAINER=%s\nCI=true\nPLAYWRIGHT_HTML_OPEN=never\n' "$password" "$port" "$password" "$port" "$container" > "$temporary/test.env"
+printf 'SULTAN_ROLLBACK_IMAGE=%s\n' "$rollback_image" >> "$temporary/test.env"
 project=$(pwd -P)
 # Mount current source directories only: the server .env is never mounted.
 docker run --rm --network host --env-file "$temporary/test.env" \
@@ -48,4 +51,4 @@ docker run --rm --network host --env-file "$temporary/test.env" \
   --mount "type=bind,src=$project/eslint.config.mjs,dst=/app/eslint.config.mjs,readonly" \
   --mount "type=bind,src=$project/package.json,dst=/app/package.json,readonly" \
   --mount "type=bind,src=$project/package-lock.json,dst=/current-package-lock.json,readonly" \
-  "$image" sh -c 'cmp -s package-lock.json /current-package-lock.json || { printf "%s\n" "Rebuild the verification image: dependency lock differs." >&2; exit 1; }; npm run build && npm test -- --runInBand && npm run lint && npx tsc --noEmit && npm run test:e2e:isolated && npm run test:restore-start -- --container "$ACCEPTANCE_DB_CONTAINER" && npm audit --omit=dev'
+  "$image" sh -c 'cmp -s package-lock.json /current-package-lock.json || { printf "%s\n" "Rebuild the verification image: dependency lock differs." >&2; exit 1; }; npm run build && npm test -- --runInBand && npm run lint && npx tsc --noEmit && npm run test:e2e:isolated && npm run test:restore-start -- --container "$ACCEPTANCE_DB_CONTAINER" && npm run test:upgrade-rollback -- --container "$ACCEPTANCE_DB_CONTAINER" --rollback-image "$SULTAN_ROLLBACK_IMAGE" && npm audit --omit=dev'

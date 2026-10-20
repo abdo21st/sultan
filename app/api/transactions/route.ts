@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { PERMISSIONS } from "@/lib/permissions";
 import { canAccessOrderFacility, getRequestUser, type RequestUser } from "@/lib/request-user";
 import { fromCents, toCents, toMoneyNumber } from "@/lib/money";
-import { ORDER_STATUS } from "@/lib/constants";
 import { writeAudit } from "@/lib/audit";
 import { decodeDateIdCursor, encodeDateIdCursor, parsePageSize } from "@/lib/keyset-pagination";
 import { moneyAmountSchema } from "@/lib/schemas";
@@ -147,10 +146,9 @@ export async function POST(request: Request) {
                     });
                     if (!order) throw new Error("ORDER_NOT_FOUND");
                     if (!canAccessOrderFacility(user, order)) throw new Error("ORDER_FORBIDDEN");
-                    if (order.status === ORDER_STATUS.COMPLETED) throw new Error("ORDER_ALREADY_COMPLETED");
 
                     const updated = await tx.order.updateMany({
-                        where: { id: order.id, status: { not: ORDER_STATUS.COMPLETED }, remainingAmount: { gte: amount } },
+                        where: { id: order.id, remainingAmount: { gte: amount } },
                         data: {
                             paidAmount: { increment: amount },
                             remainingAmount: { decrement: amount },
@@ -208,10 +206,10 @@ export async function POST(request: Request) {
                     return NextResponse.json({ error: "الطلب غير موجود" }, { status: 404 });
                 }
                 if (error instanceof Error && error.message === "ORDER_PAYMENT_CONFLICT") {
+                    // A concurrent retry may observe the balance after the first request collected it in full.
+                    const replay = await existingPaymentResponse(user, body.idempotencyKey, expectedPayment);
+                    if (replay) return replay;
                     return NextResponse.json({ error: "مبلغ التحصيل أكبر من المبلغ المتبقي أو تغيرت بيانات الطلب." }, { status: 409 });
-                }
-                if (error instanceof Error && error.message === "ORDER_ALREADY_COMPLETED") {
-                    return NextResponse.json({ error: "لا يمكن تسجيل دفعة على طلب مكتمل." }, { status: 409 });
                 }
                 if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
                     const replay = await existingPaymentResponse(user, body.idempotencyKey, expectedPayment);

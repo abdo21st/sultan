@@ -329,6 +329,22 @@ async function main() {
       throw new Error("Isolated E2E database did not match expected payment and retention invariants.");
     }
     console.log("Isolated E2E database invariants passed; fixture data remained isolated.");
+    // Add delivered fixtures only after asserting the unchanged primary acceptance counts.
+    for (const [label, status] of [['CURRENT', ORDER_STATUS.COMPLETED], ['LEGACY', 'COMPLETED']] as const) {
+      const delivered = await prisma!.$transaction(async tx => {
+        const order = await tx.order.create({ data: {
+          customerName: `Delivered correction ${label}`, customerPhone: '0910000008', description: 'Synthetic delivered-order financial acceptance',
+          dueDate: new Date(), status, totalAmount: 100, paidAmount: 100, remainingAmount: 0, images: [],
+          factoryId: fixtures.factoryId, shopId: fixtures.shopId,
+        } });
+        const payment = await tx.transaction.create({ data: { type: 'INCOME', amount: 100, category: 'SALES', orderId: order.id, facilityId: fixtures.shopId, createdBy: fixtures.adminId } });
+        await tx.auditLog.create({ data: { actorId: fixtures.adminId, entityType: 'ORDER', entityId: order.id, action: 'COMPLETED',
+          before: { status: ORDER_STATUS.DELIVERING, paidAmount: 0, remainingAmount: 100 }, after: { status, paidAmount: 100, remainingAmount: 0 } } });
+        return { order, payment };
+      });
+      testEnv[`E2E_DELIVERED_${label}_ORDER_ID`] = delivered.order.id;
+      testEnv[`E2E_DELIVERED_${label}_PAYMENT_ID`] = delivered.payment.id;
+    }
     const reversalTests = spawnSync(process.execPath, [playwrightCli, 'test', '--config', 'config/playwright/playwright.config.ts', '--grep', '@reversal'], {
       cwd: process.cwd(), env: testEnv, stdio: 'inherit', timeout: 10 * 60 * 1000,
     });
@@ -337,7 +353,7 @@ async function main() {
       SELECT (SELECT count(*) FROM "Order" o WHERE o."paidAmount" <> COALESCE((SELECT sum(amount) FROM "Transaction" t WHERE t."orderId"=o.id AND t.type='INCOME'),0)) AS mismatches,
         (SELECT count(*) FROM "Transaction" WHERE "reversalOfId" IS NOT NULL) AS reversals`;
     console.log(JSON.stringify({ reversalLedger: { mismatches: Number(reversalInvariant[0].mismatches), reversals: Number(reversalInvariant[0].reversals) } }));
-    if (Number(reversalInvariant[0].mismatches) !== 0 || Number(reversalInvariant[0].reversals) !== 5) throw new Error('Reversal ledger invariant failed.');
+    if (Number(reversalInvariant[0].mismatches) !== 0 || Number(reversalInvariant[0].reversals) !== 7) throw new Error('Reversal ledger invariant failed.');
 
     const original = await prisma!.transaction.findFirstOrThrow({ where: { orderId: fixtures.ownOrderId, amount: { gt: 0 } } });
     async function mustReject(operation: () => Promise<unknown>, expected: RegExp) {
@@ -358,7 +374,7 @@ async function main() {
     });
     if (preflight.error || preflight.status !== 0) throw new Error('Financial preflight rejected a valid signed reversal ledger.');
     const financial = JSON.parse(preflight.stdout) as { metrics: { reversalCount: number; paymentLedgerMismatchCount: number } };
-    if (financial.metrics.reversalCount !== 5 || financial.metrics.paymentLedgerMismatchCount !== 0) throw new Error('Financial preflight missed reversal entries.');
+    if (financial.metrics.reversalCount !== 7 || financial.metrics.paymentLedgerMismatchCount !== 0) throw new Error('Financial preflight missed reversal entries.');
     console.log(JSON.stringify({ reversalPreflight: financial.metrics }));
     const beforeReset = { orders: await prisma!.order.count(), transactions: await prisma!.transaction.count() };
     let resetRollback = false;

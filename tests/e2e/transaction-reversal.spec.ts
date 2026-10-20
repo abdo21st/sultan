@@ -137,4 +137,42 @@ test.describe('financial corrections @reversal', () => {
         expect(ledger).toHaveLength(3);
         expect(Math.round(ledger.reduce((sum, entry) => sum + entry.amount, 0) * 100)).toBe(7000);
     });
+
+    for (const [label, status] of [['CURRENT', 'orders:status:completed'], ['LEGACY', 'COMPLETED']] as const) {
+        test(`a delivered order keeps its delivery history through correction and recollection (${label})`, async ({ request, page }) => {
+            await login(request);
+            await login(page.request);
+            const id = process.env[`E2E_DELIVERED_${label}_ORDER_ID`]!;
+            const originalId = process.env[`E2E_DELIVERED_${label}_PAYMENT_ID`]!;
+            const audit = async () => (await (await request.get(`/api/audit?entityType=ORDER&entityId=${id}`)).json()).items as { action: string }[];
+            const completedBefore = (await audit()).filter(entry => entry.action === 'COMPLETED');
+            expect(completedBefore).toHaveLength(1);
+            const key = randomUUID();
+            const reversals = await Promise.all([reverse(request, originalId, key), reverse(request, originalId, key)]);
+            expect(reversals.map(response => response.status())).toEqual([200, 200]);
+            const reversed = await Promise.all(reversals.map(response => response.json()));
+            expect(reversed[0].id).toBe(reversed[1].id);
+            expect(await (await request.get(`/api/orders/${id}`)).json()).toMatchObject({ status, paidAmount: 0, remainingAmount: 100 });
+            expect(await (await request.get('/api/orders?paymentStatus=unpaid&limit=100')).json()).toEqual(expect.arrayContaining([expect.objectContaining({ id, status, remainingAmount: 100 })]));
+            await page.goto(`/orders/${id}`);
+            await expect(page.getByText('تم تسليم الطلب، وما زال المبلغ المتبقي مستحقاً.', { exact: false })).toBeVisible();
+            const payment = { type: 'INCOME', amount: 100, category: 'SALES', orderId: id, idempotencyKey: randomUUID() };
+            const collections = await Promise.all([request.post('/api/transactions', { data: payment }), request.post('/api/transactions', { data: payment })]);
+            expect(collections.map(response => response.status())).toEqual([200, 200]);
+            const collected = await Promise.all(collections.map(response => response.json()));
+            expect(collected[0].id).toBe(collected[1].id);
+            expect(await (await request.get(`/api/orders/${id}`)).json()).toMatchObject({ status, paidAmount: 100, remainingAmount: 0 });
+            expect((await request.post('/api/transactions', { data: { ...payment, amount: 0.01, idempotencyKey: randomUUID() } })).status()).toBe(409);
+            const after = await audit();
+            expect(after.filter(entry => entry.action === 'COMPLETED')).toEqual(completedBefore);
+            expect(after.filter(entry => entry.action === 'PAYMENT_REVERSED')).toHaveLength(1);
+            expect(after.filter(entry => entry.action === 'PAYMENT_RECORDED')).toHaveLength(1);
+            const ledger = (await entries(request)).filter(entry => entry.orderId === id);
+            expect(ledger).toHaveLength(3);
+            expect(ledger.find(entry => entry.id === originalId)?.amount).toBe(100);
+            expect(ledger.reduce((sum, entry) => sum + entry.amount, 0)).toBe(100);
+            await page.reload();
+            await expect(page.getByText('تم تسليم الطلب، وما زال المبلغ المتبقي مستحقاً.', { exact: false })).toBeHidden();
+        });
+    }
 });

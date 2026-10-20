@@ -48,6 +48,16 @@ it('replays the same key and reason without a second write or audit', async () =
     expect(writeAudit).not.toHaveBeenCalled();
 });
 
+it.each([ORDER_STATUS.COMPLETED, 'COMPLETED'])('corrects the balance of a delivered order without writing its status (%s)', async status => {
+    (prisma.transaction.findUnique as jest.Mock).mockImplementation(({ where }) => where.id ? { ...original, order: { ...original.order, status } } : null);
+    await reverseTransaction(user, 'source', reason, key);
+    expect(prisma.order.updateMany).toHaveBeenCalledWith({
+        where: { id: 'order', paidAmount: { gte: original.amount } },
+        data: { paidAmount: { decrement: original.amount }, remainingAmount: { increment: original.amount } },
+    });
+    expect(writeAudit).toHaveBeenCalledTimes(3);
+});
+
 it('rejects reuse of a key with another reason', async () => {
     (prisma.transaction.findUnique as jest.Mock).mockImplementation(({ where }) => where.id ? original : { ...original, reversalOfId: 'source', reversalReason: 'another reason' });
     await expect(reverseTransaction(user, 'source', reason, key)).rejects.toMatchObject({ code: 'IDEMPOTENCY_CONFLICT' });

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PERMISSIONS } from "@/lib/permissions";
+import { ORDER_STATUS } from "@/lib/constants";
 import OrderActions from "./OrderActions";
 import RevokeShares from "./RevokeShares";
 import { ArrowLeft, Edit } from "lucide-react";
@@ -186,6 +187,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                     </div>
                                 </div>
                                 {/* Payment History Section */}
+                                {[ORDER_STATUS.COMPLETED, 'COMPLETED'].includes(currentOrder.status) && currentOrder.remainingAmount > 0 && (
+                                    <p className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">تم تسليم الطلب، وما زال المبلغ المتبقي مستحقاً. يمكن تسجيل تحصيله من صفحة الحركات المالية.</p>
+                                )}
                                 {transactions.length > 0 && (
                                     <div className="mt-12 border-t border-border pt-8">
                                         <h4 className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest mb-6">سجل الدفعات المالية</h4>
