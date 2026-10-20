@@ -1,0 +1,69 @@
+name: sultan-mobile-acceptance
+
+services:
+  sultan-db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    mem_limit: 384m
+    cpus: 0.5
+    environment:
+      POSTGRES_DB: sultan_mobile_acceptance
+      POSTGRES_USER: sultan_mobile_user
+      POSTGRES_PASSWORD: ${QA_DB_PASSWORD:?Set the private QA configuration}
+    volumes:
+      - sultan-mobile-acceptance-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sultan_mobile_user -d sultan_mobile_acceptance"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  sultan-migrate:
+    image: sultan-release-migrator:e6f3a63
+    mem_limit: 512m
+    cpus: 0.5
+    environment:
+      DATABASE_URL: postgresql://sultan_mobile_user:${QA_DB_PASSWORD}@sultan-db:5432/sultan_mobile_acceptance
+      DIRECT_URL: postgresql://sultan_mobile_user:${QA_DB_PASSWORD}@sultan-db:5432/sultan_mobile_acceptance
+      QA_ACCOUNT_USERNAME: ${QA_ACCOUNT_USERNAME:?Set the private QA account}
+      QA_ACCOUNT_PASSWORD: ${QA_ACCOUNT_PASSWORD:?Set the private QA password}
+    depends_on:
+      sultan-db:
+        condition: service_healthy
+    restart: "no"
+
+  sultan-app:
+    image: sultan-release:e6f3a63
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.75
+    environment:
+      NODE_ENV: production
+      AUTH_URL: https://sultan-qa.mtapp.ly
+      AUTH_TRUST_HOST: "true"
+      AUTH_SECRET: ${QA_AUTH_SECRET:?Set the private QA authentication secret}
+      CRON_SECRET: ${QA_CRON_SECRET:?Set the private QA cron secret}
+      ORDER_SHARE_SECRET: ${QA_SHARE_SECRET:?Set the private QA share secret}
+      ORDER_IMAGE_STORAGE: local
+      ORDER_IMAGE_STORAGE_DIR: /app/storage/order-images
+      DATABASE_URL: postgresql://sultan_mobile_user:${QA_DB_PASSWORD}@sultan-db:5432/sultan_mobile_acceptance
+      DIRECT_URL: postgresql://sultan_mobile_user:${QA_DB_PASSWORD}@sultan-db:5432/sultan_mobile_acceptance
+    ports:
+      - "127.0.0.1:3375:3000"
+    volumes:
+      - sultan-mobile-acceptance-images:/app/storage/order-images
+    depends_on:
+      sultan-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  sultan-mobile-acceptance-db:
+    name: sultan-mobile-acceptance-db
+  sultan-mobile-acceptance-images:
+    name: sultan-mobile-acceptance-images

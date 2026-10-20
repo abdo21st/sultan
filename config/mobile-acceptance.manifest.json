@@ -1,0 +1,13 @@
+{
+  "name": "سلطان — اختبار الهاتف فقط",
+  "short_name": "سلطان اختبار",
+  "description": "بيئة اختبار مستقلة ببيانات مصطنعة. لا تدخل بيانات عملاء حقيقية.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#b45309",
+  "icons": [{ "src": "/favicon.ico", "sizes": "any", "type": "image/x-icon" }]
+}
