@@ -1,0 +1,11 @@
+[Unit]
+Description=Transfer pending Sultan encrypted snapshots offsite
+
+[Timer]
+OnCalendar=*-*-* 02:45:00 UTC
+OnBootSec=10min
+Persistent=true
+Unit=sultan-offsite-backup.service
+
+[Install]
+WantedBy=timers.target

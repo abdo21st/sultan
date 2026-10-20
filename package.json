@@ -15,6 +15,7 @@
     "db:backup:encrypted": "tsx scripts/db-backup-encrypted.ts",
     "test:restore-start": "tsx scripts/backup-restore-start-acceptance.ts",
     "test:upgrade-rollback": "tsx scripts/upgrade-rollback-acceptance.ts",
+    "test:offsite": "node --test scripts/backup-offsite.test.mjs",
     "db:seed": "tsx prisma/seed.ts",
     "blob:secure-existing-images": "tsx scripts/migrate-order-images-private.ts",
     "lint": "eslint",

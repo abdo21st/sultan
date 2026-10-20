@@ -1,0 +1,14 @@
+[Unit]
+Description=Sultan encrypted offsite backup with authenticated readback
+After=docker.service network-online.target sultan-backup.service
+Wants=network-online.target
+Requires=docker.service
+ConditionPathExists=/opt/sultan-production/.env.backup-offsite
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/sultan-production
+ExecStart=/usr/bin/flock -n /run/lock/sultan-backup.lock /usr/bin/node scripts/backup-offsite.mjs upload-pending
+TimeoutStartSec=2h
+UMask=0077
+NoNewPrivileges=true

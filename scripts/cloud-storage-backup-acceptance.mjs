@@ -72,6 +72,7 @@ async function readAuthenticatedImage(base, credentials, expectedBytes) {
 async function main() {
   const image = process.argv[2] || 'sultan-private-candidate:20261020';
   const migrator = process.argv[3] || 'sultan-production-sultan-migrate';
+  const offsiteTest = process.argv.includes('--offsite-test');
   const suffix = randomBytes(6).toString('hex');
   const project = `sultan-storage-acceptance-${suffix}`;
   const temporary = await mkdtemp(join(tmpdir(), 'sultan-storage-acceptance-'));
@@ -101,6 +102,8 @@ async function main() {
   };
   let stackStarted = false;
   let restoredVolumeCreated = false;
+  const mockName = `sultan-offsite-test-${suffix}`;
+  let mockStarted = false;
   try {
     await writeFile(composeFile, JSON.stringify(compose), { mode: 0o600 });
     stackStarted = true;
@@ -157,6 +160,45 @@ async function main() {
     await writeFile(manifestPath, JSON.stringify(manifest));
     const tamperCheck = spawnSync(process.execPath, ['scripts/cloud-backup.mjs', 'verify', '--directory', tampered, '--container', db], { env, stdio: 'ignore' });
     if (tamperCheck.status === 0) throw new Error('Modified ciphertext was accepted.');
+    if (offsiteTest) {
+      const mockPort = await availablePort();
+      const mockEndpoint = `http://127.0.0.1:${mockPort}`;
+      const mockImage = 'adobe/s3mock@sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92';
+      run('docker', ['run', '-d', '--name', mockName, '--label', `sultan.offsite-test=${suffix}`, '--memory', '768m', '-e', 'JAVA_TOOL_OPTIONS=-Xmx384m', '-e', 'COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS=sultan-acceptance', '-p', `127.0.0.1:${mockPort}:9090`, mockImage]);
+      mockStarted = true;
+      const deadline = Date.now() + 90_000;
+      let ready = false;
+      while (Date.now() < deadline) {
+        try { if ((await fetch(`${mockEndpoint}/favicon.ico`, { signal: AbortSignal.timeout(1000) })).status === 200) { ready = true; break; } } catch { /* Disposable test storage is starting. */ }
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      if (!ready) throw new Error('Disposable S3 test storage was not ready.');
+      const config = join(temporary, 'offsite-test.env');
+      await writeFile(config, `SULTAN_S3_ENDPOINT=${mockEndpoint}\nSULTAN_S3_REGION=us-east-1\nSULTAN_S3_BUCKET=sultan-acceptance\nSULTAN_S3_ACCESS_KEY_ID=${randomBytes(16).toString('hex')}\nSULTAN_S3_SECRET_ACCESS_KEY=${randomBytes(24).toString('hex')}\nSULTAN_S3_PREFIX=sultan-acceptance/\nSULTAN_S3_FORCE_PATH_STYLE=true\n`, { mode: 0o600 });
+      const common = ['--config', config, '--allow-loopback-test-endpoint', '--container', db, '--state', join(temporary, 'offsite-state')];
+      const upload = () => JSON.parse(run(process.execPath, ['scripts/backup-offsite.mjs', 'upload', '--directory', snapshot.directory, ...common], env));
+      if (!upload().readbackMatched || !upload().authenticated) throw new Error('Offsite upload or identical retry did not verify.');
+      const pending = JSON.parse(run(process.execPath, ['scripts/backup-offsite.mjs', 'upload-pending', '--root', backupRoot, ...common], env));
+      if (pending.uploaded !== 0 || pending.alreadyUploaded !== 1) throw new Error('Offsite upload receipts were not idempotent.');
+      const download = join(temporary, 'offsite-downloaded');
+      const name = snapshot.directory.split('/').at(-1);
+      const downloaded = JSON.parse(run(process.execPath, ['scripts/backup-offsite.mjs', 'download', '--snapshot', name, '--destination', download, ...common], env));
+      if (!downloaded.authenticated) throw new Error('Offsite restoration download did not authenticate.');
+      for (const file of ['manifest.json', 'database.dump.aesgcm', 'order-images.tar.gz.aesgcm', 'VERIFIED']) {
+        if (!(await readFile(join(download, file))).equals(await readFile(join(snapshot.directory, file)))) throw new Error('Downloaded offsite bytes differ from the source.');
+      }
+      const signedFile = join(download, 'OFFSITE-VERIFIED.json');
+      const marker = JSON.parse(await readFile(signedFile, 'utf8'));
+      marker.payload.hashes['manifest.json'] = '0'.repeat(64);
+      const modified = JSON.stringify(marker);
+      const put = await fetch(`${mockEndpoint}/sultan-acceptance/sultan-acceptance/${name}/OFFSITE-VERIFIED.json`, { method: 'PUT', body: modified });
+      if (!put.ok) throw new Error('Could not prepare the isolated offsite tamper fixture.');
+      const rejectedDirectory = join(temporary, 'tampered-offsite-download');
+      const rejected = spawnSync(process.execPath, ['scripts/backup-offsite.mjs', 'download', '--snapshot', name, '--destination', rejectedDirectory, ...common], { env, stdio: 'ignore' });
+      if (rejected.status !== 1 || await readFile(join(rejectedDirectory, 'OFFSITE-VERIFIED.json'), 'utf8') !== modified || await stat(join(rejectedDirectory, 'database.dump.aesgcm')).then(() => true, () => false)) throw new Error('Offsite restore did not reject the changed signature before downloading database data.');
+      snapshot.directory = download;
+      console.log(JSON.stringify({ offsiteTransportAcceptance: true, encryptedReadbackMatched: true, authenticatedSignedManifest: true, identicalUploadRetry: true, pendingReceiptIdempotent: true, tamperedManifestRejectedBeforeDatabaseDownload: true, productionCredentialsUsed: false, actualProviderAcceptance: false }));
+    }
     const restored = JSON.parse(run(process.execPath, ['scripts/cloud-backup.mjs', 'restore-images', '--directory', snapshot.directory, '--container', db, '--target-volume', restoredVolume], env));
     restoredVolumeCreated = true;
     if (restored.imageCount !== 1) throw new Error('Image restore did not contain the source image.');
@@ -172,6 +214,10 @@ async function main() {
     await readAuthenticatedImage(base, credentials, png);
     console.log(JSON.stringify({ mode: 'cloud-storage-backup-acceptance', anonymousImageAccess: 404, authenticatedImageAccess: 200, encrypted: true, interruptedBackupRecovery: 'unpaused', verifiedRetentionScoped: true, tamperedCiphertextRejected: true, restoredOrders: 1, restoredTransactions: 1, ledgerMismatches: 0, restoredImages: 1, restoredImageBytesMatch: true, recreatedApplication: 'healthy', productionDataUsed: false }));
   } finally {
+    if (mockStarted) {
+      if (run('docker', ['inspect', '--format', '{{index .Config.Labels "sultan.offsite-test"}}', mockName]) !== suffix) throw new Error('Offsite test container ownership changed.');
+      run('docker', ['rm', '-f', mockName]);
+    }
     if (stackStarted) run('docker', [...composeArgs, 'down', '--volumes', '--remove-orphans']);
     if (restoredVolumeCreated) run('docker', ['volume', 'rm', restoredVolume]);
     await rm(temporary, { recursive: true, force: true });
