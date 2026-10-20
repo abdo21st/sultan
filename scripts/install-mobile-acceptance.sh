@@ -28,6 +28,10 @@ docker run --rm --read-only --network none --mount type=volume,src=sultan-mobile
 curl -fsS --max-time 10 http://127.0.0.1:3375/api/health >/dev/null
 install -d -o root -g root -m 755 /var/www/sultan-mobile-acceptance
 install -o root -g root -m 644 "$source_root/config/mobile-acceptance.manifest.json" /var/www/sultan-mobile-acceptance/manifest.json
+for log in /var/log/nginx/sultan-mobile-acceptance.access.log /var/log/nginx/sultan-mobile-acceptance.error.log; do
+  test ! -e "$log"
+  install -o root -g adm -m 640 /dev/null "$log"
+done
 install -o root -g root -m 644 "$source_root/config/nginx/sultan-mobile-acceptance.conf" "$available"
 ln -s "$available" "$enabled"
 if ! nginx -t; then
