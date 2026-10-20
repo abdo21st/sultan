@@ -61,13 +61,15 @@ docker compose -f docker-compose.isolated.yml up --build -d
 يستخدم `docker-compose.cloud.yml` قاعدة PostgreSQL مستقلة بحجم دائم غير منشور على الإنترنت، ويربط التطبيق على `127.0.0.1:3005` ليخدمه Nginx مع HTTPS. يتطلب ملف `.env` على الخادم قيمًا عشوائية خاصة لـ`DB_PASSWORD` و`AUTH_SECRET` و`CRON_SECRET`، وكلمة مرور أول مدير عند التهيئة الأولى. لا ترفع ملف الأسرار إلى Git أو إلى سياق البناء. ينشئ هذا الإعداد قاعدة جديدة فارغة؛ لا تستخدمه لاستبدال قاعدة تشغيلية أو ترحيل بياناتها.
 
 ```bash
-docker compose -f docker-compose.cloud.yml up --build -d sultan-app
-docker compose -f docker-compose.cloud.yml run --rm sultan-migrate npm run db:seed
+flock -n /run/lock/sultan-backup.lock docker compose -f docker-compose.cloud.yml up --build -d sultan-app
+flock -n /run/lock/sultan-backup.lock docker compose -f docker-compose.cloud.yml run --rm sultan-migrate npm run db:seed
 docker compose -f docker-compose.cloud.yml ps
 curl --fail https://sultan.mtapp.ly/api/health
 ```
 
 تحقق من النسخ الاحتياطي المشفر واستعادة نسخة مستقلة قبل تخزين بيانات تشغيلية. لا يُنشر منفذ PostgreSQL على واجهة الخادم.
+
+ملف `config/nginx/sultan.mtapp.ly.conf` يضبط النطاق وHTTPS وحد رفع 50 ميغابايت، بما يغطي عشر صور بحد 4.5 ميغابايت للصورة. يتطلب شهادة Let's Encrypt صالحة بالمسارات المذكورة. بعد تثبيت ملف النطاق في Nginx، نفذ `nginx -t` ثم أعد تحميل Nginx. يستخدم النشر والنسخ اليومي القفل نفسه أعلاه لمنع تزامن تحديث التطبيق مع التقاط النسخة المتسقة.
 
 ### تخزين الصور في النسخة السحابية
 
@@ -94,6 +96,8 @@ node scripts/cloud-backup.mjs verify --directory /var/backups/sultan-production/
 انقل المجلد الكامل إلى وجهة خارج الخادم، واحفظ المفتاح في مكان خاص منفصل. يمكن تمرير ملف مفتاح منفصل عبر `--key-file` دون عرضه. يحتفظ الأمر افتراضياً بآخر 30 نسخة مكتملة ومتحقق منها على الخادم؛ يمكن ضبط العدد عبر `--keep` بين 1 و365. لا يحذف مجلداً غير معروف أو نسخة ناقصة. لا تنقل أداة الخادم الملفات خارجه تلقائياً.
 
 تتضمن `config/systemd` مؤقت نسخ يومياً قرابة 03:15 بتوقيت ليبيا ومؤقت إعادة محاولة حذف الصور قرابة 04:15. ثبت ملفات `sultan-*.service` و`sultan-*.timer` في `/etc/systemd/system` ثم نفذ `systemctl daemon-reload` و`systemctl enable --now sultan-backup.timer sultan-image-cleanup.timer`. تحقق من نتيجة تشغيل الخدمتين فعلياً؛ ظهور المؤقت وحده لا يثبت نجاح النسخ أو الحذف. تتطلب وجهة النسخ الخارجية آلية نقل مستقلة واختبار استعادة من النسخة المنقولة.
+
+لنقل أحدث لقطة متحقق منها إلى جهاز Windows عبر اتصال SSH المعد مسبقاً باسم `nawat-server`، شغّل `./scripts/pull-cloud-backup.ps1` من PowerShell 7. ينقل الملفات المشفرة فقط إلى `local-backups/cloud`، ويفحص SHA-256 قبل اعتماد المجلد، ويحتفظ افتراضياً بآخر 30 نسخة محلية متحقق منها. المفتاح لا يُنقل مع النسخة. يمكن تحديد الوجهة عبر `-Destination` وعدد النسخ عبر `-Keep`. يحتاج النقل المجدول أن يكون الجهاز قيد التشغيل ومتصلًا بالإنترنت؛ اعتمد وجهة خارجية تعمل دائماً إذا كانت النسخ اليومية دون انقطاع مطلوبة.
 
 لاستعادة الصور، تقبل الأداة حجماً جديداً فقط ينتهي بـ`_restore_test` وتفحص أسماء أعضاء الأرشيف قبل الاستخراج. استعد قاعدة البيانات إلى قاعدة اختبار جديدة باستخدام أداة النسخ المشفر السابقة، ثم شغّل التطبيق على القاعدة والحجم المستعادين للتحقق من الطلبات والصور:
 

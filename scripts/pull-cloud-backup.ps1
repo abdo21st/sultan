@@ -40,14 +40,14 @@ if (!(Test-Snapshot $target)) {
         $info.CreateNoWindow = $true
         $info.RedirectStandardOutput = $true
         $info.RedirectStandardError = $true
-        foreach ($arg in @('-o','BatchMode=yes','-o','ConnectTimeout=15','-o','ServerAliveInterval=15','-o','ServerAliveCountMax=3',$SshAlias,'cat',"$RemoteSnapshot/$file")) { $info.ArgumentList.Add($arg) }
+        foreach ($arg in @('-o','BatchMode=yes','-o','IPQoS=none','-o','ConnectTimeout=15','-o','ServerAliveInterval=15','-o','ServerAliveCountMax=3',$SshAlias,'cat',"$RemoteSnapshot/$file")) { $info.ArgumentList.Add($arg) }
         $process = [Diagnostics.Process]::Start($info)
         $errorTask = $process.StandardError.ReadToEndAsync()
         $stream = [IO.File]::Open((Join-Path $stage $file),[IO.FileMode]::CreateNew)
         try {
             $transfer = $process.StandardOutput.BaseStream.CopyToAsync($stream)
             if (!$transfer.Wait([TimeSpan]::FromMinutes(20))) { $process.Kill($true); throw 'Encrypted snapshot transfer timed out' }
-            $transfer.GetAwaiter().GetResult()
+            $null = $transfer.GetAwaiter().GetResult()
             $process.WaitForExit()
             $null = $errorTask.GetAwaiter().GetResult()
             if ($process.ExitCode -ne 0) { throw 'Encrypted snapshot transfer failed' }
