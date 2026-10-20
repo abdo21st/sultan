@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react';
 import NavBar from "../../components/NavBar";
 import { Save, Download, Trash2, RefreshCw, AlertTriangle, Building2, Plus, X } from 'lucide-react';
 import { useToast } from '@/app/components/ToastProvider';
+import { DESTRUCTIVE_CONFIRMATIONS } from '@/lib/constants';
 
 export default function SettingsPage() {
     const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState<'general' | 'whatsapp' | 'facilities' | 'actions'>('general');
     const [loading, setLoading] = useState(false);
+    const [hasWhatsappApiKey, setHasWhatsappApiKey] = useState(false);
+    const [clearWhatsappApiKey, setClearWhatsappApiKey] = useState(false);
     const [facilities, setFacilities] = useState<{ id: string; name: string; type: string; location: string; createdAt: string }[]>([]);
     const [newFacility, setNewFacility] = useState({ name: '', type: 'FACTORY', location: '' });
     const [settings, setSettings] = useState({
@@ -36,8 +39,9 @@ export default function SettingsPage() {
                         themeColor: data.themeColor || '#d97706',
                         whatsappAutoSend: data.whatsappAutoSend || false,
                         whatsappApiUrl: data.whatsappApiUrl || '',
-                        whatsappApiKey: data.whatsappApiKey || ''
+                        whatsappApiKey: ''
                     });
+                    setHasWhatsappApiKey(Boolean(data.hasWhatsappApiKey));
                 }
             });
     }, []);
@@ -60,10 +64,14 @@ export default function SettingsPage() {
             const res = await fetch('/api/settings', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settings)
+                body: JSON.stringify({ ...settings, clearWhatsappApiKey })
             });
-            if (res.ok) showToast('تم حفظ الإعدادات بنجاح', 'success');
-            else showToast('حدث خطأ أثناء حفظ الإعدادات', 'error');
+            if (res.ok) {
+                setHasWhatsappApiKey(clearWhatsappApiKey || settings.whatsappApiKey ? !clearWhatsappApiKey : hasWhatsappApiKey);
+                setClearWhatsappApiKey(false);
+                setSettings(current => ({ ...current, whatsappApiKey: '' }));
+                showToast('تم حفظ الإعدادات بنجاح', 'success');
+            } else showToast('حدث خطأ أثناء حفظ الإعدادات', 'error');
         } catch (error) {
             console.error(error);
         } finally {
@@ -76,11 +84,16 @@ export default function SettingsPage() {
     };
 
     const handleClearData = async () => {
-        if (!confirm('تحذير: سيتم حذف جميع الطلبات والحركات المالية والإشعارات. هل أنت متأكد؟')) return;
+        const confirmation = prompt(`تحذير: سيتم حذف جميع الطلبات والحركات المالية والإشعارات. اكتب ${DESTRUCTIVE_CONFIRMATIONS.CLEAR_OPERATIONAL_DATA} للمتابعة.`);
+        if (confirmation !== DESTRUCTIVE_CONFIRMATIONS.CLEAR_OPERATIONAL_DATA) return;
 
         setLoading(true);
         try {
-            const res = await fetch('/api/settings/clear-data', { method: 'POST' });
+            const res = await fetch('/api/settings/clear-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirmation }),
+            });
             const data = await res.json();
             if (res.ok) showToast(data.message, 'success');
             else showToast(data.error || 'حدث خطأ أثناء مسح البيانات', 'error');
@@ -94,11 +107,16 @@ export default function SettingsPage() {
     const handleFactoryReset = async () => {
         const confirmMsg = "تحذير خطير: سيتم حذف جميع البيانات بما في ذلك الطلبات، المستخدمين، والأدوار والعودة لحالة المصنع.\n\nهل أنت متأكد تماماً؟";
         if (!confirm(confirmMsg)) return;
-        if (!confirm("تأكيد أخير: هل أنت متأكد؟ العملية لا يمكن التراجع عنها.")) return;
+        const confirmation = prompt(`اكتب ${DESTRUCTIVE_CONFIRMATIONS.FACTORY_RESET} لتأكيد إعادة الضبط.`);
+        if (confirmation !== DESTRUCTIVE_CONFIRMATIONS.FACTORY_RESET) return;
 
         setLoading(true);
         try {
-            const res = await fetch('/api/settings/factory-reset', { method: 'POST' });
+            const res = await fetch('/api/settings/factory-reset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirmation }),
+            });
             const data = await res.json();
             if (res.ok) {
                 showToast(data.message, 'success');
@@ -159,11 +177,16 @@ export default function SettingsPage() {
     const handleDeleteAllUsers = async () => {
         const confirmMsg = "تحذير: سيتم حذف جميع المستخدمين (ماعدا حسابك الحالي).\n\nهل أنت متأكد؟";
         if (!confirm(confirmMsg)) return;
-        if (!confirm("تأكيد أخير: هل أنت متأكد تماما؟")) return;
+        const confirmation = prompt(`اكتب ${DESTRUCTIVE_CONFIRMATIONS.BULK_DELETE_USERS} لتأكيد حذف باقي المستخدمين.`);
+        if (confirmation !== DESTRUCTIVE_CONFIRMATIONS.BULK_DELETE_USERS) return;
 
         setLoading(true);
         try {
-            const res = await fetch('/api/users/bulk-delete', { method: 'POST' });
+            const res = await fetch('/api/users/bulk-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirmation }),
+            });
             const data = await res.json();
             if (res.ok) {
                 showToast(data.message, 'success');
@@ -298,7 +321,7 @@ export default function SettingsPage() {
                                 <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
                                     <div>
                                         <h3 className="font-bold text-green-800">إرسال المستندات تلقائياً عبر الواتساب</h3>
-                                        <p className="text-sm text-gray-600 mt-1">عند تسجيل الطلب أو جاهزيته للتسليم، سيتم إرسال المستند تلقائياً لرقم العميل</p>
+                                        <p className="text-sm text-gray-600 mt-1">عند نقل الطلب إلى قيد التجهيز أو جاهز للمحل، يُرسل المستند لرقم العميل. يجب أن يمتلك منفذ النقل صلاحية إرسال WhatsApp.</p>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input
@@ -321,7 +344,7 @@ export default function SettingsPage() {
                                         dir="ltr"
                                         placeholder="https://api.whatsapp.com/send"
                                     />
-                                    <p className="text-xs text-gray-500">يمكنك استخدام WhatsApp Business API أو خدمات مثل Twilio</p>
+                                    <p className="text-xs text-gray-500">يجب أن يكون اسم النطاق ضمن WHATSAPP_API_ALLOWED_HOSTS في إعدادات الخادم.</p>
                                 </div>
 
                                 <div className="space-y-2">
@@ -332,8 +355,16 @@ export default function SettingsPage() {
                                         onChange={e => setSettings({ ...settings, whatsappApiKey: e.target.value })}
                                         className="w-full border p-2 rounded-lg text-left"
                                         dir="ltr"
-                                        placeholder="your-api-key-here"
+                                        placeholder={hasWhatsappApiKey ? 'مفتاح محفوظ؛ اكتب قيمة جديدة لاستبداله' : 'أدخل مفتاح API'}
                                     />
+                                    <label className="flex items-center gap-2 text-sm text-red-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={clearWhatsappApiKey}
+                                            onChange={e => setClearWhatsappApiKey(e.target.checked)}
+                                        />
+                                        حذف المفتاح المحفوظ
+                                    </label>
                                 </div>
                             </div>
 
@@ -444,10 +475,10 @@ export default function SettingsPage() {
                                 <div>
                                     <h3 className="text-lg font-bold flex items-center gap-2 text-blue-800">
                                         <Download className="w-5 h-5" />
-                                        النسخ الاحتياطي
+                                        تصدير البيانات
                                     </h3>
                                     <p className="text-sm text-gray-600 mt-1 max-w-lg">
-                                        تصدير نسخة كاملة من قاعدة البيانات (المستخدمين، الطلبات، الإعدادات) بتنسيق JSON. يمكنك استخدام هذا الملف لاستعادة البيانات لاحقاً.
+                                        تنزيل تصدير إداري بصيغة JSON. هذا الملف ليس نسخة كاملة قابلة لاستعادة قاعدة البيانات؛ استخدم أداة النسخ والاستعادة المشفّرة الموضحة في دليل التشغيل.
                                     </p>
                                 </div>
                                 <button
@@ -455,7 +486,7 @@ export default function SettingsPage() {
                                     className="bg-blue-50 text-blue-700 border border-blue-200 px-4 py-2 rounded-lg hover:bg-blue-100 flex items-center gap-2 font-medium"
                                 >
                                     <Download className="w-4 h-4" />
-                                    تحميل النسخة
+                                    تنزيل التصدير
                                 </button>
                             </div>
                         </div>

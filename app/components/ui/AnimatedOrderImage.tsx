@@ -27,6 +27,7 @@ export default function AnimatedOrderImage({ src, index }: AnimatedOrderImagePro
                 src={src}
                 alt={`Order image ${index + 1}`}
                 fill
+                unoptimized
                 loading="lazy"
                 className="object-cover group-hover:scale-110 transition-transform duration-1000 blur-[0.2px] group-hover:blur-0"
             />

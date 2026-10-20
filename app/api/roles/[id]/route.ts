@@ -1,14 +1,15 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "../../../../lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { PERMISSIONS } from "../../../../lib/permissions";
+import { getRequestUser } from "@/lib/request-user";
+import { writeAudit } from "@/lib/audit";
 
 const roleSchema = z.object({
     name: z.string().min(2).optional(),
     displayName: z.string().min(2).optional(),
     description: z.string().optional(),
-    permissions: z.array(z.string()).optional(),
+    permissions: z.array(z.string().min(1).max(120)).max(100).optional().refine((permissions) => !permissions?.includes("*"), "Wildcard permissions are not allowed."),
 });
 
 export async function PATCH(
@@ -16,10 +17,9 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;
-    const session = await auth();
-    if (!session?.user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const user = await getRequestUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user.permissions.includes(PERMISSIONS.ROLES_MANAGE)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     try {
         const json = await req.json();
@@ -32,23 +32,26 @@ export async function PATCH(
             );
         }
 
-        const role = await prisma.customRole.update({
-            where: { id },
-            data: result.data
+        const role = await prisma.$transaction(async (tx) => {
+            const before = await tx.customRole.findUnique({ where: { id } });
+            if (!before) throw new Error("ROLE_NOT_FOUND");
+            const updated = await tx.customRole.update({ where: { id }, data: result.data });
+            await writeAudit(tx, { actorId: user.id, entityType: "ROLE", entityId: id, action: "UPDATED", before, after: updated });
+            return updated;
         });
 
         return NextResponse.json(role);
-    } catch {
+    } catch (error) {
+        if (error instanceof Error && error.message === "ROLE_NOT_FOUND") return NextResponse.json({ error: "Role not found" }, { status: 404 });
         return NextResponse.json({ error: "Failed to update role" }, { status: 500 });
     }
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-    const session = await auth();
+    const user = await getRequestUser();
     // 1. Authentication & Permission Check
-    if (!session?.user?.permissions?.includes(PERMISSIONS.ROLES_MANAGE)) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user.permissions.includes(PERMISSIONS.ROLES_MANAGE)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     try {
         const { id } = await params;
@@ -69,8 +72,15 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
             }, { status: 400 });
         }
 
-        await prisma.customRole.delete({
-            where: { id }
+        await prisma.$transaction(async (tx) => {
+            await tx.customRole.delete({ where: { id } });
+            await writeAudit(tx, {
+                actorId: user.id,
+                entityType: "ROLE",
+                entityId: id,
+                action: "DELETED",
+                before: { name: roleToDelete.name, displayName: roleToDelete.displayName, permissions: roleToDelete.permissions },
+            });
         });
         return NextResponse.json({ success: true });
     } catch (error) {

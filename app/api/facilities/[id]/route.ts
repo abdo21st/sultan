@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from "../../../../lib/prisma";
-import { auth } from "@/lib/auth";
 import { PERMISSIONS } from "../../../../lib/permissions";
+import { getRequestUser } from "@/lib/request-user";
+import { writeAudit } from "@/lib/audit";
 
 export async function DELETE(
     request: NextRequest,
@@ -9,11 +10,11 @@ export async function DELETE(
 ) {
     try {
         const { id: facilityId } = await params;
-        const session = await auth();
-        const userPermissions = session?.user?.permissions || [];
+        const user = await getRequestUser();
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         // Check authentication and permission
-        if (!userPermissions.includes(PERMISSIONS.FACILITIES_DELETE)) {
+        if (!user.permissions.includes(PERMISSIONS.FACILITIES_DELETE)) {
             return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
         }
 
@@ -48,13 +49,21 @@ export async function DELETE(
         }
 
         // Delete the facility
-        await prisma.facility.delete({
-            where: { id: facilityId }
+        await prisma.$transaction(async (tx) => {
+            const facility = await tx.facility.findUnique({ where: { id: facilityId } });
+            if (!facility) throw new Error('FACILITY_NOT_FOUND');
+            await tx.facility.delete({ where: { id: facilityId } });
+            await writeAudit(tx, {
+                actorId: user.id,
+                entityType: "FACILITY",
+                entityId: facilityId,
+                action: "DELETED",
+                before: { name: facility.name, type: facility.type, location: facility.location },
+            });
         });
 
         return NextResponse.json({ message: 'تم حذف المنشأة بنجاح' });
-    } catch (error) {
-        console.error('Error deleting facility:', error);
+    } catch {
         return NextResponse.json(
             { error: 'حدث خطأ أثناء حذف المنشأة' },
             { status: 500 }

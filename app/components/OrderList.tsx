@@ -31,6 +31,8 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
+    const [nextCursor, setNextCursor] = useState<string | null>(null);
+    const [loadingMore, setLoadingMore] = useState(false);
     const ordersPerPage = 20;
 
     const hasPermission = (permission: string) => {
@@ -43,11 +45,16 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
         async function fetchOrders() {
             setLoading(true);
             try {
-                const url = queryParams ? `/api/orders?${queryParams}` : "/api/orders";
+                const params = new URLSearchParams(queryParams ?? "");
+                params.set('limit', '100');
+                params.delete('cursor');
+                const url = `/api/orders?${params}`;
                 const res = await fetch(url);
                 if (res.ok) {
                     const data = await res.json();
                     setOrders(data);
+                    setNextCursor(res.headers.get('X-Next-Cursor'));
+                    setCurrentPage(1);
                 }
             } catch (error) {
                 console.error("Failed to fetch orders", error);
@@ -57,6 +64,25 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
         }
         fetchOrders();
     }, [queryParams]);
+
+    async function loadMoreOrders() {
+        if (!nextCursor || loadingMore) return;
+        setLoadingMore(true);
+        try {
+            const params = new URLSearchParams(queryParams ?? "");
+            params.set('limit', '100');
+            params.set('cursor', nextCursor);
+            const res = await fetch(`/api/orders?${params}`);
+            if (!res.ok) throw new Error('تعذر تحميل بقية الطلبات.')
+            const data = await res.json();
+            setOrders((previous) => [...previous, ...data]);
+            setNextCursor(res.headers.get('X-Next-Cursor'));
+        } catch (error) {
+            console.error('Failed to load more orders', error);
+        } finally {
+            setLoadingMore(false);
+        }
+    }
 
     // Grouping Logic
     // Pagination calculations
@@ -138,7 +164,7 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
             ))}
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {(totalPages > 1 || nextCursor) && (
                 <div className="flex flex-wrap items-center justify-center gap-3 mt-12 pb-8 px-4">
                     <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
@@ -149,7 +175,7 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
                     </button>
 
                     <div className="flex items-center gap-2">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                             <button
                                 key={page}
                                 onClick={() => setCurrentPage(page)}
@@ -170,6 +196,15 @@ export default function OrderList({ queryParams, groupingMode = 'none' }: OrderL
                     >
                         <span>التالي</span>
                     </button>
+                    {nextCursor && (
+                        <button
+                            onClick={loadMoreOrders}
+                            disabled={loadingMore}
+                            className="h-12 px-6 rounded-2xl bg-primary text-white font-black text-xs disabled:opacity-50"
+                        >
+                            {loadingMore ? 'جاري التحميل...' : 'تحميل المزيد'}
+                        </button>
+                    )}
                 </div>
             )}
         </div>

@@ -1,0 +1,12 @@
+[Unit]
+Description=Retry deletion of unreferenced Sultan private images
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/sultan-production
+ExecStart=/usr/bin/node scripts/cloud-maintenance.mjs
+TimeoutStartSec=90s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true

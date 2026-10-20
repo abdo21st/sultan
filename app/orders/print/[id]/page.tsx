@@ -4,13 +4,14 @@ import Image from "next/image";
 import PrintAndShareButtons from "../../../components/PrintAndShareButtons";
 import QRCode from "qrcode";
 import { formatCurrency } from "../../../../lib/utils";
-import { auth } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
+import { canAccessOrderFacility, canViewOrderStatus, getRequestUser } from "@/lib/request-user";
+import { createOrderShareToken } from "@/lib/order-share-token";
 
 export default async function PrintOrderPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
 
-    const [order, settings, session] = await Promise.all([
+    const [order, settings, user] = await Promise.all([
         prisma.order.findUnique({
             where: { id },
             include: {
@@ -19,17 +20,31 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
             }
         }),
         prisma.systemSettings.findFirst(),
-        auth()
+        getRequestUser()
     ]);
 
-    if (!order) return notFound();
+    if (
+        !user?.permissions.includes(PERMISSIONS.ORDERS_VIEW) ||
+        !(user.role === 'ADMIN' || user.permissions.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS)) ||
+        !order ||
+        !canAccessOrderFacility(user, order) ||
+        !canViewOrderStatus(user, order.status)
+    ) return notFound();
     const currentOrder = order!;
 
-    const canViewFinancials = session?.user?.role === 'ADMIN' || session?.user?.permissions?.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
+    const canViewFinancials = true;
 
     // Generate QR Code data (linking to the digital order page)
-    const baseUrl = process.env.NEXTAUTH_URL || "https://sultan23.vercel.app";
-    const orderUrl = `${baseUrl}/orders/${currentOrder.id}`;
+    const configuredBaseUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL;
+    const baseUrl = configuredBaseUrl || (process.env.NODE_ENV === 'development' ? "http://localhost:3000" : null);
+    if (!baseUrl) throw new Error("AUTH_URL must be configured with the public application URL.");
+    const parsedBaseUrl = new URL(baseUrl);
+    if (process.env.NODE_ENV === 'production' && parsedBaseUrl.protocol !== 'https:') {
+        throw new Error("AUTH_URL must use HTTPS in production.");
+    }
+    const shareUrl = new URL(`/orders/share/${currentOrder.id}`, baseUrl);
+    shareUrl.searchParams.set("token", createOrderShareToken(currentOrder.id));
+    const orderUrl = shareUrl.toString();
     const qrCodeDataUrl = await QRCode.toDataURL(orderUrl, {
         margin: 1,
         width: 120,
@@ -217,11 +232,12 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                         customerName: currentOrder.customerName,
                         customerPhone: currentOrder.customerPhone,
                         description: currentOrder.description,
-                        totalAmount: currentOrder.totalAmount,
-                        paidAmount: currentOrder.paidAmount,
-                        remainingAmount: currentOrder.remainingAmount,
+                        totalAmount: Number(currentOrder.totalAmount),
+                        paidAmount: Number(currentOrder.paidAmount),
+                        remainingAmount: Number(currentOrder.remainingAmount),
                         dueDate: currentOrder.dueDate,
-                        orderId: currentOrder.id
+                        orderId: currentOrder.id,
+                        shareUrl: orderUrl,
                     }}
                 />
             </div>

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { getRequestUser } from "@/lib/request-user";
 
 export async function GET() {
     try {
-        const session = await auth();
-        if (!session?.user || session.user.role !== "ADMIN") {
+        const user = await getRequestUser();
+        if (!user || user.role !== "ADMIN") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
@@ -73,8 +73,8 @@ export async function GET() {
                     paid: 0
                 };
             }
-            monthlySales[monthKey].total += order.totalAmount;
-            monthlySales[monthKey].paid += order.paidAmount;
+            monthlySales[monthKey].total += Number(order.totalAmount);
+            monthlySales[monthKey].paid += Number(order.paidAmount);
         });
 
         // --- Process Factory Stats ---
@@ -83,7 +83,7 @@ export async function GET() {
             return {
                 name: f.name,
                 count: stats?._count.id || 0,
-                value: stats?._sum.totalAmount || 0
+                value: Number(stats?._sum.totalAmount || 0)
             };
         }).sort((a, b) => b.value - a.value); // Sort by value desc
 
@@ -99,8 +99,8 @@ export async function GET() {
             statusCounts,
             summary: {
                 totalOrders: totalAggregates._count.id,
-                totalRevenue: totalAggregates._sum.totalAmount || 0,
-                totalCollected: totalAggregates._sum.paidAmount || 0
+                totalRevenue: Number(totalAggregates._sum.totalAmount || 0),
+                totalCollected: Number(totalAggregates._sum.paidAmount || 0)
             }
         });
 

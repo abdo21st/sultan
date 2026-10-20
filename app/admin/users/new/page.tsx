@@ -143,12 +143,15 @@ export default function NewUserPage() {
                             required
                             name="password"
                             type="password"
+                            minLength={12}
+                            maxLength={128}
                             value={formData.password}
                             onChange={e => setFormData({ ...formData, password: e.target.value })}
                             className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             dir="ltr"
                             aria-label="كلمة المرور"
                         />
+                        <p className="text-xs text-muted-foreground">12 حرفاً على الأقل</p>
                     </div>
 
                     <div className="space-y-4">

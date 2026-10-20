@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Sultan encrypted snapshot
+
+[Timer]
+OnCalendar=*-*-* 01:15:00 UTC
+RandomizedDelaySec=300
+Persistent=true
+Unit=sultan-backup.service
+
+[Install]
+WantedBy=timers.target

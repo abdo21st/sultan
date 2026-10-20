@@ -15,6 +15,7 @@ import OrderFilters, { FilterState } from "./components/OrderFilters";
 import { exportOrdersToPDF, type OrderExportData } from '@/lib/pdf-export';
 import { useToast } from './components/ToastProvider';
 import { ORDER_STATUS_LABELS } from '@/lib/constants';
+import { fetchAllPages } from '@/lib/fetch-all-pages';
 
 export default function Home() {
   const { hasPermission } = usePermission();
@@ -83,25 +84,26 @@ export default function Home() {
               onClick={async () => {
                 try {
                   const url = `/api/orders?${queryParams}`;
-                  const res = await fetch(url);
-                  if (res.ok) {
-                    const data = await res.json();
-                    if (data.length === 0) {
-                      showToast('لا توجد طلبات لتصديرها ⚠️', 'warning');
-                      return;
-                    }
-                    const exportData: OrderExportData[] = data.map((o: { serialNumber: number; customerName: string; totalAmount: number; status: string; dueDate: string }) => ({
-                      serialNumber: o.serialNumber,
-                      customerName: o.customerName,
-                      totalAmount: o.totalAmount,
-                      status: ORDER_STATUS_LABELS[o.status] || o.status,
-                      dueDate: o.dueDate
-                    }));
-                    exportOrdersToPDF(exportData, 'تقرير طلبات سلطان');
-                    showToast('تم تصدير ملف PDF بنجاح 📄✅', 'success');
-                  } else {
-                    showToast('فشل في جلب بيانات الطلبات ❌', 'error');
+                  const data = await fetchAllPages<{
+                    serialNumber: number;
+                    customerName: string;
+                    totalAmount: number;
+                    status: string;
+                    dueDate: string;
+                  }>(url);
+                  if (data.length === 0) {
+                    showToast('لا توجد طلبات لتصديرها ⚠️', 'warning');
+                    return;
                   }
+                  const exportData: OrderExportData[] = data.map((o) => ({
+                    serialNumber: o.serialNumber,
+                    customerName: o.customerName,
+                    totalAmount: o.totalAmount,
+                    status: ORDER_STATUS_LABELS[o.status] || o.status,
+                    dueDate: o.dueDate
+                  }));
+                  exportOrdersToPDF(exportData, 'تقرير طلبات سلطان');
+                  showToast('تم تصدير ملف PDF بنجاح 📄✅', 'success');
                 } catch (err) {
                   console.error('Export PDF Error:', err);
                   showToast('حدث خطأ غير متوقع ❌', 'error');

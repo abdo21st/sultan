@@ -1,70 +1,91 @@
-import { prisma } from "../../../../lib/prisma";
-import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getRequestUser } from "@/lib/request-user";
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-    const session = await auth();
-    if (!session) return new Response("Unauthorized", { status: 401 });
-    if (!session?.user?.id) {
-        return new Response('Unauthorized', { status: 401 });
-    }
+export async function GET(request: Request) {
+    const user = await getRequestUser();
+    if (!user) return new Response("Unauthorized", { status: 401 });
 
     const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-        async start(controller) {
-            // Keep-alive heartbeat
-            const timer = setInterval(() => {
-                try {
-                    controller.enqueue(encoder.encode(': keep-alive\n\n'));
-                } catch {
-                    clearInterval(timer);
-                }
-            }, 30000);
+    let cleanup: (() => void) | undefined;
+    const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+            let closed = false;
+            let polling = false;
+            let cursor: { createdAt: Date; id: string } | null = null;
+            const timers: ReturnType<typeof setInterval>[] = [];
 
-            // Poll for new notifications for this user
-            const poll = setInterval(async () => {
+            const close = () => {
+                if (closed) return;
+                closed = true;
+                timers.forEach(clearInterval);
+                request.signal.removeEventListener('abort', abort);
+                try { controller.close(); } catch { /* Stream already closed. */ }
+            };
+            cleanup = close;
+            const abort = () => close();
+
+            const poll = async () => {
+                if (closed || polling) return;
+                polling = true;
                 try {
-                    const unreadNotifications = await prisma.notification.findMany({
+                    if (cursor === null) {
+                        const latest = await prisma.notification.findFirst({
+                            where: { userId: user.id },
+                            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+                            select: { id: true, createdAt: true },
+                        });
+                        cursor = latest ?? { id: '', createdAt: new Date(Date.now() - 1000) };
+                    }
+
+                    const notifications = await prisma.notification.findMany({
                         where: {
-                            userId: session.user.id,
+                            userId: user.id,
                             read: false,
+                            OR: [
+                                { createdAt: { gt: cursor.createdAt } },
+                                { createdAt: cursor.createdAt, id: { gt: cursor.id } },
+                            ],
                         },
-                        orderBy: { createdAt: 'desc' },
-                        take: 5
+                        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+                        take: 20,
+                        select: { id: true, title: true, message: true, link: true, createdAt: true },
                     });
 
-                    if (unreadNotifications.length > 0) {
-                        controller.enqueue(encoder.encode(`data: ${JSON.stringify(unreadNotifications)}\n\n`));
-
-                        // We mark them as "delivered" or just let the client handle it.
-                        // For simplicity in this SSE mock, we just send them.
+                    if (closed) return;
+                    if (notifications.length > 0) {
+                        const last = notifications[notifications.length - 1];
+                        cursor = { createdAt: last.createdAt, id: last.id };
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify(notifications)}\n\n`));
                     }
-                } catch (e) {
-                    console.error("SSE Polling Error:", e);
-                    clearInterval(poll);
-                    clearInterval(timer);
-                    try {
-                        controller.close();
-                    } catch {
-                        // Ignore if already closed
-                    }
+                } catch {
+                    close();
+                } finally {
+                    polling = false;
                 }
-            }, 5000); // Poll every 5 seconds for simulation of "real-time"
-
-            // Clean up on close
-            return () => {
-                clearInterval(timer);
-                clearInterval(poll);
             };
-        }
+
+            request.signal.addEventListener('abort', abort, { once: true });
+            timers.push(setInterval(() => {
+                if (!closed) {
+                    try { controller.enqueue(encoder.encode(': keep-alive\n\n')); } catch { close(); }
+                }
+            }, 25_000));
+            timers.push(setInterval(() => { void poll(); }, 15_000));
+            void poll();
+        },
+        cancel() {
+            cleanup?.();
+        },
     });
 
     return new Response(stream, {
         headers: {
             'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
+            'Cache-Control': 'no-cache, no-transform',
             'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no',
         },
     });
 }

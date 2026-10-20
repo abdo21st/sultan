@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
-import { auth } from "@/lib/auth";
+import { getRequestUser } from "@/lib/request-user";
 
 export async function PATCH(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getRequestUser();
+    if (!user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -15,20 +15,12 @@ export async function PATCH(
         const { id } = await params;
 
         // Verify ownership
-        const notification = await prisma.notification.findUnique({
-            where: { id }
+        const updated = await prisma.notification.updateMany({
+            where: { id, userId: user.id },
+            data: { read: true },
         });
-
-        if (!notification || notification.userId !== session.user.id) {
-            return NextResponse.json({ error: "Not found" }, { status: 404 });
-        }
-
-        const updated = await prisma.notification.update({
-            where: { id },
-            data: { read: true }
-        });
-
-        return NextResponse.json(updated);
+        if (updated.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
+        return NextResponse.json({ success: true });
     } catch {
         return NextResponse.json(
             { error: "Failed to update notification" },

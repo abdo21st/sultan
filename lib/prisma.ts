@@ -17,7 +17,6 @@ const createPrismaClient = () => {
             max: connectionString.includes('pooler') ? 1 : 10, // Optimize for pooler vs direct
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 60000,
-            ssl: { rejectUnauthorized: false }
         })
         console.log("Prisma: Initialized Global PG Pool");
     }

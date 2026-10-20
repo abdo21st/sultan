@@ -1,0 +1,14 @@
+[Unit]
+Description=Sultan encrypted database and private image snapshot
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/sultan-production
+ExecStart=/usr/bin/flock -n /run/lock/sultan-backup.lock /usr/bin/node scripts/cloud-backup.mjs create --keep 30
+ExecStopPost=/usr/bin/node scripts/cloud-backup.mjs recover
+TimeoutStartSec=15min
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true

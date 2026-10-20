@@ -15,6 +15,7 @@ interface PrintAndShareButtonsProps {
         remainingAmount: number;
         dueDate: Date;
         orderId: string;
+        shareUrl: string;
     };
     canViewFinancials?: boolean;
 }
@@ -39,7 +40,7 @@ export default function PrintAndShareButtons({ orderData, canViewFinancials }: P
             message += `💰 المبلغ الإجمالي: ${formatCurrency(orderData.totalAmount)}\n✅ المدفوع: ${formatCurrency(orderData.paidAmount)}\n⏳ المتبقي: ${formatCurrency(orderData.remainingAmount)}\n\n`;
         }
 
-        message += `📅 موعد التسليم: ${new Date(orderData.dueDate).toLocaleDateString('ar-LY')}\n\n🔗 رابط المستند:\n${window.location.href}`;
+        message += `📅 موعد التسليم: ${new Date(orderData.dueDate).toLocaleDateString('ar-LY')}\n\n🔗 رابط المستند:\n${orderData.shareUrl}`;
 
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');

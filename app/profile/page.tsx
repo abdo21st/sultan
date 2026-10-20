@@ -49,7 +49,6 @@ export default function ProfilePage() {
 
     const handleUpdateInfo = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Submitting Info Form:", infoForm); // DEBUG LOG
         setIsSavingInfo(true);
         try {
             const res = await fetch('/api/profile', {
@@ -79,8 +78,8 @@ export default function ProfilePage() {
             toast.error('كلمات المرور غير متطابقة');
             return;
         }
-        if (passwordForm.newPassword.length < 6) {
-            toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+        if (passwordForm.newPassword.length < 12) {
+            toast.error('كلمة المرور يجب أن تكون 12 حرفاً على الأقل');
             return;
         }
 
@@ -270,6 +269,8 @@ export default function ProfilePage() {
                                                     title="كلمة المرور الجديدة"
                                                     placeholder="كلمة المرور الجديدة"
                                                     type="password"
+                                                    minLength={12}
+                                                    maxLength={128}
                                                     value={passwordForm.newPassword}
                                                     onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                                                     className="w-full p-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 outline-none"

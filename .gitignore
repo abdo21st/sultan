@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+/__pycache__/
+*.pyc
 /.pnp
 .pnp.*
 .yarn/*
@@ -48,6 +50,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# Local operations material may contain infrastructure details or data extracts.
+/SERVER_GUIDE.md
+/scratch/
+/local-backups/
+/storage/
 
 # vercel
 .vercel

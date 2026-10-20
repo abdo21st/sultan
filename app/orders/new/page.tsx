@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, X, Wifi, WifiOff } from "lucide-react";
 import Image from "next/image";
@@ -10,13 +10,16 @@ export default function NewOrderPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
     const [user, setUser] = useState<{ id: string; role: string; facilityId?: string } | null>(null);
     const [facilities, setFacilities] = useState<{ id: string, name: string, type: string }[]>([]);
     const [images, setImages] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
     const [isOnline, setIsOnline] = useState(true);
+    const clientRequestId = useRef<string | null>(null);
 
     useEffect(() => {
+        clientRequestId.current = crypto.randomUUID();
         setIsOnline(navigator.onLine);
         const handleOnline = () => setIsOnline(true);
         const handleOffline = () => setIsOnline(false);
@@ -46,13 +49,12 @@ export default function NewOrderPage() {
     }, []);
 
     const factories = facilities.filter(f => f.type === 'FACTORY');
+    const shops = facilities.filter(f => f.type === 'SHOP');
 
-    // Determine source shop:
-    // If user has facilityId, use it. Otherwise allow selection (if admin). 
-    // If user is restricted to a FACTORY, they shouldn't be here? 
-    // "Employee in shop registers order" -> so we assume user is in SHOP.
-    const userShopId = user?.facilityId;
-    const isRestricted = !!userShopId;
+    const assignedFacility = facilities.find(f => f.id === user?.facilityId);
+    const userShopId = assignedFacility?.type === 'SHOP' ? assignedFacility.id : null;
+    const userFactoryId = assignedFacility?.type === 'FACTORY' ? assignedFacility.id : null;
+    const canCreateForFacility = user?.role === 'ADMIN' || Boolean(assignedFacility);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -84,18 +86,21 @@ export default function NewOrderPage() {
         e.preventDefault();
         setLoading(true);
         setError("");
+        setSuccess("");
 
-        const formData = new FormData(e.currentTarget);
+        const form = e.currentTarget;
+        const formData = new FormData(form);
 
         // Append images
         images.forEach((file) => {
             formData.append('images', file);
         });
 
-        // If restricted, ensure shopId is set
-        if (isRestricted) {
-            formData.set('shopId', userShopId);
-        }
+        if (userShopId) formData.set('shopId', userShopId);
+        if (userFactoryId) formData.set('factoryId', userFactoryId);
+        const requestId = clientRequestId.current || crypto.randomUUID();
+        clientRequestId.current = requestId;
+        formData.set('clientRequestId', requestId);
 
         if (!isOnline) {
             try {
@@ -108,14 +113,23 @@ export default function NewOrderPage() {
                     paidAmount: formData.get('paidAmount') as string,
                     dueDate: formData.get('dueDate') as string,
                     factoryId: formData.get('factoryId') as string,
-                    shopId: (isRestricted ? userShopId : formData.get('shopId')) as string,
+                    shopId: formData.get('shopId') as string,
                     images: images, // Already Blobs essentially (File extends Blob)
                     status: 'pending',
+                    idempotencyKey: requestId,
+                    attempts: 0,
+                    nextAttemptAt: Date.now(),
                     createdAt: Date.now()
                 });
 
-                alert("تم حفظ الطلب محلياً! سيتم إرساله تلقائياً عند عودة الإنترنت.");
-                router.push("/");
+                setSuccess("تم حفظ الطلب محليًا، وسيُرسل تلقائيًا عند عودة الاتصال.");
+                window.dispatchEvent(new Event("sultan:offline-queue-updated"));
+                form.reset();
+                previews.forEach((preview) => URL.revokeObjectURL(preview));
+                setImages([]);
+                setPreviews([]);
+                clientRequestId.current = crypto.randomUUID();
+                setLoading(false);
                 return;
             } catch (offlineErr) {
                 console.error("Offline save failed", offlineErr);
@@ -161,6 +175,12 @@ export default function NewOrderPage() {
                 {error && (
                     <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-600 rounded-lg text-sm flex items-center gap-2">
                         <span>⚠️</span> {error}
+                    </div>
+                )}
+
+                {success && (
+                    <div role="status" className="mb-6 p-4 bg-green-500/10 border border-green-500/20 text-green-700 rounded-lg text-sm">
+                        {success}
                     </div>
                 )}
 
@@ -225,21 +245,26 @@ export default function NewOrderPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">تعيين المصنع (الهدف)</label>
-                            <select name="factoryId" required defaultValue="" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none" aria-label="تعيين المصنع">
-                                <option value="" disabled>اختر مصنعاً</option>
-                                {factories.map(f => (
-                                    <option key={f.id} value={f.id}>{f.name}</option>
-                                ))}
-                            </select>
+                            {userFactoryId && user?.role !== 'ADMIN' ? (
+                                <div className="w-full rounded-lg border border-input bg-muted px-4 py-2.5 text-sm text-muted-foreground">
+                                    {assignedFacility?.name}
+                                    <input type="hidden" name="factoryId" value={userFactoryId} />
+                                </div>
+                            ) : (
+                                <select name="factoryId" required defaultValue="" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none" aria-label="تعيين المصنع">
+                                    <option value="" disabled>اختر مصنعاً</option>
+                                    {factories.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                                </select>
+                            )}
                         </div>
 
                         {/* Source Shop - Auto selected if restricted */}
-                        {!isRestricted ? (
+                        {!userShopId ? (
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-muted-foreground">المعرض (المصدر) - <span className="text-red-500">للإدارة فقط</span></label>
                                 <select name="shopId" required defaultValue="" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none" aria-label="المعرض المصدر">
                                     <option value="" disabled>اختر معرضاً</option>
-                                    {facilities.filter(f => f.type === 'SHOP').map(s => (
+                                    {shops.map(s => (
                                         <option key={s.id} value={s.id}>{s.name}</option>
                                     ))}
                                 </select>
@@ -258,10 +283,11 @@ export default function NewOrderPage() {
                     {/* Actions */}
                     <div className="flex justify-end gap-3 pt-6 border-t border-border">
                         <button type="button" onClick={() => router.back()} className="px-6 py-2.5 text-sm font-medium bg-muted text-foreground hover:bg-muted/80 rounded-lg transition-all">إلغاء</button>
-                        <button type="submit" disabled={loading} className="px-6 py-2.5 text-sm font-medium text-white bg-amber-700 hover:bg-amber-600 hover:scale-105 rounded-lg shadow-sm transition-all disabled:opacity-50">
+                        <button type="submit" disabled={loading || !canCreateForFacility} className="px-6 py-2.5 text-sm font-medium text-white bg-amber-700 hover:bg-amber-600 hover:scale-105 rounded-lg shadow-sm transition-all disabled:opacity-50">
                             {loading ? "جاري الإنشاء..." : "إنشاء الطلب"}
                         </button>
                     </div>
+                    {user && !canCreateForFacility && <p className="text-sm text-red-600 text-left">يجب إسنادك إلى منشأة قبل إنشاء طلب.</p>}
                 </form>
             </div>
         </div>

@@ -1,72 +1,58 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { PERMISSIONS } from "@/lib/permissions";
 import OrderActions from "./OrderActions";
 import { ArrowLeft, Edit } from "lucide-react";
 import { getStatusInfo, formatCurrency, formatDate } from "@/lib/utils";
 import AnimatedOrderImage from "@/app/components/ui/AnimatedOrderImage";
+import { canAccessOrderFacility, canViewOrderStatus, getRequestUser } from "@/lib/request-user";
 
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const session = await auth();
+    const user = await getRequestUser();
+    if (!user?.permissions.includes(PERMISSIONS.ORDERS_VIEW)) return notFound();
+    const canViewFinancials = user.role === 'ADMIN' || user.permissions.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
 
     const order = await prisma.order.findUnique({
         where: { id },
+        select: {
+            id: true,
+            serialNumber: true,
+            customerName: true,
+            customerPhone: true,
+            description: true,
+            status: true,
+            dueDate: true,
+            createdAt: true,
+            factoryId: true,
+            shopId: true,
+            images: true,
+            rejectionReason: true,
+            totalAmount: canViewFinancials,
+            paidAmount: canViewFinancials,
+            remainingAmount: canViewFinancials,
+        },
     });
 
-    if (!order) return notFound();
+    if (!order || !canAccessOrderFacility(user, order) || !canViewOrderStatus(user, order.status)) return notFound();
 
-    // After this point, order is guaranteed to exist
-    const currentOrder = order!;
-
-    // Check Status Permission
-    const userPermissions = session?.user?.permissions || [];
-    const isMaster = (session?.user as { username?: string })?.username === 'master';
-
-    if (!isMaster) {
-        // If user is not master, they must have permission for the specific status
-        // Normalize status for permission check
-        // Handle both "orders:status:registered" -> "registered" AND "REGISTERED" -> "registered"
-        let statusSuffix = currentOrder.status.replace('orders:status:', '').toLowerCase();
-
-        // Map legacy values if needed (though toLowerCase covers most, explicit mapping is safer if keys differ)
-        const LEGACY_MAP: Record<string, string> = {
-            'review_needed': 'review',
-            'transferred_to_shop': 'shop_ready'
-        };
-        if (LEGACY_MAP[statusSuffix]) statusSuffix = LEGACY_MAP[statusSuffix];
-
-        const requiredPermission = `orders:status:view:${statusSuffix}`;
-
-        // Check if user has permission for the current order status
-        // Admins/Managers have these in DEFAULT_ROLES.
-        if (!userPermissions.includes(requiredPermission)) {
-            // Return a friendly unauthorized component or redirect?
-            // Next.js doesn't have a built-in 403 page easily accessible via a function like notFound()
-            // But we can render an error message.
-            return (
-                <div className="min-h-screen flex items-center justify-center bg-background">
-                    <div className="text-center p-8 bg-card rounded-2xl border border-border">
-                        <h1 className="text-xl font-bold text-destructive mb-2">عذراً، ليس لديك صلاحية لعرض هذا الطلب</h1>
-                        <p className="text-muted-foreground">حالة الطلب الحالية لا تسمح لك بالوصول إليه.</p>
-                        <Link href="/" className="inline-block mt-4 text-primary hover:underline">العودة للقائمة</Link>
-                    </div>
-                </div>
-            );
-        }
-    }
+    const currentOrder = {
+        ...order,
+        totalAmount: Number(order.totalAmount ?? 0),
+        paidAmount: Number(order.paidAmount ?? 0),
+        remainingAmount: Number(order.remainingAmount ?? 0),
+    };
 
     const statusInfo = getStatusInfo(currentOrder.status);
 
     // Fetch facility names
     const factory = currentOrder.factoryId ? await prisma.facility.findUnique({ where: { id: currentOrder.factoryId } }) : null;
     const shop = currentOrder.shopId ? await prisma.facility.findUnique({ where: { id: currentOrder.shopId } }) : null;
-    const transactions = await prisma.transaction.findMany({
+    const transactions = canViewFinancials ? await prisma.transaction.findMany({
         where: { orderId: id },
         orderBy: { date: 'desc' }
-    });
+    }) : [];
 
     return (
         <div className="min-h-screen bg-background pb-32 selection:bg-primary/30 antialiased">
@@ -84,7 +70,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                             </div>
                         </div>
                     </div>
-                    {session?.user?.permissions?.includes('orders:edit') && (
+                    {user.permissions.includes(PERMISSIONS.ORDERS_EDIT) && (
                         <Link href={`/orders/${id}/edit`} className="p-3 bg-card hover:bg-primary rounded-2xl transition-all duration-300 border border-border group">
                             <Edit className="w-5 h-5 text-primary group-hover:text-white transition-colors" />
                         </Link>
@@ -165,8 +151,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                     المرفقات البصرية
                                 </h3>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                    {(currentOrder.images as string[]).map((img: string, idx: number) => (
-                                        <AnimatedOrderImage key={idx} src={img} index={idx} />
+                                    {(currentOrder.images as string[]).map((_, idx: number) => (
+                                        <AnimatedOrderImage key={idx} src={`/api/orders/${id}/images/${idx}`} index={idx} />
                                     ))}
                                 </div>
                             </div>
@@ -175,7 +161,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
                     {/* Sidebar: Financials & Actions */}
                     <div className="space-y-8">
-                        {(session?.user?.role === 'ADMIN' || session?.user?.permissions?.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS)) && (
+                        {canViewFinancials && (
                             <div className="bg-card rounded-2xl p-8 border border-border shadow-sm sticky top-28">
                                 <h3 className="text-sm font-black text-gradient-gold uppercase tracking-widest mb-6 flex items-center gap-2">
                                     <div className="w-1 h-4 bg-primary rounded-full" />
@@ -217,11 +203,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                             </div>
                         )}
 
-                        {!(session?.user?.role === 'ADMIN' || session?.user?.permissions?.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS)) && (
-                            <div className="sticky top-28">
-                                <OrderActions order={currentOrder} currentUser={session?.user} />
-                            </div>
-                        )}
+                        <div className="sticky top-28">
+                            <OrderActions order={currentOrder} currentUser={user} />
+                        </div>
                     </div>
                 </div>
             </main>

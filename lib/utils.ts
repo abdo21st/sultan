@@ -11,11 +11,12 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Format currency to Libyan Dinar (LYD)
  */
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number | string | { toNumber(): number }): string {
+    const numericAmount = typeof amount === "object" ? amount.toNumber() : Number(amount);
     return new Intl.NumberFormat("ar-LY", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format(amount) + " د.ل";
+    }).format(numericAmount) + " د.ل";
 }
 
 /**

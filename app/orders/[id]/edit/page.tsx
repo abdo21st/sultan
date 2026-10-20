@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import { ORDER_STATUS, ORDER_STATUS_LABELS } from '@/lib/constants';
+import { usePermission } from '@/lib/usePermission';
+import { PERMISSIONS } from '@/lib/permissions';
 
 interface Facility {
     id: string;
@@ -27,6 +29,8 @@ interface OrderFormData {
 export default function EditOrderPage() {
     const router = useRouter();
     const params = useParams();
+    const { hasPermission } = usePermission();
+    const canViewFinancials = hasPermission(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [loading, setLoading] = useState(true);
@@ -57,8 +61,8 @@ export default function EditOrderPage() {
                 setFacilities(Array.isArray(facilitiesData) ? facilitiesData : []);
                 setFormData({
                     ...orderData,
-                    totalAmount: String(orderData.totalAmount || 0),
-                    paidAmount: String(orderData.paidAmount || 0),
+                    totalAmount: orderData.totalAmount === undefined ? '' : String(orderData.totalAmount),
+                    paidAmount: orderData.paidAmount === undefined ? '' : String(orderData.paidAmount),
                     dueDate: orderData.dueDate ? new Date(orderData.dueDate).toISOString().split('T')[0] : '',
                     images: orderData.images || [],
                 });
@@ -119,8 +123,10 @@ export default function EditOrderPage() {
             }
 
             submitData.append("status", statusToSubmit);
-            submitData.append("totalAmount", formData.totalAmount);
-            submitData.append("paidAmount", formData.paidAmount);
+            if (canViewFinancials) {
+                submitData.append("totalAmount", formData.totalAmount);
+                submitData.append("paidAmount", formData.paidAmount);
+            }
             submitData.append("dueDate", formData.dueDate);
             submitData.append("factoryId", formData.factoryId);
             submitData.append("shopId", formData.shopId);
@@ -172,7 +178,7 @@ export default function EditOrderPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {canViewFinancials && <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">اسم العميل</label>
                             <input
@@ -196,7 +202,7 @@ export default function EditOrderPage() {
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             />
                         </div>
-                    </div>
+                    </div>}
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground">الوصف والطلبات</label>
@@ -302,7 +308,7 @@ export default function EditOrderPage() {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {formData.images.map((img, idx) => (
                                 <div key={`old-${idx}`} className="group relative aspect-video rounded-lg border border-border overflow-hidden bg-muted shadow-sm">
-                                    <Image src={img} alt="Order" fill className="object-cover" />
+                                    <Image src={`/api/orders/${params.id}/images/${idx}`} alt="Order" fill unoptimized className="object-cover" />
                                     <button
                                         type="button"
                                         onClick={() => removeExistingImage(idx)}

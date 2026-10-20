@@ -1,15 +1,31 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
+import { getRequestUser, orderFacilityFilter } from "@/lib/request-user";
+import { Prisma } from "@prisma/client";
 
 export async function GET() {
     try {
-        const session = await auth();
+        const user = await getRequestUser();
         // Permission check
-        if (!session?.user?.permissions?.includes(PERMISSIONS.TRANSACTIONS_VIEW)) {
+        if (!user?.permissions.includes(PERMISSIONS.TRANSACTIONS_VIEW)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
+
+        const orderWhere: Prisma.OrderWhereInput = {
+            ...orderFacilityFilter(user),
+            remainingAmount: { gt: 0 },
+        };
+        const transactionWhere: Prisma.TransactionWhereInput = user.role === "ADMIN"
+            ? {}
+            : user.facilityId
+                ? {
+                    OR: [
+                        { facilityId: user.facilityId },
+                        { order: { is: { OR: [{ factoryId: user.facilityId }, { shopId: user.facilityId }] } } },
+                    ],
+                }
+                : { id: "__no_assigned_facility__" };
 
         const [ordersAgg, transactionAgg] = await Promise.all([
             // Calculate Total Debt (Sum of remainingAmount on Orders)
@@ -17,14 +33,13 @@ export async function GET() {
                 _sum: {
                     remainingAmount: true,
                 },
-                where: {
-                    remainingAmount: { gt: 0 } // Only orders with debt
-                }
+                where: orderWhere,
             }),
             // Calculate Treasury Balance (Income - Expenses)
             // Since we can't do complex math in aggregate easily across rows with different types, 
             // we might have to do two queries or one grouped query.
             prisma.transaction.groupBy({
+                where: transactionWhere,
                 by: ['type'],
                 _sum: {
                     amount: true
@@ -32,14 +47,14 @@ export async function GET() {
             })
         ]);
 
-        const totalDebt = ordersAgg._sum.remainingAmount || 0;
+        const totalDebt = Number(ordersAgg._sum.remainingAmount || 0);
 
         let totalIncome = 0;
         let totalExpense = 0;
 
-        transactionAgg.forEach((group: { type: string, _sum: { amount: number | null } }) => {
-            if (group.type === 'INCOME') totalIncome = group._sum.amount || 0;
-            if (group.type === 'EXPENSE') totalExpense = group._sum.amount || 0;
+        transactionAgg.forEach((group) => {
+            if (group.type === 'INCOME') totalIncome = Number(group._sum.amount || 0);
+            if (group.type === 'EXPENSE') totalExpense = Number(group._sum.amount || 0);
         });
 
         const treasuryBalance = totalIncome - totalExpense;

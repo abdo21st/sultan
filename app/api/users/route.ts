@@ -1,25 +1,35 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
-import { auth } from "@/lib/auth";
 import { PERMISSIONS } from "../../../lib/permissions";
+import { getRequestUser } from "@/lib/request-user";
 
 export async function GET() {
     try {
-        const session = await auth();
+        const user = await getRequestUser();
 
         // Bootstrap mode: Allow access if no users exist yet
         const userCount = await prisma.user.count();
         const isBootstrap = userCount === 0;
 
-        if (!isBootstrap && !session?.user?.permissions?.includes(PERMISSIONS.USERS_VIEW)) {
+        if (!isBootstrap && !user?.permissions.includes(PERMISSIONS.USERS_VIEW)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
         const users = await prisma.user.findMany({
-            where: {
-                NOT: { username: 'master' }
-            },
-            include: { roles: true }
+            select: {
+                id: true,
+                username: true,
+                displayName: true,
+                phoneNumber: true,
+                role: true,
+                permissions: true,
+                facilityId: true,
+                createdAt: true,
+                updatedAt: true,
+                roles: {
+                    select: { id: true, name: true, displayName: true, description: true, permissions: true }
+                }
+            }
         });
         return NextResponse.json(users);
     } catch {
@@ -36,7 +46,7 @@ import { z } from "zod";
 
 const userSchema = z.object({
     username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
-    password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+    password: z.string().min(12, "كلمة المرور يجب أن تكون 12 حرفاً على الأقل").max(128),
     displayName: z.string().min(2, "الاسم يجب أن يكون حرفين على الأقل"),
     phoneNumber: z.string().regex(/^\d{10,15}$/, "رقم الهاتف غير صحيح").optional().or(z.literal('')),
     role: z.enum(["ADMIN", "MANAGER", "ACCOUNTANT", "USER"]).optional(),
@@ -48,8 +58,8 @@ const userSchema = z.object({
 
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.permissions?.includes(PERMISSIONS.USERS_ADD)) {
+        const user = await getRequestUser();
+        if (!user?.permissions.includes(PERMISSIONS.USERS_ADD)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
@@ -64,21 +74,17 @@ export async function POST(request: Request) {
         }
 
         const body = result.data;
-        const hashedPassword = await bcrypt.hash(body.password, 10);
+        if (user.role !== "ADMIN" && (
+            (body.role !== undefined && body.role !== "USER") ||
+            (body.roleIds?.length ?? 0) > 0 ||
+            (body.facilityId && body.facilityId !== user.facilityId)
+        )) {
+            return NextResponse.json({ error: "Only administrators can assign roles." }, { status: 403 });
+        }
+        const hashedPassword = await bcrypt.hash(body.password, 12);
 
-        const newUser = await prisma.user.upsert({
-            where: { username: body.username },
-            update: {
-                displayName: body.displayName,
-                phoneNumber: body.phoneNumber || null,
-                role: body.role || 'USER',
-                facilityId: body.facilityId || null,
-                password: hashedPassword,
-                roles: body.roleIds ? {
-                    set: body.roleIds.map((id: string) => ({ id }))
-                } : undefined
-            },
-            create: {
+        const newUser = await prisma.user.create({
+            data: {
                 username: body.username,
                 displayName: body.displayName,
                 phoneNumber: body.phoneNumber || null,
@@ -89,7 +95,20 @@ export async function POST(request: Request) {
                     connect: body.roleIds.map((id: string) => ({ id }))
                 } : undefined
             },
-            include: { roles: true }
+            select: {
+                id: true,
+                username: true,
+                displayName: true,
+                phoneNumber: true,
+                role: true,
+                permissions: true,
+                facilityId: true,
+                createdAt: true,
+                updatedAt: true,
+                roles: {
+                    select: { id: true, name: true, displayName: true, description: true, permissions: true }
+                }
+            }
         });
         return NextResponse.json(newUser);
     } catch (error: unknown) {

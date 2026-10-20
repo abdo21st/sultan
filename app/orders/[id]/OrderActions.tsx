@@ -102,8 +102,12 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                     const changePermission = `orders:status:change:${statusSuffix}`;
 
                     const hasPermission = currentUser?.role === 'ADMIN' || currentUser?.permissions?.includes(changePermission);
+                    const canCollectPayment = currentUser?.role === 'ADMIN' || (
+                        currentUser?.permissions?.includes('orders:view_financials') &&
+                        currentUser?.permissions?.includes('transactions:add')
+                    );
 
-                    if (!hasPermission) return null;
+                    if (!hasPermission || (nextStatus === ORDER_STATUS.COMPLETED && !canCollectPayment)) return null;
 
                     if (nextStatus === ORDER_STATUS.PROCESSING) {
                         return (

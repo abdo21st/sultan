@@ -1,9 +1,18 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getStatusInfo, formatCurrency, formatDate } from "@/lib/utils";
+import { verifyOrderShareToken } from "@/lib/order-share-token";
 
-export default async function ShareOrderPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ShareOrderPage({
+    params,
+    searchParams,
+}: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ token?: string }>;
+}) {
     const { id } = await params;
+    const { token } = await searchParams;
+    if (!verifyOrderShareToken(token, id)) notFound();
 
     const order = await prisma.order.findUnique({
         where: { id },
@@ -91,7 +100,7 @@ export default async function ShareOrderPage({ params }: { params: Promise<{ id:
                         </div>
                         <div className="flex justify-between items-center pt-3 border-t-2 border-green-300">
                             <span className="text-sm font-bold">الرصيد المتبقي</span>
-                            <span className={`text-2xl font-black font-mono ${order.remainingAmount > 0 ? 'text-red-600' : 'text-gray-500'}`} dir="ltr">
+                            <span className={`text-2xl font-black font-mono ${Number(order.remainingAmount) > 0 ? 'text-red-600' : 'text-gray-500'}`} dir="ltr">
                                 {formatCurrency(order.remainingAmount)}
                             </span>
                         </div>

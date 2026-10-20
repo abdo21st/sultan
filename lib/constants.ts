@@ -73,6 +73,12 @@ export const FACILITY_TYPE = {
     SHOP: 'SHOP',
 } as const;
 
+export const DESTRUCTIVE_CONFIRMATIONS = {
+    CLEAR_OPERATIONAL_DATA: "CLEAR_OPERATIONAL_DATA",
+    FACTORY_RESET: "RESET_SULTAN_TO_FACTORY_DEFAULTS",
+    BULK_DELETE_USERS: "DELETE_OTHER_USERS",
+} as const;
+
 export type FacilityType = keyof typeof FACILITY_TYPE;
 
 export const ALLOWED_TRANSITIONS: Record<string, string[]> = {

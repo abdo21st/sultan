@@ -122,7 +122,6 @@ export default function BookingPage() {
     const handleDelete = async (id: string) => {
         if (!confirm("هل أنت متأكد من حذف هذه القاعدة؟")) return;
         setLoading(true);
-        console.log(`Deleting capacity rule: /api/admin/capacity/${id}`);
         try {
             const res = await fetch(`/api/admin/capacity/${id}`, { method: 'DELETE' });
             if (res.ok) {

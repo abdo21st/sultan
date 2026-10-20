@@ -6,6 +6,7 @@ import { Providers } from "./providers";
 import BottomNav from "./components/BottomNav";
 import { ToastProvider } from "./components/ToastProvider";
 import OfflineSyncProvider from "./components/OfflineSyncProvider";
+import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
 import { Toaster } from "react-hot-toast";
 
 const cairo = Cairo({
@@ -48,6 +49,7 @@ export default async function RootLayout({
         className={`${cairo.variable} font-sans antialiased`}
       >
         <Providers session={session}>
+          <ServiceWorkerRegistration />
           <ToastProvider>
             <OfflineSyncProvider>
               {children}

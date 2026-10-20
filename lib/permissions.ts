@@ -29,6 +29,10 @@ export const PERMISSIONS = {
     // Roles (Admin)
     ROLES_MANAGE: 'roles:manage',
     SETTINGS_MANAGE: 'settings:manage',
+    BACKUP_MANAGE: 'data:backup',
+    DATA_CLEAR: 'data:clear',
+    AUDIT_VIEW: 'audit:view',
+    WHATSAPP_SEND: 'whatsapp:send',
     ALERTS_MANAGE: 'alerts:manage',
     BOOKING_MANAGE: 'booking:manage',
     DASHBOARD_VIEW: 'dashboard:view', // New permission for control panel access
@@ -75,6 +79,10 @@ export const PERMISSION_LABELS: Record<string, string> = {
 
     [PERMISSIONS.ROLES_MANAGE]: 'إدارة الأدوار والصلاحيات',
     [PERMISSIONS.SETTINGS_MANAGE]: 'إدارة إعدادات النظام',
+    [PERMISSIONS.BACKUP_MANAGE]: 'إنشاء نسخة احتياطية',
+    [PERMISSIONS.DATA_CLEAR]: 'مسح بيانات التشغيل',
+    [PERMISSIONS.AUDIT_VIEW]: 'عرض سجل التدقيق',
+    [PERMISSIONS.WHATSAPP_SEND]: 'إرسال إشعارات WhatsApp للعملاء',
     [PERMISSIONS.ALERTS_MANAGE]: 'إدارة نظام التنبيهات',
     [PERMISSIONS.BOOKING_MANAGE]: 'إدارة طاقة الحجز',
     [PERMISSIONS.DASHBOARD_VIEW]: 'عرض لوحة التحكم',

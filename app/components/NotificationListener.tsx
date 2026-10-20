@@ -45,10 +45,6 @@ export default function NotificationListener() {
             }
         };
 
-        eventSource.onerror = () => {
-            eventSource.close();
-        };
-
         return () => {
             eventSource.close();
         };

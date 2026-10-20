@@ -1,106 +1,177 @@
+import { endOfDay, isValid, parseISO, startOfDay } from "date-fns";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { startOfDay, endOfDay, parseISO } from "date-fns";
 import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { getRequestUser } from "@/lib/request-user";
+import { fromCents, toCents, toMoneyNumber } from "@/lib/money";
+import { decodeDateIdCursor, encodeDateIdCursor, parsePageSize } from "@/lib/keyset-pagination";
 
 interface DateFilter {
     gte?: Date;
     lte?: Date;
 }
 
+function parseDateFilter(searchParams: URLSearchParams): DateFilter | null {
+    const filter: DateFilter = {};
+    const start = searchParams.get("start");
+    const end = searchParams.get("end");
+
+    if (start) {
+        const parsed = parseISO(start);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !isValid(parsed)) return null;
+        filter.gte = startOfDay(parsed);
+    }
+    if (end) {
+        const parsed = parseISO(end);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(end) || !isValid(parsed)) return null;
+        filter.lte = endOfDay(parsed);
+    }
+    if (filter.gte && filter.lte && filter.gte > filter.lte) return null;
+    return filter;
+}
+
+function transactionWhere(dateFilter: DateFilter, facilityId: string | null): Prisma.TransactionWhereInput {
+    const where: Prisma.TransactionWhereInput = {};
+    if (Object.keys(dateFilter).length > 0) where.date = dateFilter;
+    if (facilityId) {
+        where.OR = [
+            { facilityId },
+            { order: { is: { OR: [{ factoryId: facilityId }, { shopId: facilityId }] } } },
+        ];
+    }
+    return where;
+}
+
 export async function GET(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user || session.user.role !== "ADMIN") {
+        const user = await getRequestUser();
+        if (!user || user.role !== "ADMIN") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
         const { searchParams } = new URL(request.url);
         const reportType = searchParams.get("type") || "financial";
-        const startDate = searchParams.get("start");
-        const endDate = searchParams.get("end");
+        const dateFilter = parseDateFilter(searchParams);
         const facilityId = searchParams.get("facilityId");
+        const limit = parsePageSize(searchParams.get("limit"));
+        const cursor = decodeDateIdCursor(searchParams.get("cursor"));
+        if (!dateFilter || !limit || cursor === false) {
+            return NextResponse.json({ error: "Invalid report filters or pagination parameters." }, { status: 400 });
+        }
 
-        const dateFilter: DateFilter = {};
-        if (startDate) dateFilter.gte = startOfDay(parseISO(startDate));
-        if (endDate) dateFilter.lte = endOfDay(parseISO(endDate));
-
+        let response: NextResponse;
         switch (reportType) {
             case "financial":
-                return handleFinancialReport(dateFilter);
+                response = await handleFinancialReport(dateFilter, facilityId, cursor, limit);
+                break;
             case "operational":
-                return handleOperationalReport(dateFilter, facilityId);
+                response = await handleOperationalReport(dateFilter, facilityId, cursor, limit);
+                break;
             case "production":
-                return handleProductionReport(dateFilter, facilityId);
+                response = await handleProductionReport(dateFilter, facilityId);
+                break;
             case "users":
-                return handleUserActivityReport(dateFilter);
+                response = await handleUserActivityReport(dateFilter, facilityId);
+                break;
             default:
                 return NextResponse.json({ error: "Invalid report type" }, { status: 400 });
         }
-    } catch (error) {
-        console.error("Report API Error:", error);
+        response.headers.set("Cache-Control", "private, no-store");
+        return response;
+    } catch {
         return NextResponse.json({ error: "Failed to generate report" }, { status: 500 });
     }
 }
 
-async function handleFinancialReport(dateFilter: DateFilter) {
-    const where: Prisma.TransactionWhereInput = {};
-    if (Object.keys(dateFilter).length > 0) where.date = dateFilter;
+async function handleFinancialReport(
+    dateFilter: DateFilter,
+    facilityId: string | null,
+    cursor: { date: Date; id: string } | null,
+    limit: number,
+) {
+    const where = transactionWhere(dateFilter, facilityId);
+    const pageWhere: Prisma.TransactionWhereInput = cursor
+        ? { AND: [where, { OR: [{ date: { lt: cursor.date } }, { date: cursor.date, id: { lt: cursor.id } }] }] }
+        : where;
 
-    // Transactions report
-    const transactions = await prisma.transaction.findMany({
-        where,
-        orderBy: { date: "desc" }
-    });
+    const [page, income, expense, orderPayments] = await Promise.all([
+        prisma.transaction.findMany({
+            where: pageWhere,
+            select: { id: true, date: true, type: true, category: true, amount: true, description: true },
+            orderBy: [{ date: "desc" }, { id: "desc" }],
+            take: limit + 1,
+        }),
+        prisma.transaction.aggregate({ where: { AND: [where, { type: "INCOME" }] }, _sum: { amount: true } }),
+        prisma.transaction.aggregate({ where: { AND: [where, { type: "EXPENSE" }] }, _sum: { amount: true } }),
+        prisma.transaction.aggregate({
+            where: { AND: [where, { type: "INCOME", orderId: { not: null } }] },
+            _sum: { amount: true },
+        }),
+    ]);
 
-    const income = transactions.filter(t => t.type === "INCOME").reduce((sum, t) => sum + t.amount, 0);
-    const expense = transactions.filter(t => t.type === "EXPENSE").reduce((sum, t) => sum + t.amount, 0);
-
-    // Sum of order payments specifically
-    const orderPayments = transactions.filter(t => t.orderId !== null && t.type === "INCOME").reduce((sum, t) => sum + t.amount, 0);
+    const hasMore = page.length > limit;
+    const details = (hasMore ? page.slice(0, limit) : page).map((transaction) => ({
+        ...transaction,
+        date: transaction.date.toISOString(),
+        amount: toMoneyNumber(transaction.amount),
+    }));
+    const incomeCents = toCents(income._sum.amount);
+    const expenseCents = toCents(expense._sum.amount);
+    const last = details.at(-1);
 
     return NextResponse.json({
         type: "financial",
         summary: {
-            totalIncome: income,
-            totalExpense: expense,
-            netProfit: income - expense,
-            orderPayments
+            totalIncome: fromCents(incomeCents),
+            totalExpense: fromCents(expenseCents),
+            netProfit: fromCents(incomeCents - expenseCents),
+            orderPayments: fromCents(toCents(orderPayments._sum.amount)),
         },
-        details: transactions
+        details,
+        nextCursor: hasMore && last ? encodeDateIdCursor(new Date(last.date), last.id) : null,
     });
 }
 
-async function handleOperationalReport(dateFilter: DateFilter, facilityId: string | null) {
+async function handleOperationalReport(
+    dateFilter: DateFilter,
+    facilityId: string | null,
+    cursor: { date: Date; id: string } | null,
+    limit: number,
+) {
     const where: Prisma.OrderWhereInput = {};
     if (Object.keys(dateFilter).length > 0) where.createdAt = dateFilter;
     if (facilityId) where.shopId = facilityId;
+    const pageWhere: Prisma.OrderWhereInput = cursor
+        ? { AND: [where, { OR: [{ createdAt: { lt: cursor.date } }, { createdAt: cursor.date, id: { lt: cursor.id } }] }] }
+        : where;
 
-    const orders = await prisma.order.findMany({
-        where,
-        select: {
-            id: true,
-            status: true,
-            totalAmount: true,
-            createdAt: true,
-            customerName: true
-        },
-        orderBy: { createdAt: "desc" }
-    });
+    const [page, groups] = await Promise.all([
+        prisma.order.findMany({
+            where: pageWhere,
+            select: { id: true, status: true, totalAmount: true, createdAt: true, customerName: true },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take: limit + 1,
+        }),
+        prisma.order.groupBy({ by: ["status"], where, _count: { _all: true } }),
+    ]);
 
-    const statusCounts: Record<string, number> = {};
-    orders.forEach(o => {
-        statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
-    });
+    const hasMore = page.length > limit;
+    const details = (hasMore ? page.slice(0, limit) : page).map((order) => ({
+        ...order,
+        createdAt: order.createdAt.toISOString(),
+        totalAmount: toMoneyNumber(order.totalAmount),
+    }));
+    const last = details.at(-1);
+    const statusDistribution = groups.map((group) => ({ name: group.status, value: group._count._all }));
 
     return NextResponse.json({
         type: "operational",
         summary: {
-            totalOrders: orders.length,
-            statusDistribution: Object.entries(statusCounts).map(([name, value]) => ({ name, value }))
+            totalOrders: statusDistribution.reduce((total, group) => total + group.value, 0),
+            statusDistribution,
         },
-        details: orders
+        details,
+        nextCursor: hasMore && last ? encodeDateIdCursor(new Date(last.createdAt), last.id) : null,
     });
 }
 
@@ -109,73 +180,54 @@ async function handleProductionReport(dateFilter: DateFilter, facilityId: string
     if (Object.keys(dateFilter).length > 0) where.createdAt = dateFilter;
     if (facilityId) where.factoryId = facilityId;
 
-    const orders = await prisma.order.findMany({
+    const groups = await prisma.order.groupBy({
+        by: ["factoryId"],
         where,
-        select: {
-            factoryId: true,
-            totalAmount: true,
-            factory: { select: { name: true } }
-        }
+        _count: { _all: true },
+        _sum: { totalAmount: true },
     });
-
-    const factoryPerformance: Record<string, { name: string, count: number, value: number }> = {};
-    orders.forEach(o => {
-        if (!factoryPerformance[o.factoryId]) {
-            factoryPerformance[o.factoryId] = { name: o.factory.name, count: 0, value: 0 };
-        }
-        factoryPerformance[o.factoryId].count += 1;
-        factoryPerformance[o.factoryId].value += o.totalAmount;
+    const facilities = await prisma.facility.findMany({
+        where: { id: { in: groups.map((group) => group.factoryId) } },
+        select: { id: true, name: true },
     });
+    const names = new Map(facilities.map((facility) => [facility.id, facility.name]));
+    const details = groups.map((group) => ({
+        name: names.get(group.factoryId) ?? "منشأة غير متاحة",
+        count: group._count._all,
+        value: toMoneyNumber(group._sum.totalAmount),
+    })).sort((left, right) => right.value - left.value || left.name.localeCompare(right.name));
 
     return NextResponse.json({
         type: "production",
-        summary: {
-            topFactory: Object.values(factoryPerformance).sort((a, b) => b.value - a.value)[0]?.name || "N/A"
-        },
-        details: Object.values(factoryPerformance)
+        summary: { topFactory: details[0]?.name ?? "N/A" },
+        details,
+        nextCursor: null,
     });
 }
 
-async function handleUserActivityReport(dateFilter: DateFilter) {
-    const where: Prisma.TransactionWhereInput = {};
-    if (Object.keys(dateFilter).length > 0) where.date = dateFilter;
-
-    // This is simple: just count orders by each user who created them
-    // Note: Transaction has 'createdBy' field which is user ID
-    const transactions = await prisma.transaction.findMany({
+async function handleUserActivityReport(dateFilter: DateFilter, facilityId: string | null) {
+    const where = transactionWhere(dateFilter, facilityId);
+    const groups = await prisma.transaction.groupBy({
+        by: ["createdBy"],
         where,
-        select: { createdBy: true, amount: true }
+        _count: { _all: true },
+        _sum: { amount: true },
     });
-
-    const userStats: Record<string, { id: string, name: string, transactionCount: number, volume: number }> = {};
-
-    // Get all unique user IDs from transactions
-    const userIds = new Set<string>();
-    transactions.forEach(t => {
-        if (t.createdBy) userIds.add(t.createdBy);
-    });
-
-    // Fetch user details
+    const userIds = groups.flatMap((group) => group.createdBy ? [group.createdBy] : []);
     const users = await prisma.user.findMany({
-        where: { id: { in: Array.from(userIds) } },
-        select: { id: true, displayName: true }
+        where: { id: { in: userIds } },
+        select: { id: true, displayName: true },
     });
+    const names = new Map(users.map((user) => [user.id, user.displayName]));
+    const details = groups.map((group) => {
+        const id = group.createdBy ?? "System";
+        return {
+            id,
+            name: id === "System" ? "النظام" : names.get(id) ?? id,
+            transactionCount: group._count._all,
+            volume: toMoneyNumber(group._sum.amount),
+        };
+    }).sort((left, right) => right.volume - left.volume || left.name.localeCompare(right.name));
 
-    const userMap = new Map(users.map(u => [u.id, u.displayName]));
-
-    transactions.forEach(t => {
-        const userId = t.createdBy || "System";
-        const userName = userId === "System" ? "النظام" : (userMap.get(userId) || userId);
-
-        if (!userStats[userId]) {
-            userStats[userId] = { id: userId, name: userName, transactionCount: 0, volume: 0 };
-        }
-        userStats[userId].transactionCount += 1;
-        userStats[userId].volume += t.amount;
-    });
-
-    return NextResponse.json({
-        type: "users",
-        details: Object.values(userStats)
-    });
+    return NextResponse.json({ type: "users", details, nextCursor: null });
 }

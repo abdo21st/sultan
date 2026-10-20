@@ -1,7 +1,7 @@
 import NextAuth, { type User } from "next-auth"
 import { authConfig } from "./auth.config"
 import { prisma } from "@/lib/prisma"
-import { PERMISSIONS, DEFAULT_ROLES } from "@/lib/permissions"
+import { DEFAULT_ROLES } from "@/lib/permissions"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 
@@ -13,14 +13,6 @@ async function getUser(username: string) {
         });
 
         if (!user) return null;
-
-        // Force Absolute Access for Master
-        if (user.username === 'master') {
-            return {
-                ...user,
-                permissions: Object.values(PERMISSIONS) as string[]
-            };
-        }
 
         const allPermissions = new Set<string>(user.permissions || []);
         const defaultRolePermissions = DEFAULT_ROLES[user.role as keyof typeof DEFAULT_ROLES] || [];

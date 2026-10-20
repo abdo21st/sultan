@@ -186,6 +186,8 @@ export default function EditUserPage() {
                                     <Lock className="absolute right-3 top-2.5 w-4 h-4 text-muted-foreground" />
                                     <input
                                         type="password"
+                                        minLength={12}
+                                        maxLength={128}
                                         dir="ltr"
                                         value={formData.password}
                                         onChange={e => setFormData({ ...formData, password: e.target.value })}

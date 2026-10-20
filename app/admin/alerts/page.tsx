@@ -83,11 +83,14 @@ export default function AlertsPage() {
             setUsers(Array.isArray(usersData) ? usersData : []);
 
             if (activeTab === 'current') {
-                const ordersRes = await fetch('/api/orders');
-                const ordersData: Order[] = await ordersRes.json();
                 const today = new Date().toISOString().split('T')[0];
                 const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-                setMatchingOrders(ordersData.filter(o => o.dueDate === today || o.dueDate === tomorrow));
+                const ordersRes = await fetch(`/api/orders?startDate=${today}&endDate=${tomorrow}&limit=100`);
+                const ordersData: Order[] = await ordersRes.json();
+                setMatchingOrders(ordersData.filter(o => {
+                    const dueDate = new Date(o.dueDate).toISOString().split('T')[0];
+                    return dueDate === today || dueDate === tomorrow;
+                }));
             }
         } catch (error) {
             console.error(error);

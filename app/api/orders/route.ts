@@ -1,22 +1,28 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 import { PERMISSIONS } from "@/lib/permissions";
 import { ORDER_STATUS, LEGACY_STATUS_MAPPING } from "@/lib/constants";
 import { saveFile } from "@/lib/upload";
+import { canAccessOrderFacility, canViewOrderStatus, getRequestUser, orderFacilityFilter } from "@/lib/request-user";
+import { z } from "zod";
+import { toCents, toMoneyNumber } from "@/lib/money";
+import { writeAudit } from "@/lib/audit";
+import { cleanupUncommittedBlobUploads } from "@/lib/blob-cleanup";
+import { decodeDateIdCursor, encodeDateIdCursor, parsePageSize } from "@/lib/keyset-pagination";
 
 
 
 export async function GET(request: Request) {
     try {
-        console.log("[GET /api/orders] Request received");
-        const session = await auth();
-        console.log("[GET /api/orders] Session:", session?.user?.id);
-        if (!session?.user?.permissions?.includes(PERMISSIONS.ORDERS_VIEW)) {
+        const user = await getRequestUser();
+        if (!user?.permissions.includes(PERMISSIONS.ORDERS_VIEW)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
         const { searchParams } = new URL(request.url);
+        const limit = parsePageSize(searchParams.get('limit'));
+        const cursor = decodeDateIdCursor(searchParams.get('cursor'));
+        if (!limit || cursor === false) return NextResponse.json({ error: "Invalid pagination parameters." }, { status: 400 });
         const factoryId = searchParams.get('factoryId');
         const shopId = searchParams.get('shopId');
         const status = searchParams.get('status');
@@ -26,17 +32,19 @@ export async function GET(request: Request) {
         const paymentStatus = searchParams.get('paymentStatus'); // 'unpaid'
 
         const where: Prisma.OrderWhereInput = {};
+        const facilityScope = orderFacilityFilter(user);
+        if (Object.keys(facilityScope).length > 0) where.AND = [facilityScope];
         if (factoryId) where.factoryId = factoryId;
         if (shopId) where.shopId = shopId;
 
         // --- Status Permission Logic ---
-        const userPermissions = session?.user?.permissions || [];
-        const isMaster = (session?.user as { username?: string })?.username === 'master';
+        const userPermissions = user.permissions;
+        const isAdmin = user.role === 'ADMIN';
 
         const allowedStatuses: string[] = [];
 
         // Check which statuses the user is allowed to VIEW
-        if (!isMaster) {
+        if (!isAdmin) {
             Object.values(ORDER_STATUS).forEach(status => {
                 // status example: "orders:status:registered"
                 // view permission: "orders:status:view:registered"
@@ -57,7 +65,7 @@ export async function GET(request: Request) {
         // Hard rule: effective status filter is intersection of (requested status) AND (allowed statuses)
         // If user is master, allowedStatuses effectively includes ALL (skipped check).
 
-        if (!isMaster) {
+        if (!isAdmin) {
             if (status) {
                 // User wants specific statuses. Check if they are allowed.
                 const requestedStatuses = status.split(',');
@@ -107,11 +115,22 @@ export async function GET(request: Request) {
             }
         }
 
-        const canViewFinancials = isMaster || userPermissions.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
+        if (cursor) {
+            const existingAnd = where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : [];
+            where.AND = [...existingAnd, {
+                OR: [
+                    { createdAt: { lt: cursor.date } },
+                    { createdAt: cursor.date, id: { lt: cursor.id } },
+                ],
+            }];
+        }
+
+        const canViewFinancials = isAdmin || userPermissions.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
 
         const orders = await prisma.order.findMany({
             where,
-            orderBy: { createdAt: "desc" },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take: limit + 1,
             select: {
                 id: true,
                 serialNumber: true,
@@ -130,7 +149,20 @@ export async function GET(request: Request) {
                 remainingAmount: canViewFinancials,
             }
         });
-        return NextResponse.json(orders);
+        const hasMore = orders.length > limit;
+        const page = hasMore ? orders.slice(0, limit) : orders;
+        const nextCursor = hasMore && page.length > 0
+            ? encodeDateIdCursor(page[page.length - 1].createdAt, page[page.length - 1].id)
+            : null;
+        return NextResponse.json(page.map((order) => canViewFinancials ? {
+            ...order,
+            images: order.images.map((_, index) => `/api/orders/${order.id}/images/${index}`),
+            totalAmount: toMoneyNumber(order.totalAmount),
+            paidAmount: toMoneyNumber(order.paidAmount),
+            remainingAmount: toMoneyNumber(order.remainingAmount),
+        } : { ...order, images: order.images.map((_, index) => `/api/orders/${order.id}/images/${index}`) }), {
+            headers: nextCursor ? { 'X-Next-Cursor': nextCursor } : undefined,
+        });
     } catch (error) {
         console.error("Fetch orders error:", error);
         return NextResponse.json(
@@ -144,19 +176,28 @@ import { orderSchema } from "@/lib/schemas";
 
 
 export async function POST(request: Request) {
+    let clientRequestId: string | null = null;
+    let expectedOrderData: {
+        customerName: string;
+        customerPhone: string;
+        description: string;
+        dueDate: Date;
+        totalAmount: number;
+        paidAmount: number;
+        factoryId: string;
+        shopId: string;
+    } | null = null;
+    const uploadedImageUrls: string[] = [];
+    let orderCommitted = false;
     try {
-        console.log("[POST /api/orders] Request received");
-        const session = await auth();
-        console.log("[POST /api/orders] Session user:", session?.user?.id);
-        console.log("[POST /api/orders] Permissions:", session?.user?.permissions);
+        const user = await getRequestUser();
+        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const permissions = session?.user?.permissions || [];
+        const permissions = user.permissions;
         if (!permissions.includes(PERMISSIONS.ORDERS_ADD) && !permissions.includes('*')) {
-            console.warn("[POST /api/orders] Unauthorized access");
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
         const formData = await request.formData();
-        console.log("[POST /api/orders] FormData received");
 
         // Convert FormData to object for Zod validation
         const dataToValidate = {
@@ -167,7 +208,7 @@ export async function POST(request: Request) {
             totalAmount: formData.get("totalAmount"),
             paidAmount: formData.get("paidAmount"),
             factoryId: formData.get("factoryId"),
-            shopId: formData.get("shopId") || session?.user?.facilityId,
+            shopId: formData.get("shopId") || (user.role !== "ADMIN" ? user.facilityId : undefined),
         };
 
         const result = orderSchema.safeParse(dataToValidate);
@@ -180,7 +221,53 @@ export async function POST(request: Request) {
         }
 
         const body = result.data;
+        const totalAmount = Math.round((body.totalAmount + Number.EPSILON) * 100) / 100;
+        const paidAmount = Math.round((body.paidAmount + Number.EPSILON) * 100) / 100;
         const dueDateObj = new Date(body.dueDate);
+        expectedOrderData = {
+            customerName: body.customerName,
+            customerPhone: body.customerPhone,
+            description: body.description,
+            dueDate: dueDateObj,
+            totalAmount,
+            paidAmount,
+            factoryId: body.factoryId,
+            shopId: body.shopId,
+        };
+        if (paidAmount > 0 && user.role !== "ADMIN" && (
+            !permissions.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS) ||
+            !permissions.includes(PERMISSIONS.TRANSACTIONS_ADD)
+        )) {
+            return NextResponse.json({ error: "You are not allowed to register an initial payment." }, { status: 403 });
+        }
+
+        const requestIdResult = z.string().uuid().safeParse(formData.get("clientRequestId"));
+        if (!requestIdResult.success) {
+            return NextResponse.json({ error: "A valid request identifier is required." }, { status: 400 });
+        }
+        clientRequestId = requestIdResult.data;
+        const facilities = await prisma.facility.findMany({
+            where: { id: { in: [body.factoryId, body.shopId] } },
+            select: { id: true, type: true },
+        });
+        const factory = facilities.find((facility) => facility.id === body.factoryId);
+        const shop = facilities.find((facility) => facility.id === body.shopId);
+        if (factory?.type !== "FACTORY" || shop?.type !== "SHOP") {
+            return NextResponse.json({ error: "Select a valid factory and shop." }, { status: 400 });
+        }
+        if (user.role !== "ADMIN" && (!user.facilityId || ![body.factoryId, body.shopId].includes(user.facilityId))) {
+            return NextResponse.json({ error: "You can only create orders for your assigned facility." }, { status: 403 });
+        }
+        const existingOrder = await prisma.order.findUnique({ where: { clientRequestId } });
+        if (existingOrder) {
+            if (!expectedOrderData || !sameOrderRequest(existingOrder, expectedOrderData)) {
+                return NextResponse.json({ error: "Request identifier reused for different order data." }, { status: 409 });
+            }
+            if (!canAccessOrderFacility(user, existingOrder) || !canViewOrderStatus(user, existingOrder.status)) {
+                return NextResponse.json({ error: "Order not found" }, { status: 404 });
+            }
+            return NextResponse.json(orderResponse(existingOrder, user));
+        }
         const dayOfWeek = dueDateObj.getDay();
 
         // Capacity Check
@@ -219,19 +306,22 @@ export async function POST(request: Request) {
         }
 
         // Handle Images
-        const imageFiles = formData.getAll("images") as File[];
-        console.log(`[POST /api/orders] Found ${imageFiles.length} images`);
+        const imageValues = formData.getAll("images");
+        if (imageValues.length > 10 || imageValues.some((value) => !(value instanceof File))) {
+            return NextResponse.json({ error: "Invalid image upload." }, { status: 400 });
+        }
+        const imageFiles = imageValues as File[];
         const imagePaths: string[] = [];
 
         if (imageFiles.length > 0) {
             for (const file of imageFiles) {
-                console.log(`[POST /api/orders] Processing file: ${file.name}`);
                 try {
                     const path = await saveFile(file, "order");
-                    if (path) imagePaths.push(path);
+                    if (path) {
+                        imagePaths.push(path);
+                        uploadedImageUrls.push(path);
+                    }
                 } catch (e) {
-                    console.error(`[POST /api/orders] Error saving file ${file.name}:`, e);
-                    // Continue or fail? Let's fail for now if it's critical, or just log
                     throw e; // Propagate error to top level catch
                 }
             }
@@ -241,13 +331,14 @@ export async function POST(request: Request) {
         const order = await prisma.$transaction(async (tx) => {
             const newOrder = await tx.order.create({
                 data: {
+                    clientRequestId,
                     customerName: body.customerName,
                     customerPhone: body.customerPhone,
                     description: body.description,
                     dueDate: dueDateObj,
-                    totalAmount: body.totalAmount,
-                    paidAmount: body.paidAmount,
-                    remainingAmount: body.totalAmount - body.paidAmount,
+                    totalAmount,
+                    paidAmount,
+                    remainingAmount: totalAmount - paidAmount,
                     factoryId: body.factoryId,
                     shopId: body.shopId,
                     status: ORDER_STATUS.REGISTERED,
@@ -256,53 +347,117 @@ export async function POST(request: Request) {
             });
 
             // Create Transaction if paidAmount > 0
-            if (body.paidAmount > 0) {
+            if (paidAmount > 0) {
                 await tx.transaction.create({
                     data: {
                         type: 'INCOME',
-                        amount: body.paidAmount,
+                        amount: paidAmount,
                         category: 'SALES',
                         description: `دفعة مقدمة - طلب #${newOrder.serialNumber} - ${body.customerName}`,
-                        createdBy: session?.user?.id,
+                        createdBy: user.id,
+                        facilityId: body.shopId,
+                        idempotencyKey: `initial-payment:${newOrder.id}`,
                         orderId: newOrder.id,
                     }
                 });
             }
 
+            await writeAudit(tx, {
+                actorId: user.id,
+                entityType: "ORDER",
+                entityId: newOrder.id,
+                action: "CREATED",
+                after: {
+                    serialNumber: newOrder.serialNumber,
+                    customerName: newOrder.customerName,
+                    customerPhone: newOrder.customerPhone,
+                    status: newOrder.status,
+                    totalAmount,
+                    paidAmount,
+                    remainingAmount: totalAmount - paidAmount,
+                    factoryId: newOrder.factoryId,
+                    shopId: newOrder.shopId,
+                },
+            });
+
             return newOrder;
         });
+        orderCommitted = true;
 
-        // #region agent log
-        fetch("http://127.0.0.1:7242/ingest/490d5893-3539-43ca-b492-240d3ed9fa0c", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                id: `log_${Date.now()}_order_created`,
-                timestamp: Date.now(),
-                runId: "pre-fix",
-                hypothesisId: "H3",
-                location: "app/api/orders/route.ts:POST",
-                message: "Order created via POST /api/orders",
-                data: {
-                    orderId: order.id,
-                    status: order.status,
-                    createdBy: session?.user?.id ?? null,
-                },
-            }),
-        }).catch(() => { });
-        // #endregion agent log
-
-        return NextResponse.json(order);
+        return NextResponse.json(orderResponse(order, user));
     } catch (error) {
+        if (!orderCommitted && uploadedImageUrls.length > 0) {
+            try {
+                const cleanup = await cleanupUncommittedBlobUploads(uploadedImageUrls);
+                if (cleanup.failed > 0 || cleanup.unsupportedCount > 0) {
+                    console.error("Uncommitted order image cleanup was deferred.");
+                }
+            } catch {
+                console.error("Uncommitted order image cleanup could not be queued.");
+            }
+        }
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+            if (clientRequestId) {
+                const existingOrder = await prisma.order.findUnique({ where: { clientRequestId } });
+                if (existingOrder) {
+                    const user = await getRequestUser();
+                    if (user && expectedOrderData && sameOrderRequest(existingOrder, expectedOrderData) &&
+                        canAccessOrderFacility(user, existingOrder) && canViewOrderStatus(user, existingOrder.status)) {
+                        return NextResponse.json(orderResponse(existingOrder, user));
+                    }
+                }
+            }
+        }
         console.error("Error creating order:", error);
         return NextResponse.json(
-            {
-                error: error instanceof Error ? error.message : "فشل إنشاء الطلب",
-                details: error
-            },
+            { error: "فشل إنشاء الطلب" },
             { status: 500 }
         );
     }
+}
+
+function sameOrderRequest(
+    order: {
+        customerName: string;
+        customerPhone: string;
+        description: string;
+        dueDate: Date;
+        totalAmount: Prisma.Decimal | number;
+        paidAmount: Prisma.Decimal | number;
+        factoryId: string;
+        shopId: string;
+    },
+    expected: {
+        customerName: string;
+        customerPhone: string;
+        description: string;
+        dueDate: Date;
+        totalAmount: number;
+        paidAmount: number;
+        factoryId: string;
+        shopId: string;
+    },
+) {
+    return order.customerName === expected.customerName &&
+        order.customerPhone === expected.customerPhone &&
+        order.description === expected.description &&
+        order.factoryId === expected.factoryId &&
+        order.shopId === expected.shopId &&
+        order.dueDate.getTime() === expected.dueDate.getTime() &&
+        toCents(order.totalAmount) === toCents(expected.totalAmount) &&
+        toCents(order.paidAmount) === toCents(expected.paidAmount);
+}
+
+function orderResponse<T extends { id: string; images: string[]; totalAmount: Prisma.Decimal | number; paidAmount: Prisma.Decimal | number; remainingAmount: Prisma.Decimal | number }>(order: T, user: { role: string; permissions: string[] }) {
+    const { totalAmount, paidAmount, remainingAmount, ...orderFields } = order;
+    const publicOrder = { ...orderFields, images: order.images.map((_, index) => `/api/orders/${order.id}/images/${index}`) };
+    if (user.role === "ADMIN" || user.permissions.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS)) {
+        return {
+            ...publicOrder,
+            totalAmount: toMoneyNumber(totalAmount),
+            paidAmount: toMoneyNumber(paidAmount),
+            remainingAmount: toMoneyNumber(remainingAmount),
+        };
+    }
+    return publicOrder;
 }

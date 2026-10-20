@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Plus, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import NavBar from '../components/NavBar';
 import { usePermission } from '../../lib/usePermission';
 import { PERMISSIONS } from '../../lib/permissions';
 import { formatCurrency } from '../../lib/utils';
+import { fetchAllPages } from '@/lib/fetch-all-pages';
 
 interface Transaction {
     id: string;
@@ -27,6 +28,8 @@ export default function TransactionsPage() {
     const { hasPermission } = usePermission();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
+    const [nextTransactionsCursor, setNextTransactionsCursor] = useState<string | null>(null);
+    const [loadingMoreTransactions, setLoadingMoreTransactions] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [stats, setStats] = useState({ totalDebt: 0, treasuryBalance: 0, totalIncome: 0, totalExpense: 0 });
 
@@ -35,6 +38,9 @@ export default function TransactionsPage() {
     const [unpaidOrders, setUnpaidOrders] = useState<UnpaidOrder[]>([]);
     const [selectedOrder, setSelectedOrder] = useState<string>('');
     const [paymentAmount, setPaymentAmount] = useState<string>('');
+    const [paymentIdempotencyKey, setPaymentIdempotencyKey] = useState('');
+    const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+    const paymentSubmissionLock = useRef(false);
 
     const [formData, setFormData] = useState({
         type: 'EXPENSE',
@@ -58,26 +64,30 @@ export default function TransactionsPage() {
         }
     }
 
-    async function fetchTransactions() {
+    async function fetchTransactions(cursor?: string | null) {
         try {
-            const res = await fetch('/api/transactions');
+            if (cursor) setLoadingMoreTransactions(true);
+            else setLoading(true);
+            const params = new URLSearchParams({ limit: '50' });
+            if (cursor) params.set('cursor', cursor);
+            const res = await fetch(`/api/transactions?${params}`);
             if (res.ok) {
                 const data = await res.json();
-                setTransactions(data);
+                setTransactions((previous) => cursor ? [...previous, ...data] : data);
+                setNextTransactionsCursor(res.headers.get('X-Next-Cursor'));
             }
         } catch (e) {
             console.error(e);
         } finally {
-            setLoading(false);
+            if (cursor) setLoadingMoreTransactions(false);
+            else setLoading(false);
         }
     }
 
     async function fetchUnpaidOrders() {
         try {
-            const res = await fetch('/api/orders?paymentStatus=unpaid');
-            if (res.ok) {
-                setUnpaidOrders(await res.json());
-            }
+            const orders = await fetchAllPages<UnpaidOrder>('/api/orders?paymentStatus=unpaid');
+            setUnpaidOrders(orders);
         } catch (e) { console.error(e); }
     }
 
@@ -88,6 +98,11 @@ export default function TransactionsPage() {
 
     async function handlePaymentSubmit(e: React.FormEvent) {
         e.preventDefault();
+        if (paymentSubmissionLock.current) return;
+        paymentSubmissionLock.current = true;
+        setIsSubmittingPayment(true);
+        const idempotencyKey = paymentIdempotencyKey || crypto.randomUUID();
+        setPaymentIdempotencyKey(idempotencyKey);
         try {
             const res = await fetch('/api/transactions', {
                 method: 'POST',
@@ -97,6 +112,7 @@ export default function TransactionsPage() {
                     amount: parseFloat(paymentAmount),
                     category: 'SALES', // Or 'DEBT_PAYMENT'
                     orderId: selectedOrder,
+                    idempotencyKey,
                     date: new Date().toISOString().split('T')[0]
                 }),
             });
@@ -107,6 +123,7 @@ export default function TransactionsPage() {
                 fetchStats();
                 setPaymentAmount('');
                 setSelectedOrder('');
+                setPaymentIdempotencyKey('');
                 alert("تم تسجيل الدفعة بنجاح");
             } else {
                 const err = await res.json();
@@ -114,6 +131,9 @@ export default function TransactionsPage() {
             }
         } catch {
             alert('فشل الاتصال');
+        } finally {
+            paymentSubmissionLock.current = false;
+            setIsSubmittingPayment(false);
         }
     }
 
@@ -223,6 +243,7 @@ export default function TransactionsPage() {
                                         value={selectedOrder}
                                         onChange={e => {
                                             setSelectedOrder(e.target.value);
+                                            setPaymentIdempotencyKey('');
                                             const order = unpaidOrders.find(o => o.id === e.target.value);
                                             if (order) setPaymentAmount(order.remainingAmount.toString());
                                         }}
@@ -250,7 +271,10 @@ export default function TransactionsPage() {
                                             className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl p-6 text-2xl font-black font-mono text-green-400 focus:border-green-500/30 outline-none transition-all duration-300 placeholder:text-slate-800 shadow-inner"
                                             placeholder="0.00"
                                             value={paymentAmount}
-                                            onChange={e => setPaymentAmount(e.target.value)}
+                                            onChange={e => {
+                                                setPaymentAmount(e.target.value);
+                                                setPaymentIdempotencyKey('');
+                                            }}
                                             aria-label="المبلغ المستلم"
                                         />
                                         <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-700 font-bold text-xs">دينار ليبي</span>
@@ -260,9 +284,10 @@ export default function TransactionsPage() {
                                 <div className="pt-4 flex gap-4">
                                     <button
                                         type="submit"
+                                        disabled={isSubmittingPayment}
                                         className="flex-[2] py-5 bg-gradient-to-br from-green-600 to-green-900 text-white rounded-[1.5rem] font-black text-[12px] uppercase tracking-widest shadow-xl shadow-green-900/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50"
                                     >
-                                        تأكيد تحصيل الدفعة
+                                        {isSubmittingPayment ? 'جارٍ تسجيل الدفعة...' : 'تأكيد تحصيل الدفعة'}
                                     </button>
                                     <button
                                         type="button"
@@ -413,6 +438,18 @@ export default function TransactionsPage() {
                         ))
                     )}
                 </div>
+                {nextTransactionsCursor && (
+                    <div className="flex justify-center mt-8">
+                        <button
+                            type="button"
+                            disabled={loadingMoreTransactions}
+                            onClick={() => fetchTransactions(nextTransactionsCursor)}
+                            className="px-6 py-3 rounded-xl bg-primary text-white font-bold disabled:opacity-50"
+                        >
+                            {loadingMoreTransactions ? 'جاري التحميل...' : 'تحميل معاملات أقدم'}
+                        </button>
+                    </div>
+                )}
             </main>
         </div>
     );

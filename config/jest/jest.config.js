@@ -14,6 +14,8 @@ const customJestConfig = {
         '^@/(.*)$': '<rootDir>/$1',
     },
     testPathIgnorePatterns: ['<rootDir>/tests/e2e/', '<rootDir>/node_modules/'],
+    modulePathIgnorePatterns: ['<rootDir>/.next/'],
+    watchPathIgnorePatterns: ['<rootDir>/.next/'],
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

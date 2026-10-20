@@ -1,0 +1,82 @@
+name: sultan-production
+
+services:
+  sultan-db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sultan_db
+      POSTGRES_USER: sultan_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in the server .env file}
+    volumes:
+      - sultan-production-db:/var/lib/postgresql/data
+    networks:
+      - sultan-private
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sultan_user -d sultan_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  sultan-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    environment:
+      DATABASE_URL: postgresql://sultan_user:${DB_PASSWORD}@sultan-db:5432/sultan_db?schema=public
+      DIRECT_URL: postgresql://sultan_user:${DB_PASSWORD}@sultan-db:5432/sultan_db?schema=public
+      INITIAL_ADMIN_USERNAME: ${INITIAL_ADMIN_USERNAME:-admin}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+      INITIAL_ADMIN_DISPLAY_NAME: ${INITIAL_ADMIN_DISPLAY_NAME:-مدير النظام}
+    depends_on:
+      sultan-db:
+        condition: service_healthy
+    networks:
+      - sultan-private
+    restart: "no"
+
+  sultan-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      AUTH_URL: https://sultan.mtapp.ly
+      AUTH_TRUST_HOST: "true"
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET in the server .env file}
+      CRON_SECRET: ${CRON_SECRET:?Set CRON_SECRET in the server .env file}
+      ORDER_SHARE_SECRET: ${ORDER_SHARE_SECRET:-}
+      BLOB_READ_WRITE_TOKEN: ${BLOB_READ_WRITE_TOKEN:-}
+      ORDER_IMAGE_STORAGE: local
+      ORDER_IMAGE_STORAGE_DIR: /app/storage/order-images
+      DATABASE_URL: postgresql://sultan_user:${DB_PASSWORD}@sultan-db:5432/sultan_db?schema=public
+      DIRECT_URL: postgresql://sultan_user:${DB_PASSWORD}@sultan-db:5432/sultan_db?schema=public
+    ports:
+      - "127.0.0.1:3005:3000"
+    volumes:
+      - sultan-production-images:/app/storage/order-images
+    depends_on:
+      sultan-db:
+        condition: service_healthy
+      sultan-migrate:
+        condition: service_completed_successfully
+    networks:
+      - sultan-private
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+networks:
+  sultan-private:
+    name: sultan-production-private
+
+volumes:
+  sultan-production-db:
+    name: sultan-production-db
+  sultan-production-images:
+    name: sultan-production-images

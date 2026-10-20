@@ -9,6 +9,9 @@ export const authConfig = {
             const isLoggedIn = !!auth?.user;
             const isOnLogin = nextUrl.pathname.startsWith('/login');
 
+            // The route verifies a signed, expiring token before returning customer data.
+            if (nextUrl.pathname.startsWith('/orders/share/')) return true;
+
             // Allow access to public assets and api routes that don't need auth (like seed)
             if (nextUrl.pathname.startsWith('/api/seed')) return true;
             if (nextUrl.pathname.startsWith('/_next')) return true;

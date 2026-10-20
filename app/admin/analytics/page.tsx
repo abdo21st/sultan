@@ -71,8 +71,11 @@ interface ReportData {
         netProfit?: number;
         totalOrders?: number;
         statusDistribution?: { name: string; value: number }[];
+        orderPayments?: number;
+        topFactory?: string;
     };
     details: (FinancialDetail | OperationalDetail | ProductionDetail | UserDetail)[];
+    nextCursor?: string | null;
 }
 
 export default function FlexibleReportsPage() {
@@ -89,6 +92,7 @@ export default function FlexibleReportsPage() {
     });
     const [reportData, setReportData] = useState<ReportData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     const isAuthorized = status === "authenticated" && session?.user && (
         session.user.role === 'ADMIN' ||
@@ -120,9 +124,11 @@ export default function FlexibleReportsPage() {
                 type: reportType,
                 start: filters.start,
                 end: filters.end,
+                limit: "50",
                 ...(filters.facilityId && { facilityId: filters.facilityId })
             });
             const res = await fetch(`/api/admin/reports?${query}`);
+            if (!res.ok) throw new Error("تعذر تحميل التقرير.");
             const data = await res.json();
             setReportData(data);
         } catch (err) {
@@ -132,6 +138,33 @@ export default function FlexibleReportsPage() {
             setLoading(false);
         }
     }, [reportType, filters]);
+
+    const loadMoreReport = useCallback(async () => {
+        if (!reportData?.nextCursor || loadingMore) return;
+        setLoadingMore(true);
+        try {
+            const query = new URLSearchParams({
+                type: reportType,
+                start: filters.start,
+                end: filters.end,
+                limit: "50",
+                cursor: reportData.nextCursor,
+                ...(filters.facilityId && { facilityId: filters.facilityId })
+            });
+            const response = await fetch(`/api/admin/reports?${query}`, { cache: "no-store" });
+            if (!response.ok) throw new Error("تعذر تحميل بقية التقرير.");
+            const page: ReportData = await response.json();
+            setReportData((current) => current ? {
+                ...current,
+                details: [...current.details, ...page.details],
+                nextCursor: page.nextCursor ?? null,
+            } : page);
+        } catch {
+            toast.error("فشل تحميل بقية التقرير");
+        } finally {
+            setLoadingMore(false);
+        }
+    }, [reportData, loadingMore, reportType, filters]);
 
     useEffect(() => {
         if (isAuthorized) {
@@ -160,8 +193,31 @@ export default function FlexibleReportsPage() {
         "System": "النظام"
     };
 
-    const handlePDFExport = () => {
+    const handlePDFExport = async () => {
         if (!reportData) return;
+
+        let exportDetails = [...reportData.details];
+        let cursor = reportData.nextCursor ?? null;
+        try {
+            while (cursor) {
+                const query = new URLSearchParams({
+                    type: reportType,
+                    start: filters.start,
+                    end: filters.end,
+                    limit: "100",
+                    cursor,
+                    ...(filters.facilityId && { facilityId: filters.facilityId })
+                });
+                const response = await fetch(`/api/admin/reports?${query}`, { cache: "no-store" });
+                if (!response.ok) throw new Error("تعذر تحميل بقية التقرير.");
+                const page: ReportData = await response.json();
+                exportDetails = exportDetails.concat(page.details);
+                cursor = page.nextCursor ?? null;
+            }
+        } catch {
+            toast.error("تعذر تحميل التقرير كاملًا للتصدير");
+            return;
+        }
 
         let columns: { header: string; dataKey: string }[] = [];
         let rows: Record<string, string | number>[] = [];
@@ -177,7 +233,7 @@ export default function FlexibleReportsPage() {
                     { header: "المبلغ", dataKey: "amount" },
                     { header: "البيان", dataKey: "description" }
                 ];
-                rows = (reportData.details as FinancialDetail[]).map(t => ({
+                rows = (exportDetails as FinancialDetail[]).map(t => ({
                     date: new Date(t.date).toLocaleDateString('ar-EG'),
                     type: t.type === "INCOME" ? "دخل" : "مصروف",
                     category: t.category,
@@ -194,7 +250,7 @@ export default function FlexibleReportsPage() {
                     { header: "القيمة", dataKey: "amount" },
                     { header: "تاريخ الطلب", dataKey: "date" }
                 ];
-                rows = (reportData.details as OperationalDetail[]).map(o => ({
+                rows = (exportDetails as OperationalDetail[]).map(o => ({
                     id: o.id.slice(-6),
                     customer: o.customerName,
                     status: STATUS_MAP[o.status] || o.status,
@@ -209,7 +265,7 @@ export default function FlexibleReportsPage() {
                     { header: "عدد الطلبات", dataKey: "count" },
                     { header: "إجمالي القيمة", dataKey: "value" }
                 ];
-                rows = (reportData.details as ProductionDetail[]).map(f => ({
+                rows = (exportDetails as ProductionDetail[]).map(f => ({
                     name: f.name,
                     count: f.count,
                     value: formatCurrency(f.value)
@@ -222,7 +278,7 @@ export default function FlexibleReportsPage() {
                     { header: "عدد المعاملات", dataKey: "count" },
                     { header: "حجم العمليات", dataKey: "volume" }
                 ];
-                rows = (reportData.details as UserDetail[]).map(u => ({
+                rows = (exportDetails as UserDetail[]).map(u => ({
                     id: u.name || u.id,
                     count: u.transactionCount,
                     volume: formatCurrency(u.volume)
@@ -395,6 +451,17 @@ export default function FlexibleReportsPage() {
                         {reportType === "operational" && <OperationalView data={reportData} />}
                         {reportType === "production" && <ProductionView data={reportData} />}
                         {reportType === "users" && <UserActivityView data={reportData} />}
+                        {reportData.nextCursor && (
+                            <div className="flex justify-center pt-8">
+                                <button
+                                    onClick={loadMoreReport}
+                                    disabled={loadingMore}
+                                    className="min-h-12 px-8 rounded-xl border border-border bg-white font-bold text-foreground hover:border-primary disabled:opacity-60"
+                                >
+                                    {loadingMore ? "جاري تحميل المزيد..." : "تحميل المزيد من السجلات"}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </main>

@@ -1,28 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { authorizeCronRequest } from "@/lib/cron-auth";
 
 export async function GET(request: Request) {
-    // Basic protection using a header (optional but recommended)
-    const authHeader = request.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        return new NextResponse('Unauthorized', { status: 401 });
-    }
+    const auth = authorizeCronRequest(request);
+    if (auth === "unconfigured") return NextResponse.json({ error: "Scheduled maintenance is not configured." }, { status: 503 });
+    if (auth !== "authorized") return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
 
     try {
-        // Perform a simple query to keep the database active
-        const count = await prisma.user.count();
-
+        await prisma.$queryRaw`SELECT 1`;
         return NextResponse.json({
             success: true,
-            message: "Database pinged successfully",
             timestamp: new Date().toISOString(),
-            data: { userCount: count }
-        });
-    } catch (error: unknown) {
-        console.error("Keep-alive error:", error);
-        return NextResponse.json({
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error"
-        }, { status: 500 });
+        }, { headers: { "Cache-Control": "no-store" } });
+    } catch {
+        return NextResponse.json({ error: "Database check failed." }, { status: 503 });
     }
 }

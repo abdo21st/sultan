@@ -1,25 +1,34 @@
 import { NextResponse } from 'next/server';
 import { prisma } from "../../../../lib/prisma";
-import { auth } from "@/lib/auth";
+import { getRequestUser } from "@/lib/request-user";
+import { writeAudit } from "@/lib/audit";
+import { DESTRUCTIVE_CONFIRMATIONS } from "@/lib/constants";
 
-export async function POST() {
+export async function POST(request: Request) {
     try {
-        const session = await auth();
+        const user = await getRequestUser();
 
         // Check authentication and admin permission
-        if (!session?.user || session.user.role !== 'ADMIN') {
+        if (!user || user.role !== 'ADMIN') {
             return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
         }
+        const body = await request.json().catch(() => null);
+        if (body?.confirmation !== DESTRUCTIVE_CONFIRMATIONS.BULK_DELETE_USERS) {
+            return NextResponse.json({ error: 'يتطلب حذف المستخدمين تأكيدًا صريحًا' }, { status: 400 });
+        }
 
-        const currentUserId = session.user.id;
-
-        // Delete all users except the current admin
-        const result = await prisma.user.deleteMany({
-            where: {
-                id: {
-                    not: currentUserId
-                }
-            }
+        const result = await prisma.$transaction(async (tx) => {
+            const count = await tx.user.count({ where: { id: { not: user.id } } });
+            const deleted = await tx.user.deleteMany({ where: { id: { not: user.id } } });
+            await writeAudit(tx, {
+                actorId: user.id,
+                entityType: "USER",
+                entityId: "bulk-delete",
+                action: "BULK_DELETED",
+                before: { count },
+                after: { count: deleted.count },
+            });
+            return deleted;
         });
 
         return NextResponse.json({

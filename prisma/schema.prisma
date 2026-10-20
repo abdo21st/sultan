@@ -13,6 +13,11 @@ enum Role {
   USER
 }
 
+enum BlobDeletionStatus {
+  PENDING
+  NEEDS_ATTENTION
+}
+
 model User {
   id          String  @id @default(cuid())
   username    String  @unique
@@ -58,53 +63,66 @@ model Facility {
   type     String
   location String?
 
-  factoryOrders Order[] @relation("FactoryOrders")
-  shopOrders    Order[] @relation("ShopOrders")
+  factoryOrders Order[]       @relation("FactoryOrders")
+  shopOrders    Order[]       @relation("ShopOrders")
+  transactions  Transaction[]
 }
 
 model Order {
-  id              String   @id @default(cuid())
-  serialNumber    Int      @default(autoincrement())
+  id              String        @id @default(cuid())
+  clientRequestId String?       @unique
+  serialNumber    Int           @default(autoincrement())
   customerName    String
   customerPhone   String
   description     String
   dueDate         DateTime
-  status          String   @default("orders:status:registered")
-  totalAmount     Float
-  paidAmount      Float
-  remainingAmount Float    @default(0)
+  status          String        @default("orders:status:registered")
+  totalAmount     Decimal       @db.Decimal(14, 2)
+  paidAmount      Decimal       @db.Decimal(14, 2)
+  remainingAmount Decimal       @default(0) @db.Decimal(14, 2)
   images          String[]
   factoryId       String
-  factory         Facility @relation("FactoryOrders", fields: [factoryId], references: [id])
+  factory         Facility      @relation("FactoryOrders", fields: [factoryId], references: [id])
   shopId          String
-  shop            Facility @relation("ShopOrders", fields: [shopId], references: [id])
+  shop            Facility      @relation("ShopOrders", fields: [shopId], references: [id])
   rejectionReason String?
   paymentNote     String?
-  history         Json[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  transactions    Transaction[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@index([factoryId])
+  @@index([factoryId, dueDate])
+  @@index([factoryId, createdAt, id])
   @@index([shopId])
+  @@index([shopId, createdAt, id])
   @@index([status])
   @@index([customerPhone])
+  @@index([createdAt, id])
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
-  type        String
-  amount      Float
-  category    String
-  description String?
-  orderId     String? // Link to specific Order
-  customerId  String? // Link to specific Customer (if we normalize customers later)
-  date        DateTime @default(now())
-  createdBy   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String    @id @default(cuid())
+  type           String
+  amount         Decimal   @db.Decimal(14, 2)
+  category       String
+  description    String?
+  orderId        String? // Link to specific Order
+  order          Order?    @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  facilityId     String?
+  facility       Facility? @relation(fields: [facilityId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  idempotencyKey String?   @unique
+  customerId     String? // Link to specific Customer (if we normalize customers later)
+  date           DateTime  @default(now())
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([date])
+  @@index([date, id])
+  @@index([facilityId, date, id])
   @@index([orderId])
+  @@index([facilityId])
 }
 
 model Notification {
@@ -119,6 +137,7 @@ model Notification {
   @@index([userId])
   @@index([read])
   @@index([createdAt])
+  @@index([userId, read, createdAt, id])
 }
 
 model CapacityRule {
@@ -144,4 +163,32 @@ model AlertSetting {
   recipientPhones String[] @default([])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  entityType String
+  entityId   String
+  action     String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model BlobDeletion {
+  id            String             @id @default(cuid())
+  url           String             @unique
+  sourceOrderId String?
+  status        BlobDeletionStatus @default(PENDING)
+  attempts      Int                @default(0)
+  nextAttemptAt DateTime           @default(now())
+  lastError     String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([status, nextAttemptAt, createdAt])
 }
