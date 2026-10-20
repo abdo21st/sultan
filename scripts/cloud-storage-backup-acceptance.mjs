@@ -7,6 +7,7 @@ import { join } from 'node:path';
 
 function run(command, args, env = process.env, input) {
   const result = spawnSync(command, args, { env, input, encoding: 'utf8', timeout: 300_000, windowsHide: true });
+  if (result.status !== 0 && args[0] === 'scripts/backup-offsite.mjs') process.stderr.write(result.stderr);
   if (result.error || result.status !== 0) throw new Error(`Acceptance operation failed: ${command} ${args[0] || ''}`);
   return result.stdout.trim();
 }

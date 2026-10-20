@@ -13,7 +13,8 @@ export const SNAPSHOT_NAME = /^sultan-\d{4}-\d\d-\d\dT[0-9TZ-]+-[A-Za-z0-9]+$/;
 const files = ['database.dump.aesgcm', 'order-images.tar.gz.aesgcm', 'manifest.json'];
 const signedMarker = 'OFFSITE-VERIFIED.json';
 const configKeys = ['SULTAN_S3_ENDPOINT', 'SULTAN_S3_REGION', 'SULTAN_S3_BUCKET', 'SULTAN_S3_ACCESS_KEY_ID', 'SULTAN_S3_SECRET_ACCESS_KEY', 'SULTAN_S3_PREFIX', 'SULTAN_S3_FORCE_PATH_STYLE'];
-const assert = (condition, message) => { if (!condition) throw new Error(message); };
+class OffsiteError extends Error {}
+const assert = (condition, message) => { if (!condition) throw new OffsiteError(message); };
 const option = (name, fallback) => { const index = process.argv.indexOf(name); return index < 0 ? fallback : process.argv[index + 1]; };
 
 export function validateConfig(input, allowLoopbackTest = false) {
@@ -146,16 +147,18 @@ export async function uploadSnapshot(config, directory, container, stateDirector
                 ? ['--mount', `type=bind,src=${download},dst=/download`]
                 : ['--mount', `type=bind,src=${join(file === signedMarker ? temporary : source.directory, file)},dst=/source,readonly`];
             transport(['--env-file', credentials, ...mounts, RCLONE_IMAGE,
-                'copyto', ...(downloading ? [remote, `/download/${file}`] : ['/source', remote]), '--config', '/dev/null', '--immutable', '--checksum', '--retries', '2', '--low-level-retries', '2', '--contimeout', '15s', '--timeout', '5m', '--umask', '077'], downloading ? 'remote readback' : 'encrypted upload');
+                'copyto', ...(downloading ? [remote, `/download/${file}`] : ['/source', remote]), '--config', '/dev/null', '--immutable', '--checksum', '--retries', '2', '--low-level-retries', '2', '--contimeout', '15s', '--timeout', '5m'], downloading ? 'remote readback' : 'encrypted upload');
         }
         // Publish the completion marker only after readback and authenticated archive verification.
-        for (const file of files) { transfer(file); transfer(file, true); assert(await digest(join(download, file)) === source.hashes[file], 'Remote readback checksum mismatch.'); }
+        for (const file of files) { transfer(file); transfer(file, true); await chmod(join(download, file), 0o600); assert(await digest(join(download, file)) === source.hashes[file], 'Remote readback checksum mismatch.'); }
         const verification = authenticateSnapshot(download, container);
         transfer('VERIFIED'); transfer('VERIFIED', true);
+        await chmod(join(download, 'VERIFIED'), 0o600);
         assert(await digest(join(download, 'VERIFIED')) === source.hashes.VERIFIED, 'Remote completion marker differs.');
         const marker = signSnapshot(source.name, source.hashes, key);
         await writeFile(join(temporary, signedMarker), JSON.stringify(marker), { mode: 0o600, flag: 'wx' });
         transfer(signedMarker); transfer(signedMarker, true);
+        await chmod(join(download, signedMarker), 0o600);
         const remoteHashes = verifySignedSnapshot(JSON.parse(await readFile(join(download, signedMarker), 'utf8')), source.name, key);
         assert(JSON.stringify(remoteHashes) === JSON.stringify(source.hashes), 'The signed remote snapshot differs from its source.');
         const receipt = { format: 'sultan-offsite-v1', destinationId: config.destinationId, snapshot: source.name, hashes: source.hashes, verifiedAt: new Date().toISOString(), readbackMatched: true, authenticated: true, ...verification };
@@ -179,7 +182,8 @@ export async function downloadSnapshot(config, snapshot, destination, container)
         let expected;
         for (const file of [signedMarker, 'VERIFIED', ...files]) {
             transport(['--env-file', credentials, '--mount', `type=bind,src=${target},dst=/download`, RCLONE_IMAGE,
-                'copyto', `offsite:${config.SULTAN_S3_BUCKET}/${config.SULTAN_S3_PREFIX}${snapshot}/${file}`, `/download/${file}`, '--config', '/dev/null', '--immutable', '--retries', '2', '--low-level-retries', '2', '--contimeout', '15s', '--timeout', '5m', '--umask', '077'], 'remote restore download');
+                'copyto', `offsite:${config.SULTAN_S3_BUCKET}/${config.SULTAN_S3_PREFIX}${snapshot}/${file}`, `/download/${file}`, '--config', '/dev/null', '--immutable', '--retries', '2', '--low-level-retries', '2', '--contimeout', '15s', '--timeout', '5m'], 'remote restore download');
+            await chmod(join(target, file), 0o600);
             if (file === signedMarker) {
                 await regularFile(join(target, file), 65_536);
                 expected = verifySignedSnapshot(JSON.parse(await readFile(join(target, file), 'utf8')), snapshot, key);
@@ -215,4 +219,7 @@ async function main() {
     }
     console.log(JSON.stringify({ mode, uploaded, alreadyUploaded, destinationId: config.destinationId }));
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main().catch(() => { console.error('Offsite backup failed; configuration values and transport logs were suppressed. Inspect the private configuration and verified snapshot.'); process.exitCode = 1; });
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main().catch(error => {
+    console.error(error instanceof OffsiteError ? error.message : 'Offsite backup failed; inspect the private configuration and verified snapshot.');
+    process.exitCode = 1;
+});
