@@ -4,15 +4,18 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, X, Wifi, WifiOff } from "lucide-react";
 import Image from "next/image";
-import { db } from "@/lib/db";
+import { db, type OfflineFacility } from "@/lib/db";
+import { useSession } from "next-auth/react";
 
 export default function NewOrderPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-    const [user, setUser] = useState<{ id: string; role: string; facilityId?: string } | null>(null);
-    const [facilities, setFacilities] = useState<{ id: string, name: string, type: string }[]>([]);
+    const { data: session } = useSession();
+    const user = session?.user;
+    const [facilities, setFacilities] = useState<OfflineFacility[]>([]);
+    const [usingCachedFacilities, setUsingCachedFacilities] = useState(false);
     const [images, setImages] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
     const [isOnline, setIsOnline] = useState(true);
@@ -34,19 +37,57 @@ export default function NewOrderPage() {
     }, []);
 
     useEffect(() => {
-        // Fetch session
-        fetch('/api/auth/session').then(res => res.json()).then(data => {
-            if (data?.user) setUser(data.user);
+        if (!user || user.mustChangePassword) return;
+        let active = true;
+        const actor = user;
+        async function loadFacilities() {
+            const identity = JSON.stringify([actor.id, actor.role, actor.facilityId, actor.sessionVersion, [...actor.permissions].sort()]);
+            const scope = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(identity))))
+                .map(byte => byte.toString(16).padStart(2, '0')).join('');
+            if (!active) return;
+            setFacilities([]);
+            setUsingCachedFacilities(false);
+            let cached;
+            try { cached = await db.facilityCache.get('current'); } catch { /* Online creation remains available if local storage is unavailable. */ }
+            if (!active) return;
+            if (cached && (cached.scope !== scope || Date.now() - cached.updatedAt > 24 * 60 * 60 * 1000 || cached.updatedAt > Date.now())) {
+                cached = undefined;
+                try { await db.facilityCache.delete('current'); } catch { /* Never use an incompatible snapshot. */ }
+            }
+            try {
+                const response = await fetch('/api/facilities');
+                if (!active) return;
+                if (response.status === 401 || response.status === 403) {
+                    await db.facilityCache.clear();
+                    if (active) { setFacilities([]); setError('يلزم تسجيل الدخول بصلاحية عرض المنشآت.'); }
+                    return;
+                }
+                if (!response.ok) throw new Error('Facilities unavailable');
+                const data: unknown = await response.json();
+                if (!Array.isArray(data) || data.some(item => !item || typeof item.id !== 'string' || typeof item.name !== 'string' || !['FACTORY', 'SHOP'].includes(item.type))) throw new Error('Invalid facilities');
+                const minimal: OfflineFacility[] = data.map(item => ({ id: item.id, name: item.name, type: item.type }));
+                if (!active) return;
+                setFacilities(minimal);
+                setUsingCachedFacilities(false);
+                try { await db.facilityCache.put({ key: 'current', scope, updatedAt: Date.now(), facilities: minimal }); }
+                catch { /* A storage quota failure must not disable an online form. */ }
+            } catch {
+                if (!active) return;
+                const age = cached ? Date.now() - cached.updatedAt : Infinity;
+                if (cached?.scope === scope && age >= 0 && age <= 24 * 60 * 60 * 1000) {
+                    setFacilities(cached.facilities);
+                    setUsingCachedFacilities(true);
+                } else {
+                    setFacilities([]);
+                    setError('تعذر تحميل المنشآت. أعد الاتصال لفتح نموذج الطلب.');
+                }
+            }
+        }
+        void loadFacilities().catch(() => {
+            if (active) { setFacilities([]); setError('تعذر تحميل المنشآت. أعد الاتصال لفتح نموذج الطلب.'); }
         });
-
-        // Fetch facilities
-        fetch('/api/facilities')
-            .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) setFacilities(data);
-            })
-            .catch(err => console.error("Failed to load facilities", err));
-    }, []);
+        return () => { active = false; };
+    }, [user]);
 
     const factories = facilities.filter(f => f.type === 'FACTORY');
     const shops = facilities.filter(f => f.type === 'SHOP');
@@ -183,6 +224,8 @@ export default function NewOrderPage() {
                         {success}
                     </div>
                 )}
+
+                {usingCachedFacilities && <p className="mb-4 text-sm text-amber-700">تُعرض آخر قائمة منشآت محفوظة لهذا الحساب. ستُراجع الصلاحيات عند الإرسال.</p>}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Customer Info */}

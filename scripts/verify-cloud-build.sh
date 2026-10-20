@@ -36,7 +36,7 @@ printf 'DATABASE_URL=postgresql://sultan_user:%s@127.0.0.1:%s/sultan_acceptance\
 printf 'SULTAN_ROLLBACK_IMAGE=%s\n' "$rollback_image" >> "$temporary/test.env"
 project=$(pwd -P)
 # Mount current source directories only: the server .env is never mounted.
-docker run --rm --network host --env-file "$temporary/test.env" \
+docker run --rm --network host --memory 2560m --cpus 1.5 --env-file "$temporary/test.env" \
   --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock \
   --mount "type=bind,src=$project/app,dst=/app/app,readonly" \
   --mount "type=bind,src=$project/lib,dst=/app/lib,readonly" \

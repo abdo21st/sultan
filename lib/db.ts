@@ -1,5 +1,18 @@
 import Dexie, { type Table } from 'dexie';
 
+export interface OfflineFacility {
+    id: string;
+    name: string;
+    type: 'FACTORY' | 'SHOP';
+}
+
+export interface FacilitySnapshot {
+    key: 'current';
+    scope: string;
+    updatedAt: number;
+    facilities: OfflineFacility[];
+}
+
 export interface OfflineOrder {
     id?: number;
     customerName: string;
@@ -17,11 +30,13 @@ export interface OfflineOrder {
     nextAttemptAt: number;
     syncingAt?: number;
     lastError?: string;
+    lastStatus?: number;
     createdAt: number;
 }
 
 export class AppDatabase extends Dexie {
     orders!: Table<OfflineOrder>;
+    facilityCache!: Table<FacilitySnapshot, string>;
 
     constructor() {
         super('SultanAppDB');
@@ -40,6 +55,10 @@ export class AppDatabase extends Dexie {
                     order.nextAttemptAt = 0;
                 }
             });
+        });
+        this.version(3).stores({
+            orders: '++id, status, createdAt, nextAttemptAt',
+            facilityCache: '&key',
         });
     }
 }

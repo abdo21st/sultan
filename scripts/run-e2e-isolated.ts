@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { cp, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { config as loadEnv } from "dotenv";
@@ -210,7 +210,7 @@ async function main() {
     await cp(path.resolve(process.cwd(), "public"), path.resolve(process.cwd(), ".next/standalone/public"), { recursive: true });
 
     const playwrightCli = path.resolve(process.cwd(), "node_modules/@playwright/test/cli.js");
-    const tests = spawnSync(process.execPath, [playwrightCli, "test", "--config", "config/playwright/playwright.config.ts", "--grep-invert", "@reversal"], {
+    const tests = spawnSync(process.execPath, [playwrightCli, "test", "--config", "config/playwright/playwright.config.ts", "--grep-invert", "@reversal|@offline_images"], {
       cwd: process.cwd(),
       env: testEnv,
       stdio: "inherit",
@@ -392,11 +392,25 @@ async function main() {
     }
     if (!resetRollback || await prisma!.order.count() !== beforeReset.orders || await prisma!.transaction.count() !== beforeReset.transactions) throw new Error('Synthetic reset rollback failed.');
     console.log(JSON.stringify({ destructiveResetCompatibility: true, rolledBack: true, restoredFixtureCounts: beforeReset }));
+    const imagesBefore = new Set(await readdir(imageDirectory!));
+    const offlineImages = spawnSync(process.execPath, [playwrightCli, 'test', '--config', 'config/playwright/playwright.config.ts', '--grep', '@offline_images'], {
+      cwd: process.cwd(), env: testEnv, stdio: 'inherit', timeout: 10 * 60 * 1000,
+    });
+    if (offlineImages.error || offlineImages.status !== 0) throw new Error('Offline image acceptance failed.');
+    const offlineOrders = await prisma!.order.findMany({ where: { customerName: { startsWith: 'E2E Offline Image ' } }, select: { id: true, clientRequestId: true, paidAmount: true, images: true } });
+    const imagesAdded = (await readdir(imageDirectory!)).filter(name => !imagesBefore.has(name));
+    const offlineCreatedAudits = await prisma!.auditLog.count({ where: { entityType: 'ORDER', action: 'CREATED', entityId: { in: offlineOrders.map(order => order.id) } } });
+    if (offlineOrders.length !== 5 || new Set(offlineOrders.map(order => order.clientRequestId)).size !== 5 || offlineOrders.some(order => !order.clientRequestId || order.images.length !== 1 || !order.paidAmount.eq(0)) || imagesAdded.length !== 5 || offlineCreatedAudits !== 5) throw new Error('Offline image acceptance created duplicate records, missing images, or orphaned files.');
+    console.log(JSON.stringify({ offlineImageAcceptance: { orders: offlineOrders.length, uniqueClientKeys: 5, imageFilesAdded: imagesAdded.length, creationAudits: offlineCreatedAudits, disposableProfileRestart: true, localQueueSchemaUpgrade: true } }));
   } finally {
     try {
       await cleanupDatabase();
     } finally {
-      if (imageDirectory) await rm(imageDirectory, { recursive: true, force: true });
+      if (imageDirectory) {
+        const resolved = await realpath(imageDirectory);
+        if (path.dirname(resolved) !== await realpath(tmpdir()) || !path.basename(resolved).startsWith('sultan-e2e-images-')) throw new Error('Unsafe isolated image cleanup path.');
+        await rm(resolved, { recursive: true, force: true });
+      }
     }
     if (!databaseCreated) console.log(`Dropped isolated E2E database ${databaseName}.`);
   }

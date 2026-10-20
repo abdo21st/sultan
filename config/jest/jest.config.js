@@ -13,7 +13,8 @@ const customJestConfig = {
     moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/$1',
     },
-    testPathIgnorePatterns: ['<rootDir>/tests/e2e/', '<rootDir>/node_modules/'],
+    // Offsite tests use Node's test runner, invoked separately by npm test.
+    testPathIgnorePatterns: ['<rootDir>/tests/e2e/', '<rootDir>/node_modules/', '<rootDir>/scripts/backup-offsite.test.mjs'],
     modulePathIgnorePatterns: ['<rootDir>/.next/'],
     watchPathIgnorePatterns: ['<rootDir>/.next/'],
 };

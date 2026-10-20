@@ -20,7 +20,7 @@
     "blob:secure-existing-images": "tsx scripts/migrate-order-images-private.ts",
     "lint": "eslint",
     "postinstall": "npx prisma generate",
-    "test": "jest --config config/jest/jest.config.js",
+    "test": "npm run test:offsite && jest --config config/jest/jest.config.js",
     "test:e2e": "playwright test --config config/playwright/playwright.config.ts",
     "test:e2e:isolated": "tsx scripts/run-e2e-isolated.ts",
     "test:blob:provider": "tsx scripts/blob-provider-smoke.ts"
