@@ -17,7 +17,7 @@ export function parseLocalImageReference(reference: string) {
 function storageDirectory() {
   const configured = process.env.ORDER_IMAGE_STORAGE_DIR || join(process.cwd(), "storage", "order-images");
   if (!isAbsolute(configured)) throw new Error("Image storage directory must be absolute.");
-  const root = resolve(configured);
+  const root = resolve(/* turbopackIgnore: true */ configured);
   for (const publicDirectory of [resolve("public"), resolve(".next/static")]) {
     const child = relative(publicDirectory, root);
     if (child === "" || (child !== ".." && !child.startsWith(`..${sep}`) && !isAbsolute(child))) {
@@ -33,8 +33,8 @@ export async function saveLocalImage(file: File): Promise<string> {
   const root = storageDirectory();
   await mkdir(root, { recursive: true, mode: 0o700 });
   const fileName = `${randomUUID()}.${extension}`;
-  const target = join(root, fileName);
-  const handle = await open(target, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, 0o600);
+  const target = join(/* turbopackIgnore: true */ root, fileName);
+  const handle = await open(/* turbopackIgnore: true */ target, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, 0o600);
   try {
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (bytes.byteLength !== file.size || bytes.byteLength > maxBytes) throw new Error("Image size changed during upload.");
@@ -42,7 +42,7 @@ export async function saveLocalImage(file: File): Promise<string> {
     await handle.sync();
   } catch (error) {
     await handle.close().catch(() => undefined);
-    await unlink(target).catch(() => undefined);
+    await unlink(/* turbopackIgnore: true */ target).catch(() => undefined);
     throw error;
   } finally {
     await handle.close().catch(() => undefined);
@@ -53,11 +53,11 @@ export async function saveLocalImage(file: File): Promise<string> {
 export async function readLocalImage(reference: string) {
   const parsed = parseLocalImageReference(reference);
   if (!parsed) return null;
-  const target = join(storageDirectory(), parsed.fileName);
+  const target = join(/* turbopackIgnore: true */ storageDirectory(), parsed.fileName);
   try {
-    const metadata = await lstat(target);
+    const metadata = await lstat(/* turbopackIgnore: true */ target);
     if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.size <= 0 || metadata.size > maxBytes) return null;
-    const handle = await open(target, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
+    const handle = await open(/* turbopackIgnore: true */ target, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
     try {
       const bytes = await handle.readFile();
       if (bytes.byteLength <= 0 || bytes.byteLength > maxBytes) return null;
@@ -80,7 +80,7 @@ export async function deleteLocalImage(reference: string) {
   if (!parsed) throw new Error("Invalid local image reference.");
   try {
     // unlink removes a directory entry and never follows a symbolic link.
-    await unlink(join(storageDirectory(), parsed.fileName));
+    await unlink(/* turbopackIgnore: true */ join(/* turbopackIgnore: true */ storageDirectory(), parsed.fileName));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }

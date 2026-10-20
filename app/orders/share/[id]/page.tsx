@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getStatusInfo, formatCurrency, formatDate } from "@/lib/utils";
-import { verifyOrderShareToken } from "@/lib/order-share-token";
+import { readOrderShareToken } from "@/lib/order-share-token";
+
+export const dynamic = 'force-dynamic';
 
 export default async function ShareOrderPage({
     params,
@@ -12,13 +14,14 @@ export default async function ShareOrderPage({
 }) {
     const { id } = await params;
     const { token } = await searchParams;
-    if (!verifyOrderShareToken(token, id)) notFound();
+    const claims = readOrderShareToken(token, id);
+    if (!claims) notFound();
 
     const order = await prisma.order.findUnique({
         where: { id },
     });
 
-    if (!order) notFound();
+    if (!order || claims.version !== order.shareVersion) notFound();
 
     const statusInfo = getStatusInfo(order.status);
 

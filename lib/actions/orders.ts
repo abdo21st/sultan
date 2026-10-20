@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { ORDER_STATUS, ALLOWED_TRANSITIONS } from "@/lib/constants";
 import { PERMISSIONS } from "@/lib/permissions";
 import { createStatusChangeNotification } from "@/lib/services/notification-service";
-import { canAccessOrderFacility, getRequestUser } from "@/lib/request-user";
-import { createOrderShareToken } from "@/lib/order-share-token";
+import { canAccessOrderFacility, getRequestUser, type RequestUser } from "@/lib/request-user";
+import { issueOrderShareToken } from "@/lib/order-sharing";
 import { toCents, toMoneyNumber } from "@/lib/money";
 import { writeAudit } from "@/lib/audit";
 import { persistOrderStatusTransition } from "@/lib/order-status-transition";
@@ -21,8 +21,9 @@ const WHATSAPP_MAX_SENDS_PER_WINDOW = 10;
 async function sendWhatsAppNotification(
     order: { id: string; serialNumber: number; customerName: string; customerPhone: string },
     status: string,
-    actorId: string,
+    actor: RequestUser,
 ) {
+    const actorId = actor.id;
     let attemptId: string | null = null;
     try {
         const settings = await prisma.systemSettings.findFirst();
@@ -31,10 +32,21 @@ async function sendWhatsAppNotification(
             return; // WhatsApp not configured or disabled
         }
 
+        if (status !== ORDER_STATUS.PROCESSING && status !== ORDER_STATUS.SHOP_READY) return;
+        const apiUrl = parseAllowedWhatsAppApiUrl(settings.whatsappApiUrl);
+        if (!apiUrl) {
+            await prisma.auditLog.create({
+                data: { actorId, entityType: "ORDER", entityId: order.id, action: "WHATSAPP_SEND_BLOCKED_CONFIGURATION", after: { status, reason: "INVALID_OR_UNALLOWLISTED_HOST" } },
+            });
+            return;
+        }
+
         const baseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL;
         if (!baseUrl) return;
         const shareUrl = new URL(`/orders/share/${order.id}`, baseUrl);
-        shareUrl.searchParams.set('token', createOrderShareToken(order.id));
+        const token = await issueOrderShareToken(order.id, actor, 'WHATSAPP');
+        if (!token) return;
+        shareUrl.searchParams.set('token', token);
         const documentUrl = shareUrl.toString();
 
         let message = '';
@@ -45,20 +57,6 @@ async function sendWhatsAppNotification(
         }
 
         if (!message) return;
-
-        const apiUrl = parseAllowedWhatsAppApiUrl(settings.whatsappApiUrl);
-        if (!apiUrl) {
-            await prisma.auditLog.create({
-                data: {
-                    actorId,
-                    entityType: "ORDER",
-                    entityId: order.id,
-                    action: "WHATSAPP_SEND_BLOCKED_CONFIGURATION",
-                    after: { status, reason: "INVALID_OR_UNALLOWLISTED_HOST" },
-                },
-            });
-            return;
-        }
 
         attemptId = await prisma.$transaction(async (tx) => {
             // Serialize sends for one actor so concurrent status changes cannot bypass the rate limit.
@@ -195,7 +193,7 @@ export async function updateOrderStatus(id: string, newStatus: string, rejection
         // Send WhatsApp notification for specific statuses
         if (newStatus === ORDER_STATUS.PROCESSING || newStatus === ORDER_STATUS.SHOP_READY) {
             if (user.permissions.includes(PERMISSIONS.WHATSAPP_SEND)) {
-                await sendWhatsAppNotification(order, newStatus, user.id);
+                await sendWhatsAppNotification(order, newStatus, user);
             } else {
                 const settings = await prisma.systemSettings.findUnique({
                     where: { id: "default" },

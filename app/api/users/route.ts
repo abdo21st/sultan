@@ -41,12 +41,13 @@ export async function GET() {
 }
 
 import bcrypt from "bcryptjs";
+import { newPasswordSchema } from '@/lib/password-policy';
 
 import { z } from "zod";
 
 const userSchema = z.object({
     username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
-    password: z.string().min(12, "كلمة المرور يجب أن تكون 12 حرفاً على الأقل").max(128),
+    password: newPasswordSchema,
     displayName: z.string().min(2, "الاسم يجب أن يكون حرفين على الأقل"),
     phoneNumber: z.string().regex(/^\d{10,15}$/, "رقم الهاتف غير صحيح").optional().or(z.literal('')),
     role: z.enum(["ADMIN", "MANAGER", "ACCOUNTANT", "USER"]).optional(),
@@ -91,6 +92,7 @@ export async function POST(request: Request) {
                 role: body.role || 'USER',
                 facilityId: body.facilityId || null,
                 password: hashedPassword,
+                mustChangePassword: true,
                 roles: body.roleIds ? {
                     connect: body.roleIds.map((id: string) => ({ id }))
                 } : undefined

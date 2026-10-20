@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   output: 'standalone',
+  outputFileTracingExcludes: {
+    '/*': ['./.env', './.env.*', './scratch/**/*', './local-backups/**/*', './storage/**/*', './.git/**/*'],
+  },
   reactCompiler: true,
   serverExternalPackages: ['@prisma/client'],
   images: {

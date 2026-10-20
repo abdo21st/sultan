@@ -30,6 +30,8 @@ export async function GET(request: Request) {
                 if (closed || polling) return;
                 polling = true;
                 try {
+                    const current = await prisma.user.findUnique({ where: { id: user.id }, select: { sessionVersion: true, mustChangePassword: true } });
+                    if (!current || current.mustChangePassword || current.sessionVersion !== user.sessionVersion) { close(); return; }
                     if (cursor === null) {
                         const latest = await prisma.notification.findFirst({
                             where: { userId: user.id },

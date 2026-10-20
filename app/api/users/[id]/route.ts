@@ -4,13 +4,14 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { PERMISSIONS } from "@/lib/permissions";
 import { getRequestUser } from "@/lib/request-user";
+import { newPasswordSchema } from '@/lib/password-policy';
 import { writeAudit } from "@/lib/audit";
 
 const userUpdateSchema = z.object({
     username: z.string().trim().min(3).max(100),
     displayName: z.string().trim().min(2).max(120),
     phoneNumber: z.string().regex(/^\d{10,15}$/).optional().or(z.literal("")),
-    password: z.string().min(12).max(128).optional().or(z.literal("")),
+    password: newPasswordSchema.optional().or(z.literal("")),
     role: z.enum(["ADMIN", "MANAGER", "ACCOUNTANT", "USER"]),
     facilityId: z.string().nullable().optional(),
     roleIds: z.array(z.string().min(1).max(128)).max(20).optional(),
@@ -85,7 +86,8 @@ export async function PATCH(
             role: body.role,
             facilityId: requestedFacilityId,
             ...(requestedRoleIds !== undefined ? { roles: { set: requestedRoleIds.map((roleId) => ({ id: roleId })) } } : {}),
-            ...(body.password ? { password: await bcrypt.hash(body.password, 12) } : {}),
+            ...(body.password ? { password: await bcrypt.hash(body.password, 12), mustChangePassword: true } : {}),
+            ...(body.password || isChangingAccess ? { sessionVersion: { increment: 1 } } : {}),
         };
 
         const user = await prisma.$transaction(async (tx) => {

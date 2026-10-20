@@ -33,6 +33,21 @@ async function getUser(username: string) {
 
 export const { auth, signIn, signOut, handlers } = NextAuth({
     ...authConfig,
+    callbacks: {
+        ...authConfig.callbacks,
+        async jwt(args) {
+            const token = await authConfig.callbacks.jwt(args);
+            if (!token.sub || !Number.isSafeInteger(token.sessionVersion)) return null;
+            // Every server authentication checks revocation, including page requests.
+            const current = await prisma.user.findUnique({
+                where: { id: token.sub },
+                select: { sessionVersion: true, mustChangePassword: true },
+            });
+            if (!current || current.sessionVersion !== token.sessionVersion) return null;
+            token.mustChangePassword = current.mustChangePassword;
+            return token;
+        },
+    },
     providers: [
         {
             id: 'credentials',

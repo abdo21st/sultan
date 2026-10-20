@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { getRequestUser } from "@/lib/request-user";
 import { writeAudit } from "@/lib/audit";
+import { newPasswordSchema } from '@/lib/password-policy';
 
 // Schema for updating basic info
 const updateInfoSchema = z.object({
@@ -13,8 +14,8 @@ const updateInfoSchema = z.object({
 
 // Schema for changing password
 const changePasswordSchema = z.object({
-    currentPassword: z.string().min(1, "كلمة المرور الحالية مطلوبة"),
-    newPassword: z.string().min(12, "كلمة المرور الجديدة يجب أن تكون 12 حرفاً على الأقل").max(128),
+    currentPassword: z.string().min(1, "كلمة المرور الحالية مطلوبة").max(128),
+    newPassword: newPasswordSchema,
 });
 
 export async function PUT(request: Request) {
@@ -64,7 +65,7 @@ export async function PUT(request: Request) {
 
 export async function PATCH(request: Request) {
     try {
-        const user = await getRequestUser();
+        const user = await getRequestUser({ allowPasswordChange: true });
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
@@ -89,6 +90,9 @@ export async function PATCH(request: Request) {
         if (!userRecord) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
+        if (userRecord.sessionVersion !== user.sessionVersion) {
+            return NextResponse.json({ error: "انتهت الجلسة؛ سجّل الدخول مجدداً" }, { status: 401 });
+        }
 
         // Verify current password
         const isValid = await bcrypt.compare(currentPassword, userRecord.password);
@@ -99,20 +103,31 @@ export async function PATCH(request: Request) {
             );
         }
 
+        if (await bcrypt.compare(newPassword, userRecord.password)) {
+            return NextResponse.json({ error: "اختر كلمة مرور مختلفة عن الحالية" }, { status: 400 });
+        }
+
         // Hash new password
         const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-        await prisma.$transaction(async (tx) => {
-            await tx.user.update({ where: { id: user.id }, data: { password: hashedPassword } });
+        const changed = await prisma.$transaction(async (tx) => {
+            const result = await tx.user.updateMany({
+                where: { id: user.id, password: userRecord.password, sessionVersion: userRecord.sessionVersion },
+                data: { password: hashedPassword, mustChangePassword: false, sessionVersion: { increment: 1 } },
+            });
+            if (result.count !== 1) return false;
             await writeAudit(tx, {
                 actorId: user.id,
                 entityType: "USER",
                 entityId: user.id,
                 action: "PASSWORD_CHANGED",
+                after: { initialPasswordReplaced: userRecord.mustChangePassword, sessionsRevoked: true },
             });
+            return true;
         });
 
-        return NextResponse.json({ message: "تم تغيير كلمة المرور بنجاح" });
+        if (!changed) return NextResponse.json({ error: "تغيرت بيانات الحساب أثناء الطلب؛ سجّل الدخول مجدداً" }, { status: 409 });
+        return NextResponse.json({ message: "تم تغيير كلمة المرور؛ سجّل الدخول بالكلمة الجديدة", reauthenticate: true });
     } catch {
         return NextResponse.json(
             { error: "حدث خطأ أثناء تغيير كلمة المرور" },

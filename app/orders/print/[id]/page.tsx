@@ -6,7 +6,7 @@ import QRCode from "qrcode";
 import { formatCurrency } from "../../../../lib/utils";
 import { PERMISSIONS } from "@/lib/permissions";
 import { canAccessOrderFacility, canViewOrderStatus, getRequestUser } from "@/lib/request-user";
-import { createOrderShareToken } from "@/lib/order-share-token";
+import { issueOrderShareToken } from "@/lib/order-sharing";
 
 export default async function PrintOrderPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -43,7 +43,9 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
         throw new Error("AUTH_URL must use HTTPS in production.");
     }
     const shareUrl = new URL(`/orders/share/${currentOrder.id}`, baseUrl);
-    shareUrl.searchParams.set("token", createOrderShareToken(currentOrder.id));
+    const token = await issueOrderShareToken(currentOrder.id, user, 'PRINT');
+    if (!token) return notFound();
+    shareUrl.searchParams.set("token", token);
     const orderUrl = shareUrl.toString();
     const qrCodeDataUrl = await QRCode.toDataURL(orderUrl, {
         margin: 1,

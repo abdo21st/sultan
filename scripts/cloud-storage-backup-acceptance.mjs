@@ -5,8 +5,8 @@ import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-function run(command, args, env = process.env) {
-  const result = spawnSync(command, args, { env, encoding: 'utf8', timeout: 300_000, windowsHide: true });
+function run(command, args, env = process.env, input) {
+  const result = spawnSync(command, args, { env, input, encoding: 'utf8', timeout: 300_000, windowsHide: true });
   if (result.error || result.status !== 0) throw new Error(`Acceptance operation failed: ${command} ${args[0] || ''}`);
   return result.stdout.trim();
 }
@@ -28,7 +28,7 @@ async function healthy(base) {
   }
   throw new Error('Isolated restored app did not become healthy.');
 }
-async function readAuthenticatedImage(base, password, expectedBytes) {
+async function readAuthenticatedImage(base, credentials, expectedBytes) {
   const path = `${base}/api/orders/storage_acceptance_order/images/0`;
   if ((await fetch(path)).status !== 404) throw new Error('Anonymous image access was not rejected.');
   const jar = new Map();
@@ -41,12 +41,29 @@ async function readAuthenticatedImage(base, password, expectedBytes) {
     }
     return response;
   }
-  const csrf = await request(`${base}/api/auth/csrf`);
-  const { csrfToken } = await csrf.json();
-  await request(`${base}/api/auth/callback/credentials`, {
-    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Auth-Return-Redirect': '1' },
-    body: new URLSearchParams({ username: 'storage_acceptance_admin', password, csrfToken, callbackUrl: base, json: 'true' }),
-  });
+  async function login() {
+    const { csrfToken } = await (await request(`${base}/api/auth/csrf`)).json();
+    await request(`${base}/api/auth/callback/credentials`, {
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Auth-Return-Redirect': '1' },
+      body: new URLSearchParams({ username: 'storage_acceptance_admin', password: credentials.password, csrfToken, callbackUrl: base, json: 'true' }),
+    });
+    const session = await (await request(`${base}/api/auth/session`)).json();
+    if (!session?.user?.id) throw new Error('Acceptance administrator could not authenticate.');
+    return session;
+  }
+  const session = await login();
+  if (session.user.mustChangePassword) {
+    if ((await request(path)).status !== 404) throw new Error('Initial account accessed images before changing its password.');
+    const replacement = randomBytes(24).toString('base64url');
+    const changed = await request(`${base}/api/profile`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword: credentials.password, newPassword: replacement }),
+    });
+    if (changed.status !== 200) throw new Error('Initial account password change failed.');
+    if ((await (await request(`${base}/api/auth/session`)).json())?.user) throw new Error('Password change did not revoke the prior session.');
+    credentials.password = replacement;
+    if ((await login()).user.mustChangePassword) throw new Error('Initial account remained blocked after changing its password.');
+  }
   const response = await request(path);
   if (response.status !== 200 || response.headers.get('content-type') !== 'image/png' || !Buffer.from(await response.arrayBuffer()).equals(expectedBytes)) {
     throw new Error('Authenticated restored image bytes did not match the source.');
@@ -64,6 +81,7 @@ async function main() {
   const base = `http://127.0.0.1:${port}`;
   const databasePassword = randomBytes(24).toString('hex');
   const password = randomBytes(24).toString('base64url');
+  const credentials = { password };
   const key = randomBytes(32).toString('base64');
   const imagesVolume = `${project}-images`;
   const restoredVolume = `sultan_images_${suffix}_restore_test`;
@@ -89,13 +107,24 @@ async function main() {
     run('docker', [...composeArgs, 'up', '-d', 'sultan-app']);
     run('docker', [...composeArgs, 'run', '--rm', 'sultan-migrate', 'npm', 'run', 'db:seed']);
     const db = run('docker', [...composeArgs, 'ps', '-q', 'sultan-db']);
+    const readFlag = () => run('docker', ['exec', db, 'psql', '-At', '-U', 'sultan_user', '-d', 'sultan_db', '-c', `SELECT "mustChangePassword" FROM "User" WHERE username = 'storage_acceptance_admin'`]);
+    if (readFlag() !== 't') throw new Error('New seed did not require an initial password change.');
+    run('docker', ['exec', db, 'psql', '-v', 'ON_ERROR_STOP=1', '-U', 'sultan_user', '-d', 'sultan_db', '-c', `UPDATE "User" SET "mustChangePassword"=false WHERE username='storage_acceptance_admin'`]);
+    const enroll = initialPassword => JSON.parse(run('docker', [...composeArgs, 'run', '--rm', '-T', 'sultan-migrate', 'node', '--import', 'tsx', 'scripts/enroll-initial-admin.ts'], process.env, JSON.stringify({ username: 'storage_acceptance_admin', initialPassword })));
+    if (enroll(randomBytes(24).toString('hex')).status !== 'preserved' || readFlag() !== 'f') throw new Error('Enrollment changed an account with different credentials.');
+    if (enroll(password).status !== 'enrolled' || readFlag() !== 't' || enroll(password).status !== 'already_required') throw new Error('Legacy initial password enrollment was not safe and idempotent.');
     run('docker', ['run', '--rm', '--network', 'none', '--mount', `type=volume,src=${imagesVolume},dst=/app/storage/order-images`, image, 'node', '-e', `require('fs').writeFileSync('/app/storage/order-images/${imageFile}',Buffer.from('${png.toString('base64')}','base64'),{mode:0o600})`]);
     const sql = `INSERT INTO "Facility" (id,name,type) VALUES ('storage_factory','Synthetic factory','FACTORY'),('storage_shop','Synthetic shop','SHOP');
       INSERT INTO "Order" (id,"customerName","customerPhone",description,"dueDate","totalAmount","paidAmount","remainingAmount",images,"factoryId","shopId","updatedAt") VALUES ('storage_acceptance_order','Synthetic customer','0910000000','Cloud storage backup acceptance',NOW()+INTERVAL '7 days',100,70,30,ARRAY['sultan-local://orders/${imageFile}'],'storage_factory','storage_shop',NOW());
       INSERT INTO "Transaction" (id,type,amount,category,"orderId","facilityId","updatedAt") VALUES ('storage_acceptance_payment','INCOME',70,'PAYMENT','storage_acceptance_order','storage_shop',NOW());`;
     run('docker', ['exec', db, 'psql', '-v', 'ON_ERROR_STOP=1', '-U', 'sultan_user', '-d', 'sultan_db', '-c', sql]);
     await healthy(base);
-    await readAuthenticatedImage(base, password, png);
+    await readAuthenticatedImage(base, credentials, png);
+    const accountFingerprint = () => run('docker', ['exec', db, 'psql', '-At', '-U', 'sultan_user', '-d', 'sultan_db', '-c', `SELECT md5(password || ':' || "mustChangePassword"::text || ':' || "sessionVersion"::text) FROM "User" WHERE username = 'storage_acceptance_admin'`]);
+    const beforeSeed = accountFingerprint();
+    run('docker', [...composeArgs, 'run', '--rm', 'sultan-migrate', 'npm', 'run', 'db:seed']);
+    if (beforeSeed !== accountFingerprint()) throw new Error('Repeated seed changed existing credentials or session flags.');
+    if (enroll(password).status !== 'preserved' || beforeSeed !== accountFingerprint()) throw new Error('Enrollment changed a password already replaced by its owner.');
     const backupRoot = join(temporary, 'snapshots');
     await mkdir(backupRoot, { mode: 0o700 });
     const app = run('docker', [...composeArgs, 'ps', '-q', 'sultan-app']);
@@ -140,7 +169,7 @@ async function main() {
     await writeFile(composeFile, JSON.stringify(compose), { mode: 0o600 });
     run('docker', [...composeArgs, 'up', '-d', '--force-recreate', '--no-deps', 'sultan-app']);
     await healthy(base);
-    await readAuthenticatedImage(base, password, png);
+    await readAuthenticatedImage(base, credentials, png);
     console.log(JSON.stringify({ mode: 'cloud-storage-backup-acceptance', anonymousImageAccess: 404, authenticatedImageAccess: 200, encrypted: true, interruptedBackupRecovery: 'unpaused', verifiedRetentionScoped: true, tamperedCiphertextRejected: true, restoredOrders: 1, restoredTransactions: 1, ledgerMismatches: 0, restoredImages: 1, restoredImageBytesMatch: true, recreatedApplication: 'healthy', productionDataUsed: false }));
   } finally {
     if (stackStarted) run('docker', [...composeArgs, 'down', '--volumes', '--remove-orphans']);

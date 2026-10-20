@@ -40,4 +40,12 @@ docker run --rm --network host --env-file "$temporary/test.env" \
   --mount "type=bind,src=$project/scripts,dst=/app/scripts,readonly" \
   --mount "type=bind,src=$project/tests,dst=/app/tests,readonly" \
   --mount "type=bind,src=$project/config,dst=/app/config,readonly" \
-  "$image" sh -c 'npm run build && npm test -- --runInBand && npm run lint && npx tsc --noEmit && npm run test:e2e:isolated && npm run test:restore-start -- --container "$ACCEPTANCE_DB_CONTAINER" && npm audit --omit=dev'
+  --mount "type=bind,src=$project/prisma,dst=/app/prisma,readonly" \
+  --mount "type=bind,src=$project/types,dst=/app/types,readonly" \
+  --mount "type=bind,src=$project/proxy.ts,dst=/app/proxy.ts,readonly" \
+  --mount "type=bind,src=$project/next.config.ts,dst=/app/next.config.ts,readonly" \
+  --mount "type=bind,src=$project/tsconfig.json,dst=/app/tsconfig.json,readonly" \
+  --mount "type=bind,src=$project/eslint.config.mjs,dst=/app/eslint.config.mjs,readonly" \
+  --mount "type=bind,src=$project/package.json,dst=/app/package.json,readonly" \
+  --mount "type=bind,src=$project/package-lock.json,dst=/current-package-lock.json,readonly" \
+  "$image" sh -c 'cmp -s package-lock.json /current-package-lock.json || { printf "%s\n" "Rebuild the verification image: dependency lock differs." >&2; exit 1; }; npm run build && npm test -- --runInBand && npm run lint && npx tsc --noEmit && npm run test:e2e:isolated && npm run test:restore-start -- --container "$ACCEPTANCE_DB_CONTAINER" && npm audit --omit=dev'

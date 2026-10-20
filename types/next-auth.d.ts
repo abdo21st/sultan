@@ -9,6 +9,8 @@ declare module "next-auth" {
             permissions: string[];
             username: string | null;
             displayName: string | null;
+            mustChangePassword: boolean;
+            sessionVersion: number;
         } & DefaultSession["user"]
     }
 
@@ -18,6 +20,8 @@ declare module "next-auth" {
         permissions: string[];
         username: string | null;
         displayName: string | null;
+        mustChangePassword: boolean;
+        sessionVersion: number;
     }
 }
 
@@ -28,6 +32,8 @@ declare module "next-auth/jwt" {
         permissions?: string[];
         username?: string | null;
         displayName?: string | null;
+        mustChangePassword?: boolean;
+        sessionVersion?: number;
     }
 }
 
@@ -39,6 +45,8 @@ declare module "@auth/core/types" {
         permissions: string[];
         username: string | null;
         displayName: string | null;
+        mustChangePassword: boolean;
+        sessionVersion: number;
     }
 
     interface Session {
@@ -49,6 +57,8 @@ declare module "@auth/core/types" {
             permissions: string[];
             username: string | null;
             displayName: string | null;
+            mustChangePassword: boolean;
+            sessionVersion: number;
         } & DefaultSession["user"]
     }
 }

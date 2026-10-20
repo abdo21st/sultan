@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 const TOKEN_LIFETIME_SECONDS = 7 * 24 * 60 * 60;
 
@@ -12,15 +12,16 @@ function sign(payload: string) {
     return createHmac("sha256", getSecret()).update(`sultan-order-share:${payload}`).digest("base64url");
 }
 
-export function createOrderShareToken(orderId: string, nowSeconds = Math.floor(Date.now() / 1000)) {
-    const payload = Buffer.from(JSON.stringify({ orderId, exp: nowSeconds + TOKEN_LIFETIME_SECONDS })).toString("base64url");
+export function createOrderShareToken(orderId: string, version: number, nowSeconds = Math.floor(Date.now() / 1000)) {
+    if (!Number.isSafeInteger(version) || version < 0) throw new Error('Invalid share version.');
+    const payload = Buffer.from(JSON.stringify({ orderId, version, nonce: randomBytes(16).toString('base64url'), exp: nowSeconds + TOKEN_LIFETIME_SECONDS })).toString("base64url");
     return `${payload}.${sign(payload)}`;
 }
 
-export function verifyOrderShareToken(token: string | undefined, orderId: string, nowSeconds = Math.floor(Date.now() / 1000)) {
-    if (!token || token.length > 2048) return false;
+export function readOrderShareToken(token: string | undefined, orderId: string, nowSeconds = Math.floor(Date.now() / 1000)): { version: number; exp: number } | null {
+    if (!token || token.length > 2048) return null;
     const [payload, signature, ...extra] = token.split(".");
-    if (!payload || !signature || extra.length > 0) return false;
+    if (!payload || !signature || extra.length > 0) return null;
 
     let expectedSignature: Buffer;
     let providedSignature: Buffer;
@@ -28,14 +29,21 @@ export function verifyOrderShareToken(token: string | undefined, orderId: string
         expectedSignature = Buffer.from(sign(payload), "base64url");
         providedSignature = Buffer.from(signature, "base64url");
     } catch {
-        return false;
+        return null;
     }
-    if (expectedSignature.length !== providedSignature.length || !timingSafeEqual(expectedSignature, providedSignature)) return false;
+    if (expectedSignature.length !== providedSignature.length || !timingSafeEqual(expectedSignature, providedSignature)) return null;
 
     try {
-        const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { orderId?: unknown; exp?: unknown };
-        return decoded.orderId === orderId && Number.isInteger(decoded.exp) && Number(decoded.exp) > nowSeconds;
+        const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { orderId?: unknown; exp?: unknown; version?: unknown };
+        // Previously issued links remain valid at version 0 until revoked or expired.
+        const version = decoded.version === undefined ? 0 : decoded.version;
+        if (decoded.orderId !== orderId || !Number.isSafeInteger(decoded.exp) || Number(decoded.exp) <= nowSeconds || !Number.isSafeInteger(version) || Number(version) < 0) return null;
+        return { version: Number(version), exp: Number(decoded.exp) };
     } catch {
-        return false;
+        return null;
     }
+}
+
+export function verifyOrderShareToken(token: string | undefined, orderId: string, version: number, nowSeconds = Math.floor(Date.now() / 1000)) {
+    return readOrderShareToken(token, orderId, nowSeconds)?.version === version;
 }

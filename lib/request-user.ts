@@ -9,10 +9,12 @@ export type RequestUser = {
     role: string;
     facilityId: string | null;
     permissions: string[];
+    sessionVersion: number;
+    mustChangePassword: boolean;
 };
 
 /** Reload authorization facts for sensitive server operations instead of trusting stale JWT claims. */
-export async function getRequestUser(): Promise<RequestUser | null> {
+export async function getRequestUser(options: { allowPasswordChange?: boolean } = {}): Promise<RequestUser | null> {
     const session = await auth();
     const userId = session?.user?.id;
     if (!userId) return null;
@@ -25,10 +27,13 @@ export async function getRequestUser(): Promise<RequestUser | null> {
             role: true,
             facilityId: true,
             permissions: true,
+            mustChangePassword: true,
+            sessionVersion: true,
             roles: { select: { permissions: true } },
         },
     });
-    if (!user) return null;
+    if (!user || user.sessionVersion !== session?.user.sessionVersion) return null;
+    if (user.mustChangePassword && !options.allowPasswordChange) return null;
 
     const permissions = new Set<string>([
         ...(DEFAULT_ROLES[user.role] ?? []),

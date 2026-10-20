@@ -12,10 +12,18 @@ export const authConfig = {
             // The route verifies a signed, expiring token before returning customer data.
             if (nextUrl.pathname.startsWith('/orders/share/')) return true;
 
-            // Allow access to public assets and api routes that don't need auth (like seed)
-            if (nextUrl.pathname.startsWith('/api/seed')) return true;
             if (nextUrl.pathname.startsWith('/_next')) return true;
             if (nextUrl.pathname.startsWith('/static')) return true;
+
+            if (isLoggedIn && auth.user.mustChangePassword && !nextUrl.pathname.startsWith('/api/auth')) {
+                return nextUrl.pathname === '/change-password'
+                    ? true
+                    : Response.redirect(new URL('/change-password', nextUrl));
+            }
+
+            if (isLoggedIn && nextUrl.pathname === '/change-password') {
+                return Response.redirect(new URL('/', nextUrl));
+            }
 
             // If on login page and logged in, redirect to dashboard
             if (isOnLogin && isLoggedIn) {
@@ -39,6 +47,8 @@ export const authConfig = {
                 session.user.permissions = token.permissions as string[];
                 session.user.username = token.username as string | null;
                 session.user.displayName = token.displayName as string | null;
+                session.user.mustChangePassword = token.mustChangePassword === true;
+                session.user.sessionVersion = token.sessionVersion as number;
             }
             return session;
         },
@@ -50,6 +60,8 @@ export const authConfig = {
                 token.permissions = user.permissions;
                 token.username = user.username;
                 token.displayName = user.displayName;
+                token.mustChangePassword = user.mustChangePassword;
+                token.sessionVersion = user.sessionVersion;
             }
             return token;
         }

@@ -21,6 +21,8 @@ export const PERMISSIONS = {
     // Order Specifics
     ORDERS_CHANGE_STATUS: 'orders:change_status',
     ORDERS_VIEW_FINANCIALS: 'orders:view_financials', // See price/totals
+    ORDERS_SHARE: 'orders:share',
+    ORDERS_REVOKE_SHARES: 'orders:revoke_shares',
 
     // Transactions
     TRANSACTIONS_VIEW: 'transactions:view',
@@ -73,6 +75,8 @@ export const PERMISSION_LABELS: Record<string, string> = {
     [PERMISSIONS.ORDERS_DELETE]: 'حذف الطلبات',
     [PERMISSIONS.ORDERS_CHANGE_STATUS]: 'تغيير حالة الطلب (عام)',
     [PERMISSIONS.ORDERS_VIEW_FINANCIALS]: 'عرض تفاصيل مالية الطلب',
+    [PERMISSIONS.ORDERS_SHARE]: 'إصدار روابط مشاركة الطلب',
+    [PERMISSIONS.ORDERS_REVOKE_SHARES]: 'إلغاء روابط مشاركة الطلب',
 
     [PERMISSIONS.TRANSACTIONS_VIEW]: 'عرض الحركات المالية',
     [PERMISSIONS.TRANSACTIONS_ADD]: 'إضافة حركة مالية',
@@ -111,6 +115,7 @@ export const DEFAULT_ROLES = {
         ...Object.values(PERMISSIONS)
     ],
     MANAGER: [
+        PERMISSIONS.ORDERS_SHARE, PERMISSIONS.ORDERS_REVOKE_SHARES,
         PERMISSIONS.DASHBOARD_VIEW,
         PERMISSIONS.USERS_VIEW,
         PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_ADD, PERMISSIONS.ORDERS_EDIT, PERMISSIONS.ORDERS_CHANGE_STATUS, PERMISSIONS.ORDERS_VIEW_FINANCIALS,
@@ -127,6 +132,7 @@ export const DEFAULT_ROLES = {
         PERMISSIONS.FACILITIES_VIEW
     ],
     ACCOUNTANT: [
+        PERMISSIONS.ORDERS_SHARE,
         PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_VIEW_FINANCIALS,
         PERMISSIONS.TRANSACTIONS_VIEW, PERMISSIONS.TRANSACTIONS_ADD,
 

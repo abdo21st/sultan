@@ -19,6 +19,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json prisma.config.ts ./
 COPY prisma ./prisma
 COPY lib/permissions.ts ./lib/permissions.ts
+COPY lib/password-policy.ts ./lib/password-policy.ts
+COPY scripts/enroll-initial-admin.ts ./scripts/enroll-initial-admin.ts
 CMD ["npm", "run", "db:migrate:deploy"]
 
 FROM builder AS verification

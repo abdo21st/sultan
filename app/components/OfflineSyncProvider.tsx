@@ -4,11 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { db } from "@/lib/db";
 import { toast } from "react-hot-toast";
 import { Wifi, RefreshCw } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 const MAX_AUTOMATIC_ATTEMPTS = 8;
 const STALE_SYNC_MS = 2 * 60 * 1000;
 
 export default function OfflineSyncProvider({ children }: { children: React.ReactNode }) {
+    const { data: session } = useSession();
+    const canSync = Boolean(session?.user && !session.user.mustChangePassword);
     const [isSyncing, setIsSyncing] = useState(false);
     const [pendingCount, setPendingCount] = useState(0);
     const syncLock = useRef(false);
@@ -31,7 +34,7 @@ export default function OfflineSyncProvider({ children }: { children: React.Reac
     }, []);
 
     const syncOrders = useCallback(async (forceRetry = false) => {
-        if (syncLock.current || !navigator.onLine) return;
+        if (!canSync || syncLock.current || !navigator.onLine) return;
         syncLock.current = true;
         setIsSyncing(true);
 
@@ -123,9 +126,10 @@ export default function OfflineSyncProvider({ children }: { children: React.Reac
             setIsSyncing(false);
             await refreshPendingCount();
         }
-    }, [refreshPendingCount]);
+    }, [canSync, refreshPendingCount]);
 
     useEffect(() => {
+        if (!canSync) return;
         const onOnline = () => { void syncOrders(); };
         const onQueueUpdated = () => { void refreshPendingCount(); };
         void refreshPendingCount().then(() => {
@@ -142,12 +146,12 @@ export default function OfflineSyncProvider({ children }: { children: React.Reac
             window.removeEventListener("sultan:offline-queue-updated", onQueueUpdated);
             clearInterval(interval);
         };
-    }, [refreshPendingCount, syncOrders]);
+    }, [canSync, refreshPendingCount, syncOrders]);
 
     return (
         <>
             {children}
-            {pendingCount > 0 && (
+            {canSync && pendingCount > 0 && (
                 <div className="fixed bottom-24 left-6 z-[100] animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <button
                         onClick={() => { void syncOrders(true); }}

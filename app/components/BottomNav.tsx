@@ -130,7 +130,7 @@ export default function BottomNav() {
         };
     }, [isDragging]);
 
-    if (!mounted) {
+    if (!mounted || !session?.user || session.user.mustChangePassword) {
         return null;
     }
 

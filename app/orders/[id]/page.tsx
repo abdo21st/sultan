@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PERMISSIONS } from "@/lib/permissions";
 import OrderActions from "./OrderActions";
+import RevokeShares from "./RevokeShares";
 import { ArrowLeft, Edit } from "lucide-react";
 import { getStatusInfo, formatCurrency, formatDate } from "@/lib/utils";
 import AnimatedOrderImage from "@/app/components/ui/AnimatedOrderImage";
@@ -206,6 +207,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         <div className="sticky top-28">
                             <OrderActions order={currentOrder} currentUser={user} />
                         </div>
+                        {(user.permissions.includes(PERMISSIONS.ORDERS_REVOKE_SHARES) || (canViewFinancials && user.permissions.includes(PERMISSIONS.ORDERS_SHARE))) && (
+                            <RevokeShares orderId={id} canIssue={canViewFinancials && user.permissions.includes(PERMISSIONS.ORDERS_SHARE)} canRevoke={user.permissions.includes(PERMISSIONS.ORDERS_REVOKE_SHARES)} />
+                        )}
                     </div>
                 </div>
             </main>

@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 import { PERMISSIONS } from '../lib/permissions'
+import { newPasswordSchema } from '../lib/password-policy'
 
 loadEnv({ path: '.env.local', quiet: true })
 loadEnv({ path: '.env', quiet: true })
@@ -23,7 +24,7 @@ async function main() {
   const admin = await prisma.user.findUnique({ where: { username: adminUsername } })
   if (!admin) {
     const initialPassword = process.env.INITIAL_ADMIN_PASSWORD
-    if (!initialPassword || initialPassword.length < 12) {
+    if (!initialPassword || !newPasswordSchema.safeParse(initialPassword).success) {
       throw new Error('Set INITIAL_ADMIN_PASSWORD (at least 12 characters) to create the initial administrator.')
     }
     const { default: bcrypt } = await import('bcryptjs')
@@ -31,6 +32,7 @@ async function main() {
       data: {
         username: adminUsername,
         password: await bcrypt.hash(initialPassword, 12),
+        mustChangePassword: true,
         displayName: process.env.INITIAL_ADMIN_DISPLAY_NAME || 'مدير النظام',
         role: 'ADMIN',
         permissions: Object.values(PERMISSIONS),

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import NavBar from '../components/NavBar';
 import { User, Shield, LogOut, Save, Lock, Loader2, Eye, EyeOff, Pencil } from 'lucide-react'; // Added Pencil
 import { type User as NextAuthUser } from "next-auth";
+import { signOut } from 'next-auth/react';
 import toast, { Toaster } from 'react-hot-toast';
 
 export default function ProfilePage() {
@@ -97,8 +98,9 @@ export default function ProfilePage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'فشل تغيير كلمة المرور');
 
-            toast.success('تم تغيير كلمة المرور بنجاح');
+            toast.success('تم تغيير كلمة المرور؛ سجّل الدخول بالكلمة الجديدة');
             setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            await signOut({ callbackUrl: '/login' });
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "حدث خطأ";
             toast.error(message);

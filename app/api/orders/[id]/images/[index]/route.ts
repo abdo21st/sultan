@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { PERMISSIONS } from '@/lib/permissions'
 import { canAccessOrderFacility, canViewOrderStatus, getRequestUser } from '@/lib/request-user'
-import { verifyOrderShareToken } from '@/lib/order-share-token'
+import { readOrderShareToken } from '@/lib/order-share-token'
 import { parseLocalImageReference, readLocalImage } from '@/lib/local-image-storage'
 
 export const dynamic = 'force-dynamic'
@@ -18,7 +18,8 @@ export async function GET(
 
     const url = new URL(request.url)
     const token = url.searchParams.get('token') ?? undefined
-    const hasShareAccess = verifyOrderShareToken(token, id)
+    const claims = readOrderShareToken(token, id)
+    const hasShareAccess = Boolean(claims)
     const user = hasShareAccess ? null : await getRequestUser()
     if (!hasShareAccess && !user?.permissions.includes(PERMISSIONS.ORDERS_VIEW)) {
         return new Response('Not found', { status: 404 })
@@ -26,9 +27,10 @@ export async function GET(
 
     const order = await prisma.order.findUnique({
         where: { id },
-        select: { factoryId: true, shopId: true, status: true, images: true },
+        select: { factoryId: true, shopId: true, status: true, images: true, shareVersion: true },
     })
     if (!order) return new Response('Not found', { status: 404 })
+    if (claims && claims.version !== order.shareVersion) return new Response('Not found', { status: 404 })
     if (user && (!canAccessOrderFacility(user, order) || !canViewOrderStatus(user, order.status))) {
         return new Response('Not found', { status: 404 })
     }

@@ -23,7 +23,7 @@ export default function NotificationListener() {
     }, []);
 
     useEffect(() => {
-        if (!session || !enabled) return;
+        if (!session?.user || session.user.mustChangePassword || !enabled) return;
 
         const eventSource = new EventSource("/api/notifications/stream");
 
