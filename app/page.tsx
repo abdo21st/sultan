@@ -6,7 +6,7 @@ import { FileDown, Search, SlidersHorizontal, X } from 'lucide-react';
 import { usePermission } from '@/lib/usePermission';
 import { PERMISSIONS } from '@/lib/permissions';
 import { exportOrdersToPDF, type OrderExportData } from '@/lib/pdf-export';
-import { ORDER_STATUS_LABELS, ORDER_STATUS } from '@/lib/constants';
+import { ORDER_STATUS_LABELS, PRIMARY_ORDER_STATUSES } from '@/lib/constants';
 import { fetchAllPages } from '@/lib/fetch-all-pages';
 import { useToast } from './components/ToastProvider';
 import OrderList from './components/OrderList';
@@ -44,9 +44,9 @@ function OrdersPage({ initialSearch }: { initialSearch: string }) {
     const exportPDF = async () => {
         setExporting(true);
         try {
-            const data = await fetchAllPages<{ serialNumber: number; customerName: string; totalAmount: number; status: string; dueDate: string }>(`/api/orders?${queryParams}`);
+            const data = await fetchAllPages<{ serialNumber: number; customerName: string; totalAmount: number; status: string; dueDate: string; reviewRequired?: boolean }>(`/api/orders?${queryParams}`);
             if (!data.length) { showToast('لا توجد طلبات لتصديرها', 'warning'); return; }
-            const rows: OrderExportData[] = data.map(order => ({ ...order, status: ORDER_STATUS_LABELS[order.status] || order.status }));
+            const rows: OrderExportData[] = data.map(order => ({ ...order, status: `${ORDER_STATUS_LABELS[order.status] || order.status}${order.reviewRequired ? ' · يحتاج تصحيحاً' : ''}` }));
             exportOrdersToPDF(rows, 'تقرير طلبات سلطان');
             showToast('تم تصدير التقرير', 'success');
         } catch { showToast('تعذر تصدير التقرير. حاول مجدداً.', 'error'); }
@@ -63,7 +63,7 @@ function OrdersPage({ initialSearch }: { initialSearch: string }) {
                 <button type="submit" className="ui-button ui-button-primary">بحث</button>
             </form>
             <div className="grid grid-cols-2 lg:flex lg:flex-wrap items-end gap-3">
-                <label className="min-w-0 lg:w-52"><span className="ui-field-label">حالة الطلب</span><select className="ui-field" value={activeFilters.status?.length === 1 ? activeFilters.status[0] : activeFilters.status?.length ? 'multiple' : ''} onChange={event => setActiveFilters(previous => ({ ...previous, status: event.target.value ? [event.target.value] : [] }))}><option value="">جميع الحالات</option>{activeFilters.status && activeFilters.status.length > 1 && <option value="multiple" disabled>حالات متعددة</option>}{Object.entries(ORDER_STATUS_LABELS).filter(([key]) => (Object.values(ORDER_STATUS) as readonly string[]).includes(key)).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+                <label className="min-w-0 lg:w-52"><span className="ui-field-label">حالة الطلب</span><select className="ui-field" value={activeFilters.status?.length === 1 ? activeFilters.status[0] : activeFilters.status?.length ? 'multiple' : ''} onChange={event => setActiveFilters(previous => ({ ...previous, status: event.target.value ? [event.target.value] : [] }))}><option value="">جميع الحالات</option>{activeFilters.status && activeFilters.status.length > 1 && <option value="multiple" disabled>حالات متعددة</option>}{Object.entries(ORDER_STATUS_LABELS).filter(([key]) => (PRIMARY_ORDER_STATUSES as readonly string[]).includes(key)).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
                 <label className="min-w-0 lg:w-44"><span className="ui-field-label">موعد الاستحقاق</span><select className="ui-field" value={datePreset} onChange={event => dateFilter(event.target.value)}><option value="all">كل المواعيد</option><option value="today">اليوم</option><option value="week">هذا الأسبوع</option><option value="month">هذا الشهر</option>{datePreset === 'custom' && <option value="custom" disabled>فترة مخصصة</option>}</select></label>
                 <button type="button" className="ui-button col-span-2 lg:col-span-1" aria-haspopup="dialog" onClick={() => setShowFilters(true)}><SlidersHorizontal size={18} aria-hidden="true" />تصفية متقدمة</button>
                 {hasFilters && <button type="button" className="ui-button" onClick={() => { setActiveFilters({}); setSearch(''); setSearchInput(''); setDatePreset('all'); }}><X size={16} aria-hidden="true" />مسح التصفية</button>}

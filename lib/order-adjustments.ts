@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
-import { CLOSED_ORDER_STATUSES, ORDER_STATUS } from './constants';
+import { CLOSED_ORDER_STATUSES, ORDER_STATUS, normalizeOrderStatus } from './constants';
 import { DEFAULT_ROLES, PERMISSIONS } from './permissions';
 import { canAccessOrderFacility, canViewOrderStatus, type RequestUser } from './request-user';
 import { writeAudit } from './audit';
@@ -64,15 +64,15 @@ export async function reviewAdjustment(user: RequestUser, id: string, input: { d
             if (item.status === input.decision && item.reviewedBy === user.id && item.reviewNote === input.note) return item;
             throw new AdjustmentError('سبق اتخاذ قرار بشأن هذا الطلب.');
         }
-        if (order.status !== item.originalStatus) throw new AdjustmentError('تغيرت حالة الطلب؛ راجع البيانات قبل اتخاذ القرار.');
+        if (normalizeOrderStatus(order.status) !== normalizeOrderStatus(item.originalStatus)) throw new AdjustmentError('تغيرت حالة الطلب؛ راجع البيانات قبل اتخاذ القرار.');
         const updated = await tx.orderAdjustment.update({ where: { id }, data: {
             status: input.decision, reviewedBy: user.id, reviewedAt: new Date(), reviewNote: input.note,
             refundAmount: input.decision === 'APPROVED' ? order.paidAmount : 0,
         } });
-        if (input.decision === 'APPROVED') await tx.order.update({ where: { id: order.id }, data: { status: item.kind === 'CANCEL' ? ORDER_STATUS.CANCELLED : ORDER_STATUS.RETURNED } });
+        if (input.decision === 'APPROVED') await tx.order.update({ where: { id: order.id }, data: { status: item.kind === 'CANCEL' ? ORDER_STATUS.CANCELLED : ORDER_STATUS.RETURNED, reviewRequired: false, rejectionReason: null } });
         else await tx.order.update({ where: { id: order.id }, data: { updatedAt: new Date() } });
         await writeAudit(tx, { actorId: user.id, entityType: 'ORDER_ADJUSTMENT', entityId: id, action: input.decision, before: item, after: updated });
-        await writeAudit(tx, { actorId: user.id, entityType: 'ORDER', entityId: order.id, action: `ADJUSTMENT_${input.decision}`, before: { status: order.status, remainingAmount: order.remainingAmount }, after: { adjustmentId: id, decision: input.decision, kind: item.kind, originalPaymentLedgerRetained: true } });
+        await writeAudit(tx, { actorId: user.id, entityType: 'ORDER', entityId: order.id, action: `ADJUSTMENT_${input.decision}`, before: { status: order.status, remainingAmount: order.remainingAmount, reviewRequired: order.reviewRequired, correctionReason: order.rejectionReason }, after: { adjustmentId: id, decision: input.decision, kind: item.kind, originalPaymentLedgerRetained: true } });
         await notifyReviewers(tx, order, input.decision === 'APPROVED' ? 'اعتماد الإلغاء أو المرتجع' : 'رفض الإلغاء أو المرتجع', `طلب #${order.serialNumber}: ${input.note}`, item.requestedBy);
         return updated;
     });

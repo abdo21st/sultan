@@ -2,10 +2,10 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { ORDER_STATUS, ALLOWED_TRANSITIONS, CLOSED_ORDER_STATUSES } from "@/lib/constants";
+import { ORDER_STATUS, ALLOWED_TRANSITIONS, CLOSED_ORDER_STATUSES, normalizeOrderStatus } from "@/lib/constants";
 import { PERMISSIONS } from "@/lib/permissions";
 import { createStatusChangeNotification } from "@/lib/services/notification-service";
-import { canAccessOrderFacility, getRequestUser, type RequestUser } from "@/lib/request-user";
+import { canAccessOrderFacility, canViewOrderStatus, getRequestUser, type RequestUser } from "@/lib/request-user";
 import { issueOrderShareToken } from "@/lib/order-sharing";
 import { toCents, toMoneyNumber } from "@/lib/money";
 import { writeAudit } from "@/lib/audit";
@@ -168,29 +168,52 @@ export async function updateOrderStatus(id: string, newStatus: string, rejection
         // Check if transition is allowed
         const currentOrder = await prisma.order.findUnique({
             where: { id },
-            select: { status: true, factoryId: true, shopId: true }
+            select: { status: true, factoryId: true, shopId: true, reviewRequired: true, rejectionReason: true }
         });
 
         if (!currentOrder) return { success: false, error: 'الطلب غير موجود' };
         if (!canAccessOrderFacility(user, currentOrder)) return { success: false, error: 'غير مصرح لك بهذا الطلب' };
+        if (!canViewOrderStatus(user, currentOrder.status)) return { success: false, error: 'الطلب غير متاح لك' };
 
-        const allowedNextStatuses = ALLOWED_TRANSITIONS[currentOrder.status] || [];
+        if (newStatus === ORDER_STATUS.REVIEW) {
+            const reason = rejectionReason?.trim() ?? '';
+            if ([...reason].length < 5 || reason.length > 1000) return { success: false, error: 'اكتب سبب التصحيح من 5 إلى 1000 حرف' };
+            if (normalizeOrderStatus(currentOrder.status) === ORDER_STATUS.COMPLETED || CLOSED_ORDER_STATUSES.includes(currentOrder.status)) return { success: false, error: 'لا يمكن طلب تصحيح بعد إغلاق الطلب' };
+            const changed = await prisma.$transaction(async tx => {
+                await tx.$queryRaw`SELECT id FROM "Order" WHERE id=${id} FOR UPDATE`;
+                if (await tx.orderAdjustment.findFirst({ where: { orderId: id, status: { in: ['REQUESTED', 'APPROVED'] } } })) return false;
+                const result = await tx.order.updateMany({ where: { id, status: currentOrder.status, reviewRequired: false }, data: { reviewRequired: true, rejectionReason: reason } });
+                if (result.count !== 1) return false;
+                await writeAudit(tx, { actorId: user.id, entityType: 'ORDER', entityId: id, action: 'CORRECTION_REQUESTED', before: { status: currentOrder.status, reviewRequired: false }, after: { status: currentOrder.status, reviewRequired: true, reason } });
+                await createStatusChangeNotification(await tx.order.findUniqueOrThrow({ where: { id } }), ORDER_STATUS.REVIEW, reason, tx);
+                return true;
+            });
+            if (!changed) return { success: false, error: 'تغير الطلب أو يوجد طلب مراجعة مفتوح؛ أعد تحميل الصفحة' };
+            revalidatePath(`/orders/${id}`); revalidatePath('/');
+            return { success: true };
+        }
+        if (currentOrder.reviewRequired) return { success: false, error: 'يحتاج الطلب تصحيحاً؛ صحح البيانات أولاً مع بقاء مرحلته الحالية' };
+
+        const allowedNextStatuses = ALLOWED_TRANSITIONS[normalizeOrderStatus(currentOrder.status)] || [];
         if (!allowedNextStatuses.includes(newStatus)) {
             return { success: false, error: `لا يمكن نقل الطلب من حالة "${currentOrder.status}" إلى "${newStatus}"` };
         }
 
-        const changed = await prisma.$transaction((tx) => persistOrderStatusTransition(tx, {
+        const changed = await prisma.$transaction(async tx => {
+            const result = await persistOrderStatusTransition(tx, {
             orderId: id,
             actorId: user.id,
             currentStatus: currentOrder.status,
             newStatus,
             rejectionReason,
-        }));
+            });
+            if (result) await createStatusChangeNotification(await tx.order.findUniqueOrThrow({ where: { id } }), newStatus, undefined, tx);
+            return result;
+        });
         if (!changed) return { success: false, error: 'تغيرت حالة الطلب؛ أعد تحميل الصفحة وحاول مجدداً' };
         const order = await prisma.order.findUniqueOrThrow({ where: { id } });
 
         // Trigger Notification Service
-        await createStatusChangeNotification(order, newStatus, rejectionReason);
 
         // Send WhatsApp notification for specific statuses
         if (newStatus === ORDER_STATUS.PROCESSING || newStatus === ORDER_STATUS.SHOP_READY) {
@@ -237,26 +260,26 @@ export async function completeOrder(id: string, paymentAmount: number, paymentNo
         if (!permissions.includes(PERMISSIONS.STATUS_CHANGE_COMPLETED)) {
             return { success: false, error: 'ليس لديك صلاحية إتمام الطلب' };
         }
-        if (!permissions.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS) || !permissions.includes(PERMISSIONS.TRANSACTIONS_ADD)) {
-            return { success: false, error: 'يلزم امتلاك صلاحية الاطلاع المالي وتسجيل التحصيل لإتمام الطلب' };
-        }
 
         if (!Number.isFinite(paymentAmount) || paymentAmount < 0 || paymentAmount > 999_999_999_999.99 ||
             Math.abs(paymentAmount * 100 - Math.round(paymentAmount * 100)) > 1e-7) {
             return { success: false, error: 'مبلغ التحصيل غير صحيح' };
         }
         const roundedPayment = Math.round((paymentAmount + Number.EPSILON) * 100) / 100;
+        if (roundedPayment > 0 && (!permissions.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS) || !permissions.includes(PERMISSIONS.TRANSACTIONS_ADD))) return { success: false, error: 'تسجيل دفعة يحتاج صلاحية مالية والتحصيل؛ يمكنك تأكيد التسليم بمبلغ صفر' };
 
         const order = await prisma.order.findUnique({
             where: { id },
-            select: { serialNumber: true, customerName: true, remainingAmount: true, totalAmount: true, paidAmount: true, status: true, factoryId: true, shopId: true, updatedAt: true }
+            select: { serialNumber: true, customerName: true, remainingAmount: true, totalAmount: true, paidAmount: true, status: true, factoryId: true, shopId: true, updatedAt: true, reviewRequired: true }
         });
 
         if (!order) return { success: false, error: 'الطلب غير موجود' };
         if (!canAccessOrderFacility(user, order)) return { success: false, error: 'غير مصرح لك بهذا الطلب' };
+        if (!canViewOrderStatus(user, order.status)) return { success: false, error: 'الطلب غير متاح لك' };
         if (order.status === ORDER_STATUS.COMPLETED) return { success: false, error: 'الطلب مكتمل بالفعل' };
         if (CLOSED_ORDER_STATUSES.includes(order.status)) return { success: false, error: 'الطلب مغلق بإلغاء أو مرتجع' };
-        if (![ORDER_STATUS.DELIVERING, 'DELIVERING'].includes(order.status)) return { success: false, error: 'يجب أن يكون الطلب قيد التوصيل قبل إتمام التسليم' };
+        if (normalizeOrderStatus(order.status) !== ORDER_STATUS.SHOP_READY) return { success: false, error: 'يجب أن يكون الطلب جاهزاً قبل تأكيد تسليمه للعميل' };
+        if (order.reviewRequired) return { success: false, error: 'صحح بيانات الطلب أولاً قبل تسليمه للعميل' };
         if (toCents(order.remainingAmount) < toCents(roundedPayment)) {
             return { success: false, error: 'مبلغ التحصيل أكبر من المبلغ المتبقي' };
         }
@@ -269,6 +292,7 @@ export async function completeOrder(id: string, paymentAmount: number, paymentNo
                     id,
                     status: order.status,
                     updatedAt: order.updatedAt,
+                    reviewRequired: false,
                     remainingAmount: { gte: roundedPayment },
                 },
                 data: {

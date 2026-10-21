@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
 import { DEFAULT_ROLES, PERMISSIONS } from '@/lib/permissions';
-import { LEGACY_STATUS_MAPPING } from '@/lib/constants';
+import { CORRECTION_ALERT_TRIGGER, CLOSED_ORDER_STATUSES, LEGACY_STATUS_MAPPING, normalizeOrderStatus } from '@/lib/constants';
 import { canAccessOrderFacility, canViewOrderStatus } from '@/lib/request-user';
 import { businessDateKey, businessDayBounds, shiftDateKey } from '@/lib/business-date';
 import { parseAllowedWhatsAppApiUrl } from '@/lib/whatsapp-security';
@@ -37,9 +37,9 @@ export async function processScheduledAlerts() {
         for (const rule of rules) {
             if (Date.now() > deadline) break;
             const dueDay = shiftDateKey(day, -rule.timingDays);
-            const canonical = Object.entries(LEGACY_STATUS_MAPPING).find(([, old]) => old === rule.triggerStatus)?.[0] ?? rule.triggerStatus;
+            const canonical = normalizeOrderStatus(rule.triggerStatus);
             const statuses = [canonical, LEGACY_STATUS_MAPPING[canonical]].filter(Boolean);
-            const base = { dueDate: businessDayBounds(dueDay), status: { in: statuses }, adjustments: { none: { status: 'REQUESTED' } } };
+            const base = { dueDate: businessDayBounds(dueDay), ...(canonical === CORRECTION_ALERT_TRIGGER ? { reviewRequired: true, status: { notIn: [...CLOSED_ORDER_STATUSES, 'orders:status:completed', 'COMPLETED'] } } : { status: { in: statuses }, reviewRequired: false }), adjustments: { none: { status: 'REQUESTED' } } };
             const orders = await prisma.order.findMany({
                 where: { ...base, alertDeliveries: { none: { alertSettingId: rule.id, scheduledDay, channel: 'INTERNAL', recipient: '*' } } },
                 select: { id: true, serialNumber: true, status: true, factoryId: true, shopId: true },

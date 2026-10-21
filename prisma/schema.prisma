@@ -90,6 +90,7 @@ model Order {
   shopId          String
   shop            Facility      @relation("ShopOrders", fields: [shopId], references: [id])
   rejectionReason String?
+  reviewRequired  Boolean       @default(false)
   paymentNote     String?
   transactions    Transaction[]
   alertDeliveries AlertDelivery[]

@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_ROLES, PERMISSIONS } from "@/lib/permissions";
-import { CLOSED_ORDER_STATUSES, LEGACY_STATUS_MAPPING } from "@/lib/constants";
+import { CLOSED_ORDER_STATUSES, normalizeOrderStatus } from "@/lib/constants";
 import type { Prisma } from '@prisma/client';
 
 export type RequestUser = {
@@ -82,8 +82,7 @@ export function canViewOrderStatus(
 ): boolean {
     if (user.role === "ADMIN") return true;
     if (CLOSED_ORDER_STATUSES.includes(status) && [PERMISSIONS.ORDERS_ADJUSTMENT_REQUEST, PERMISSIONS.ORDERS_ADJUSTMENT_APPROVE, PERMISSIONS.ORDERS_REFUND].some(permission => user.permissions.includes(permission))) return true;
-    const canonicalStatus = Object.entries(LEGACY_STATUS_MAPPING)
-        .find(([, legacyStatus]) => legacyStatus === status)?.[0] ?? status;
+    const canonicalStatus = normalizeOrderStatus(status);
     const prefix = "orders:status:";
     if (!canonicalStatus.startsWith(prefix)) return false;
     const suffix = canonicalStatus.slice(prefix.length);

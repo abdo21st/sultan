@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Bell, Loader2, Settings, Trash2, ExternalLink } from 'lucide-react';
-import { ORDER_STATUS, ORDER_STATUS_LABELS } from '@/lib/constants';
+import { CORRECTION_ALERT_TRIGGER, ORDER_STATUS, ORDER_STATUS_LABELS, PRIMARY_ORDER_STATUSES } from '@/lib/constants';
 import { PERMISSIONS } from '@/lib/permissions';
 import { usePermission } from '@/lib/usePermission';
 import { businessDateKey, shiftDateKey } from '@/lib/business-date';
@@ -143,7 +143,7 @@ export default function AlertsPage() {
                 <form onSubmit={save} className="ui-card space-y-4">
                     <h2 className="font-bold">{editingId ? 'تعديل القاعدة' : 'إضافة تنبيه آلي'}</h2>
                     <label className="block">اسم التنبيه<input className="ui-field mt-1" required minLength={2} maxLength={100} value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} /></label>
-                    <label className="block">حالة الطلب<select className="ui-field mt-1" value={form.triggerStatus} onChange={event => setForm({ ...form, triggerStatus: event.target.value })}>{Object.values(ORDER_STATUS).map(status => <option key={status} value={status}>{ORDER_STATUS_LABELS[status]}</option>)}</select></label>
+                    <label className="block">المرحلة أو علامة التصحيح<select className="ui-field mt-1" value={form.triggerStatus} onChange={event => setForm({ ...form, triggerStatus: event.target.value })}>{[...PRIMARY_ORDER_STATUSES, CORRECTION_ALERT_TRIGGER].map(status => <option key={status} value={status}>{ORDER_STATUS_LABELS[status]}</option>)}</select></label>
                     <label className="block">التوقيت بالنسبة لموعد التسليم<input className="ui-field mt-1" type="number" required min={-365} max={365} step={1} value={form.timingDays} onChange={event => setForm({ ...form, timingDays: Number(event.target.value) })} /></label>
                     <p className="text-xs text-muted-foreground">0 = يوم التسليم، -1 = قبله بيوم، 1 = بعده بيوم. تُطابق القاعدة حالة الطلب الحالية.</p>
                     <label className="flex gap-2 items-center"><input type="checkbox" checked={form.whatsappEnabled} onChange={event => setForm({ ...form, whatsappEnabled: event.target.checked })} />إرسال واتساب أيضاً</label>

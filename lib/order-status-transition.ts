@@ -15,7 +15,7 @@ export async function persistOrderStatusTransition(
   await tx.$queryRaw`SELECT id FROM "Order" WHERE id=${input.orderId} FOR UPDATE`;
   if (await tx.orderAdjustment.findFirst({ where: { orderId: input.orderId, status: { in: ['REQUESTED', 'APPROVED'] } } })) return false;
   const updated = await tx.order.updateMany({
-    where: { id: input.orderId, status: input.currentStatus },
+    where: { id: input.orderId, status: input.currentStatus, reviewRequired: false },
     data: { status: input.newStatus, rejectionReason },
   });
   if (updated.count !== 1) return false;

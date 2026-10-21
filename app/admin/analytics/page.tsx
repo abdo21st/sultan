@@ -24,6 +24,7 @@ import { exportToPDF } from "@/lib/pdf-export";
 import toast from "react-hot-toast";
 import { formatCurrency } from "@/lib/utils";
 import { PERMISSIONS } from '@/lib/permissions';
+import { ORDER_STATUS_LABELS } from '@/lib/constants';
 
 interface Facility {
     id: string;
@@ -43,6 +44,8 @@ interface FinancialDetail {
 }
 
 interface OperationalDetail {
+    reviewRequired?: boolean;
+    rejectionReason?: string | null;
     id: string;
     customerName: string;
     status: string;
@@ -73,6 +76,7 @@ interface ReportData {
         totalOrders?: number;
         completedOrders?: number;
         openOrders?: number;
+        correctionOrders?: number;
         statusDistribution?: { name: string; value: number }[];
         orderPayments?: number;
         topFactory?: string;
@@ -182,25 +186,7 @@ export default function FlexibleReportsPage() {
     }, [isAuthorized, fetchReport]);
 
     // PDF Export Logic
-    const STATUS_MAP: Record<string, string> = {
-        "PENDING": "قيد الانتظار",
-        "PROCESSING": "قيد التنفيذ",
-        "COMPLETED": "مكتمل",
-        "CANCELLED": "ملغي",
-        "DELIVERED": "تم التسليم",
-        "orders:status:pending": "قيد الانتظار",
-        "orders:status:registered": "قيد التسجيل",
-        "orders:status:shop_ready": "جاهز للعرض",
-        "orders:status:review": "المراجعة",
-        "orders:status:processing": "قيد التنفيذ",
-        "orders:status:delivering_to_factory": "التوصيل للمصنع",
-        "orders:status:factory": "في المصنع",
-        "orders:status:delivering": "التوصيل للعميل",
-        "orders:status:completed": "مكتمل",
-        "orders:status:cancelled": "ملغي",
-        "orders:status:refused": "مرفوض",
-        "System": "النظام"
-    };
+    const STATUS_MAP: Record<string, string> = { ...ORDER_STATUS_LABELS, System: 'النظام' };
 
     const handlePDFExport = async () => {
         if (!reportData) return;
@@ -262,7 +248,7 @@ export default function FlexibleReportsPage() {
                 rows = (exportDetails as OperationalDetail[]).map(o => ({
                     id: o.id.slice(-6),
                     customer: o.customerName,
-                    status: STATUS_MAP[o.status] || o.status,
+                    status: `${STATUS_MAP[o.status] || o.status}${o.reviewRequired ? ' · يحتاج تصحيحاً' : ''}`,
                     amount: formatCurrency(o.totalAmount),
                     date: new Date(o.createdAt).toLocaleDateString('ar-EG')
                 }));
@@ -490,23 +476,7 @@ function FinancialView({ data }: { data: ReportData }) {
 }
 
 function OperationalView({ data }: { data: ReportData }) {
-    const STATUS_MAP: Record<string, string> = {
-        "PENDING": "قيد الانتظار",
-        "PROCESSING": "قيد التنفيذ",
-        "COMPLETED": "مكتمل",
-        "CANCELLED": "ملغي",
-        "DELIVERED": "تم التسليم",
-        "orders:status:registered": "قيد التسجيل",
-        "orders:status:shop_ready": "جاهز للعرض",
-        "orders:status:review": "المراجعة",
-        "orders:status:processing": "قيد التنفيذ",
-        "orders:status:delivering_to_factory": "التوصيل للمصنع",
-        "orders:status:factory": "في المصنع",
-        "orders:status:delivering": "التوصيل للعميل",
-        "orders:status:completed": "مكتمل",
-        "orders:status:cancelled": "ملغي",
-        "orders:status:refused": "مرفوض"
-    };
+    const STATUS_MAP: Record<string, string> = { ...ORDER_STATUS_LABELS, System: 'النظام' };
 
     const localizedDistribution = data.summary.statusDistribution?.map(d => ({
         ...d,
@@ -535,6 +505,7 @@ function OperationalView({ data }: { data: ReportData }) {
                     <h5 className="text-4xl font-semibold">{data.summary.totalOrders}</h5>
                     <p className="text-muted-foreground font-bold">إجمالي الطلبات المسجلة</p>
                     <p className="text-sm">المكتملة: {data.summary.completedOrders ?? 0} · قيد المتابعة: {data.summary.openOrders ?? 0}</p>
+                    <p className="text-sm text-primary">يحتاج تصحيحاً: {data.summary.correctionOrders ?? 0} — علامة مستقلة عن المرحلة</p>
                 </div>
             </div>
         </div>

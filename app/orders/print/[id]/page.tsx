@@ -156,6 +156,7 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
             </div>
 
             <p className="mb-5 font-bold">الحالة: {ORDER_STATUS_LABELS[currentOrder.status] || currentOrder.status}</p>
+            {currentOrder.reviewRequired && <p className="mb-5 rounded-xl border p-4 text-sm">يحتاج تصحيحاً: {currentOrder.rejectionReason}</p>}
             {closed && <p className="mb-6 p-4 border rounded-xl text-sm">أُغلق الطلب بإلغاء أو مرتجع. الأرقام أدناه هي السجل الأصلي قبل الإغلاق، ولا يُحصّل الرصيد الأصلي. المتبقي لإعادته للعميل: {formatCurrency(refundRemaining)}.</p>}
             {/* Financial Summary */}
             {canViewFinancials && (
@@ -250,6 +251,7 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                         closed,
                         statusLabel: ORDER_STATUS_LABELS[currentOrder.status] || currentOrder.status,
                         refundRemaining,
+                        correctionReason: currentOrder.reviewRequired ? currentOrder.rejectionReason || 'يحتاج تصحيحاً' : '',
                     }}
                 />
             </div>

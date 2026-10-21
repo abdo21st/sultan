@@ -14,6 +14,8 @@ interface Facility {
 }
 
 interface OrderFormData {
+    reviewRequired?: boolean;
+    rejectionReason?: string | null;
     customerName: string;
     customerPhone: string;
     description: string;
@@ -178,6 +180,7 @@ export default function EditOrderPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {formData.reviewRequired && <div className="rounded-xl border border-amber-400 bg-amber-50 p-4 text-amber-950"><h2 className="font-bold">تصحيح بيانات الطلب</h2><p className="whitespace-pre-wrap text-sm mt-2">{formData.rejectionReason}</p><p className="text-xs mt-2">بعد حفظ التصحيح تُرفع العلامة ويُشعر المصنع، مع إبقاء مرحلة الطلب الحالية.</p></div>}
                     {canViewFinancials && <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">اسم العميل</label>

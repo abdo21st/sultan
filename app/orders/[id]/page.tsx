@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PERMISSIONS } from "@/lib/permissions";
-import { CLOSED_ORDER_STATUSES, ORDER_STATUS } from "@/lib/constants";
+import { CLOSED_ORDER_STATUSES, ORDER_STATUS, PRIMARY_ORDER_STATUSES, ORDER_STATUS_LABELS, normalizeOrderStatus } from "@/lib/constants";
 import OrderAdjustments from './OrderAdjustments';
 import { adjustmentResponse } from '@/lib/order-adjustments';
 import OrderActions from "./OrderActions";
@@ -33,6 +33,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             shopId: true,
             images: true,
             rejectionReason: true,
+            reviewRequired: true,
             adjustments: { orderBy: { requestedAt: 'desc' }, take: 50 },
             totalAmount: canViewFinancials,
             paidAmount: canViewFinancials,
@@ -104,7 +105,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                     </div>
                 </div>
 
+                {!closed && <ol className="grid grid-cols-2 md:grid-cols-4 gap-3" aria-label="مراحل الطلب الأربع">{PRIMARY_ORDER_STATUSES.map((phase, index) => <li key={phase} aria-current={phase === normalizeOrderStatus(order.status) ? 'step' : undefined} className={`ui-card text-sm ${phase === normalizeOrderStatus(order.status) ? 'border-primary bg-primary/5 font-bold' : 'text-muted-foreground'}`}>{index + 1}. {ORDER_STATUS_LABELS[phase]}</li>)}</ol>}
                 <OrderAdjustments orderId={id} orderStatus={order.status} permissions={user.permissions} items={adjustments.map(item => ({ ...adjustmentResponse(item, canViewFinancials), requestedAt: item.requestedAt.toISOString() }))} />
+                {order.reviewRequired && <section className="ui-card border-amber-400 space-y-2" role="status"><h2 className="font-bold">يحتاج تصحيحاً</h2><p className="whitespace-pre-wrap">{order.rejectionReason || 'راجع بيانات الطلب مع المصنع.'}</p><p className="text-sm text-muted-foreground">المرحلة الحالية محفوظة. بعد حفظ التصحيح يُشعر المصنع ويمكن متابعة التجهيز والتسليم.</p>{user.permissions.includes(PERMISSIONS.ORDERS_EDIT) && !adjustmentOpen && <Link className="ui-button inline-flex" href={`/orders/${id}/edit`}>تصحيح بيانات الطلب</Link>}</section>}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Details */}

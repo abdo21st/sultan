@@ -236,6 +236,7 @@ export default function AccessManagementPage() {
                 PERMISSIONS.ORDERS_VIEW_FINANCIALS,
                 PERMISSIONS.ORDERS_SHARE,
                 PERMISSIONS.ORDERS_REVOKE_SHARES,
+                PERMISSIONS.STATUS_CHANGE_REVIEW,
                 PERMISSIONS.ORDERS_ADJUSTMENT_REQUEST, PERMISSIONS.ORDERS_ADJUSTMENT_APPROVE, PERMISSIONS.ORDERS_REFUND,
             ]
         },
@@ -257,11 +258,8 @@ export default function AccessManagementPage() {
             icon: <History className="w-4 h-4" />,
             perms: [
                 PERMISSIONS.STATUS_VIEW_REGISTERED,
-                PERMISSIONS.STATUS_VIEW_REVIEW,
                 PERMISSIONS.STATUS_VIEW_PROCESSING,
-                PERMISSIONS.STATUS_VIEW_DELIVERING_TO_FACTORY,
                 PERMISSIONS.STATUS_VIEW_SHOP_READY,
-                PERMISSIONS.STATUS_VIEW_DELIVERING,
                 PERMISSIONS.STATUS_VIEW_COMPLETED,
                 PERMISSIONS.STATUS_VIEW_CANCELLED, PERMISSIONS.STATUS_VIEW_RETURNED,
             ]
@@ -269,12 +267,8 @@ export default function AccessManagementPage() {
         'تغيير الحالات': {
             icon: <RefreshCw className="w-4 h-4" />,
             perms: [
-                PERMISSIONS.STATUS_CHANGE_REGISTERED,
-                PERMISSIONS.STATUS_CHANGE_REVIEW,
                 PERMISSIONS.STATUS_CHANGE_PROCESSING,
-                PERMISSIONS.STATUS_CHANGE_DELIVERING_TO_FACTORY,
                 PERMISSIONS.STATUS_CHANGE_SHOP_READY,
-                PERMISSIONS.STATUS_CHANGE_DELIVERING,
                 PERMISSIONS.STATUS_CHANGE_COMPLETED
             ]
         }

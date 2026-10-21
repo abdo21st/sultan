@@ -104,24 +104,24 @@ export const PERMISSION_LABELS: Record<string, string> = {
     [PERMISSIONS.DASHBOARD_VIEW]: 'عرض التقارير والتحليلات',
 
     // Status Views Labels
-    [PERMISSIONS.STATUS_VIEW_REGISTERED]: 'عرض: قيد التسجيل',
-    [PERMISSIONS.STATUS_VIEW_REVIEW]: 'عرض: قيد المراجعة',
+    [PERMISSIONS.STATUS_VIEW_REGISTERED]: 'عرض: مسجّل',
+    [PERMISSIONS.STATUS_VIEW_REVIEW]: 'عرض المراجعة — صلاحية قديمة',
     [PERMISSIONS.STATUS_VIEW_DELIVERING_TO_FACTORY]: 'عرض: قيد التسليم للمصنع',
     [PERMISSIONS.STATUS_VIEW_PROCESSING]: 'عرض: قيد التجهيز',
-    [PERMISSIONS.STATUS_VIEW_SHOP_READY]: 'عرض: جاهز للمحل',
+    [PERMISSIONS.STATUS_VIEW_SHOP_READY]: 'عرض: جاهز للاستلام',
     [PERMISSIONS.STATUS_VIEW_DELIVERING]: 'عرض: قيد التوصيل',
-    [PERMISSIONS.STATUS_VIEW_COMPLETED]: 'عرض: مكتمل',
+    [PERMISSIONS.STATUS_VIEW_COMPLETED]: 'عرض: تم التسليم للعميل',
     [PERMISSIONS.STATUS_VIEW_CANCELLED]: 'عرض: ملغي',
     [PERMISSIONS.STATUS_VIEW_RETURNED]: 'عرض: مرتجع',
 
     // Status Changes Labels
     [PERMISSIONS.STATUS_CHANGE_REGISTERED]: 'نقل إلى: قيد التسجيل',
-    [PERMISSIONS.STATUS_CHANGE_REVIEW]: 'نقل إلى: قيد المراجعة',
+    [PERMISSIONS.STATUS_CHANGE_REVIEW]: 'طلب تصحيح بيانات الطلب مع السبب',
     [PERMISSIONS.STATUS_CHANGE_DELIVERING_TO_FACTORY]: 'نقل إلى: قيد التسليم للمصنع',
     [PERMISSIONS.STATUS_CHANGE_PROCESSING]: 'نقل إلى: قيد التجهيز',
-    [PERMISSIONS.STATUS_CHANGE_SHOP_READY]: 'نقل إلى: جاهز للمحل',
+    [PERMISSIONS.STATUS_CHANGE_SHOP_READY]: 'إنهاء تجهيز المصنع وإشعار المحل',
     [PERMISSIONS.STATUS_CHANGE_DELIVERING]: 'نقل إلى: قيد التوصيل',
-    [PERMISSIONS.STATUS_CHANGE_COMPLETED]: 'نقل إلى: مكتمل',
+    [PERMISSIONS.STATUS_CHANGE_COMPLETED]: 'تأكيد تسليم الطلب للعميل',
 };
 
 export const DEFAULT_ROLES = {

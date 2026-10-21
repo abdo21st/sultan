@@ -10,6 +10,7 @@ import { toCents, toMoneyNumber } from "@/lib/money";
 import { writeAudit } from "@/lib/audit";
 import { cleanupUncommittedBlobUploads } from "@/lib/blob-cleanup";
 import { decodeDateIdCursor, encodeDateIdCursor, parsePageSize } from "@/lib/keyset-pagination";
+import { createStatusChangeNotification } from '@/lib/services/notification-service';
 
 
 
@@ -35,6 +36,7 @@ export async function GET(request: Request) {
         const deliveryFollowUp = searchParams.get('deliveryFollowUp') === 'true';
 
         const where: Prisma.OrderWhereInput = {};
+        if (searchParams.get('reviewRequired') === 'true') where.reviewRequired = true;
         const facilityScope = orderFacilityFilter(user);
         if (Object.keys(facilityScope).length > 0) where.AND = [facilityScope];
         if (factoryId) where.factoryId = factoryId;
@@ -159,6 +161,8 @@ export async function GET(request: Request) {
                 description: true,
                 status: true,
                 dueDate: true,
+                reviewRequired: true,
+                rejectionReason: true,
                 createdAt: true,
                 factoryId: true,
                 shopId: true,
@@ -401,6 +405,7 @@ export async function POST(request: Request) {
                 },
             });
 
+            await createStatusChangeNotification(newOrder, ORDER_STATUS.REGISTERED, undefined, tx);
             return newOrder;
         });
         orderCommitted = true;

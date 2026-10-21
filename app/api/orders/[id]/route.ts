@@ -7,6 +7,7 @@ import { canAccessAllFacilities, canAccessOrderFacility, canViewOrderStatus, get
 import { fromCents, toCents, toMoneyNumber } from "@/lib/money";
 import { writeAudit } from "@/lib/audit";
 import { cleanupUncommittedBlobUploads, enqueueBlobDeletions, processBlobDeletionQueue } from "@/lib/blob-cleanup";
+import { createStatusChangeNotification } from '@/lib/services/notification-service';
 
 
 export async function GET(
@@ -101,6 +102,8 @@ export async function PATCH(
                 description: true,
                 dueDate: true,
                 updatedAt: true,
+                reviewRequired: true,
+                rejectionReason: true,
             },
         });
         if (!currentOrder) return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -215,10 +218,15 @@ export async function PATCH(
                 factoryId: body.factoryId || undefined,
                 shopId: body.shopId || undefined,
                 images: images,
+                ...(currentOrder.reviewRequired ? { reviewRequired: false, rejectionReason: null } : {}),
                 },
             });
             if (updated.count !== 1) throw new Error("ORDER_UPDATE_CONFLICT");
             const updatedOrder = await tx.order.findUniqueOrThrow({ where: { id } });
+            if (currentOrder.reviewRequired) {
+                await writeAudit(tx, { actorId: user.id, entityType: 'ORDER', entityId: id, action: 'CORRECTION_RESOLVED', before: { reviewRequired: true, reason: currentOrder.rejectionReason }, after: { reviewRequired: false, status: updatedOrder.status } });
+                await createStatusChangeNotification(updatedOrder, 'CORRECTION_RESOLVED', undefined, tx);
+            }
             const cleanupQueue = await enqueueBlobDeletions(tx, removedImageUrls, id);
             await writeAudit(tx, {
                 actorId: user.id,

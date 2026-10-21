@@ -53,6 +53,7 @@ export default async function ShareOrderPage({
                 </div>
 
                 {/* Customer Info */}
+                {order.reviewRequired && <p className="mb-4 rounded-xl border p-4 text-sm">بيانات الطلب قيد التصحيح، مع بقاء مرحلة الطلب كما هي.</p>}
                 <div className="bg-amber-50 p-6 rounded-xl mb-6 border-2 border-amber-200">
                     <h2 className="text-lg font-black text-amber-800 mb-4">بيانات العميل</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

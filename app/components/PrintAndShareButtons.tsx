@@ -26,6 +26,7 @@ interface PrintAndShareButtonsProps {
         closed: boolean;
         statusLabel: string;
         refundRemaining: number;
+        correctionReason: string;
     };
     canViewFinancials?: boolean;
 }
@@ -54,6 +55,7 @@ export default function PrintAndShareButtons({ orderData, canViewFinancials }: P
                     { label: 'المحل', value: orderData.shopName },
                     { label: 'المصنع', value: orderData.factoryName },
                     { label: 'الحالة', value: orderData.statusLabel },
+                    ...(orderData.correctionReason ? [{ label: 'يحتاج تصحيحاً', value: orderData.correctionReason }] : []),
                     { label: 'موعد التسليم', value: new Date(orderData.dueDate).toLocaleDateString('ar-LY', { timeZone: 'Africa/Tripoli' }) },
                     { label: 'تفاصيل الطلب', value: orderData.description || '' },
                     ...(canViewFinancials ? [

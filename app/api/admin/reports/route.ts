@@ -153,14 +153,15 @@ async function handleOperationalReport(
         ? { AND: [where, { OR: [{ createdAt: { lt: cursor.date } }, { createdAt: cursor.date, id: { lt: cursor.id } }] }] }
         : where;
 
-    const [page, groups] = await Promise.all([
+    const [page, groups, correctionOrders] = await Promise.all([
         prisma.order.findMany({
             where: pageWhere,
-            select: { id: true, status: true, totalAmount: true, createdAt: true, customerName: true },
+            select: { id: true, status: true, reviewRequired: true, rejectionReason: true, totalAmount: true, createdAt: true, customerName: true },
             orderBy: [{ createdAt: "desc" }, { id: "desc" }],
             take: limit + 1,
         }),
         prisma.order.groupBy({ by: ["status"], where, _count: { _all: true } }),
+        prisma.order.count({ where: { ...where, reviewRequired: true } }),
     ]);
 
     const hasMore = page.length > limit;
@@ -176,6 +177,7 @@ async function handleOperationalReport(
         type: "operational",
         summary: {
             totalOrders: statusDistribution.reduce((total, group) => total + group.value, 0),
+            correctionOrders,
             completedOrders: statusDistribution.filter(group => [ORDER_STATUS.COMPLETED, 'COMPLETED'].includes(group.name)).reduce((total, group) => total + group.value, 0),
             openOrders: statusDistribution.filter(group => ![ORDER_STATUS.COMPLETED, 'COMPLETED', 'orders:status:cancelled', 'CANCELLED', 'orders:status:returned', 'RETURNED'].includes(group.name)).reduce((total, group) => total + group.value, 0),
             statusDistribution,
