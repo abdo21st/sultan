@@ -27,6 +27,7 @@ export default function OrderActions({ order, currentUser }: { order: Order; cur
     const canCollect = financial && can(PERMISSIONS.TRANSACTIONS_ADD);
     const phase = normalizeOrderStatus(order.status);
     const closed = CLOSED_ORDER_STATUSES.includes(phase) || phase === ORDER_STATUS.COMPLETED;
+    const canPrint = financial && can(PERMISSIONS.ORDERS_SHARE);
 
     async function change(status: string, correctionReason?: string) {
         if (busy) return;
@@ -55,10 +56,11 @@ export default function OrderActions({ order, currentUser }: { order: Order; cur
         finally { setBusy(false); }
     }
 
+    if (closed && !canPrint) return null;
     return <section className="ui-card space-y-4" aria-label="إجراءات الطلب">
-        <h2 className="font-bold">إجراءات الطلب</h2>
-        <div className="flex flex-col gap-3">
-            {financial && can(PERMISSIONS.ORDERS_SHARE) && <Link className="ui-button" href={'/orders/print/' + order.id} target="_blank">طباعة أو تنزيل مستند الطلب</Link>}
+        <h2 className="font-bold">{closed ? 'إجراءات الطلب' : 'الخطوة التالية'}</h2>
+        {!closed && !order.reviewRequired && <p className="text-sm text-muted-foreground">{phase === ORDER_STATUS.REGISTERED ? 'الطلب مسجّل، وينتظر بدء التجهيز في المصنع.' : phase === ORDER_STATUS.PROCESSING ? 'بعد اكتمال التجهيز، يُشعر المصنع المحل بأن الطلب جاهز.' : 'الطلب جاهز. يؤكد المحل التسليم بعد تسليمه فعلياً للعميل.'}</p>}
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
             {order.reviewRequired && !closed ? <>
                 <p className="text-sm text-primary">يحتاج الطلب تصحيحاً قبل متابعة التجهيز أو التسليم.</p>
                 {can(PERMISSIONS.ORDERS_EDIT) && <Link className="ui-button ui-button-primary" href={'/orders/' + order.id + '/edit'}>تصحيح بيانات الطلب</Link>}
@@ -68,6 +70,7 @@ export default function OrderActions({ order, currentUser }: { order: Order; cur
                 {phase === ORDER_STATUS.SHOP_READY && can(PERMISSIONS.STATUS_CHANGE_COMPLETED) && <button className="ui-button ui-button-primary" disabled={busy} onClick={() => { setPayment('0'); setDeliveryOpen(true); }}>تأكيد تسليم الطلب للعميل</button>}
                 {can(PERMISSIONS.STATUS_CHANGE_REVIEW) && <button className="ui-button" disabled={busy} onClick={() => setCorrectionOpen(true)}>طلب تصحيح البيانات مع السبب</button>}
             </>}
+            {canPrint && <Link className="ui-button" href={'/orders/print/' + order.id} target="_blank" rel="noopener">طباعة أو تنزيل مستند الطلب</Link>}
         </div>
         {correctionOpen && <Modal isOpen onClose={() => { if (!busy) setCorrectionOpen(false); }} title="الطلب يحتاج تصحيحاً">
             <form className="space-y-4" onSubmit={event => { event.preventDefault(); void change(ORDER_STATUS.REVIEW, reason); }}>

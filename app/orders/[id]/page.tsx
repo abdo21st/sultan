@@ -7,8 +7,9 @@ import OrderAdjustments from './OrderAdjustments';
 import { adjustmentResponse } from '@/lib/order-adjustments';
 import OrderActions from "./OrderActions";
 import RevokeShares from "./RevokeShares";
-import { ArrowLeft, Edit } from "lucide-react";
-import { getStatusInfo, formatCurrency, formatDate } from "@/lib/utils";
+import { ArrowRight, CalendarDays, Check, ChevronDown, Edit3, Factory, FileText, ImageIcon, Store, User, Wallet } from "lucide-react";
+import OrderStatusBadge from "@/app/components/OrderStatusBadge";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import AnimatedOrderImage from "@/app/components/ui/AnimatedOrderImage";
 import { canAccessOrderFacility, canViewOrderStatus, getRequestUser } from "@/lib/request-user";
 
@@ -51,7 +52,9 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         remainingAmount: Number(order.remainingAmount ?? 0),
     };
 
-    const statusInfo = getStatusInfo(currentOrder.status);
+    const phaseIndex = PRIMARY_ORDER_STATUSES.findIndex(phase => phase === normalizeOrderStatus(order.status));
+    const pendingAdjustment = adjustments.some(item => item.status === "REQUESTED");
+    const canRequestAdjustment = [PERMISSIONS.ORDERS_ADJUSTMENT_REQUEST, PERMISSIONS.ORDERS_ADJUSTMENT_APPROVE, PERMISSIONS.ORDERS_REFUND].some(permission => user.permissions.includes(permission));
     const adjustmentOpen = order.adjustments.some(item => item.status === 'REQUESTED' || item.status === 'APPROVED');
     const closed = CLOSED_ORDER_STATUSES.includes(order.status);
 
@@ -64,174 +67,28 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         orderBy: { date: 'desc' }
     }) : [];
 
-    return (
-        <div className="min-h-full bg-background pb-32 selection:bg-primary/30 antialiased">
-            <header className="bg-background border-b border-border px-4 py-4">
-                <div className="max-w-5xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                        <Link href="/" aria-label="العودة إلى الطلبات" className="p-3 bg-card hover:bg-primary/10 rounded-xl transition-all duration-300 border border-border hover:border-primary/20 group">
-                            <ArrowLeft className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </Link>
-                        <div>
-                            <h1 className="text-2xl font-semibold text-gradient-gold ">الطلب #{currentOrder.serialNumber}</h1>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                <span className="text-xs uppercase font-bold  text-muted-foreground">{formatDate(currentOrder.createdAt)}</span>
-                            </div>
-                        </div>
-                    </div>
-                    {user.permissions.includes(PERMISSIONS.ORDERS_EDIT) && !adjustmentOpen && (
-                        <Link href={`/orders/${id}/edit`} aria-label="تعديل الطلب" className="p-3 bg-card hover:bg-primary rounded-xl transition-all duration-300 border border-border group">
-                            <Edit className="w-5 h-5 text-primary group-hover:text-white transition-colors" />
-                        </Link>
-                    )}
-                </div>
-
-            </header>
-
-            <main className="max-w-5xl mx-auto p-4 md:p-8 space-y-8">
-                {/* Status Bar */}
-                <div className="bg-card rounded-xl p-6 border border-border flex flex-wrap gap-4 items-center justify-between ">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary/10 rounded-xl">
-                            <div className="w-3 h-3 rounded-full bg-primary " />
-                        </div>
-                        <div>
-                            <p className="text-xs font-bold text-muted-foreground uppercase ">الحالة الحالية للنظام</p>
-                            <span className={`inline-block mt-1 px-4 py-1 rounded-lg text-xs font-semibold uppercase  border ${statusInfo.color} border-current/20 `}>
-                                {statusInfo.label}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                {!closed && <ol className="grid grid-cols-2 md:grid-cols-4 gap-3" aria-label="مراحل الطلب الأربع">{PRIMARY_ORDER_STATUSES.map((phase, index) => <li key={phase} aria-current={phase === normalizeOrderStatus(order.status) ? 'step' : undefined} className={`ui-card text-sm ${phase === normalizeOrderStatus(order.status) ? 'border-primary bg-primary/5 font-bold' : 'text-muted-foreground'}`}>{index + 1}. {ORDER_STATUS_LABELS[phase]}</li>)}</ol>}
-                <OrderAdjustments orderId={id} orderStatus={order.status} permissions={user.permissions} items={adjustments.map(item => ({ ...adjustmentResponse(item, canViewFinancials), requestedAt: item.requestedAt.toISOString() }))} />
-                {order.reviewRequired && <section className="ui-card border-amber-400 space-y-2" role="status"><h2 className="font-bold">يحتاج تصحيحاً</h2><p className="whitespace-pre-wrap">{order.rejectionReason || 'راجع بيانات الطلب مع المصنع.'}</p><p className="text-sm text-muted-foreground">المرحلة الحالية محفوظة. بعد حفظ التصحيح يُشعر المصنع ويمكن متابعة التجهيز والتسليم.</p>{user.permissions.includes(PERMISSIONS.ORDERS_EDIT) && !adjustmentOpen && <Link className="ui-button inline-flex" href={`/orders/${id}/edit`}>تصحيح بيانات الطلب</Link>}</section>}
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Details */}
-                    <div className="lg:col-span-2 space-y-8">
-                        {/* Customer Card */}
-                        <div className="bg-card rounded-xl p-8 border border-border ">
-                            <h3 className="text-sm font-semibold text-gradient-gold uppercase  mb-6 flex items-center gap-2">
-                                <div className="w-1 h-4 bg-primary rounded-full transition-all group-hover:h-6" />
-                                بيانات العميل الملكي
-                            </h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                <div className="space-y-2">
-                                    <p className="text-xs font-bold text-muted-foreground uppercase ">اسم العميل</p>
-                                    <p className="text-lg font-semibold text-foreground">{currentOrder.customerName}</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <p className="text-xs font-bold text-muted-foreground uppercase ">رقم التواصل</p>
-                                    <p className="text-lg font-semibold text-foreground font-mono er" dir="ltr">{currentOrder.customerPhone}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Order Info */}
-                        <div className="bg-card rounded-xl p-8 border border-border ">
-                            <h3 className="text-sm font-semibold text-gradient-gold uppercase  mb-6 flex items-center gap-2">
-                                <div className="w-1 h-4 bg-primary rounded-full" />
-                                تفاصيل التصميم والتجهيز
-                            </h3>
-                            <div className="p-6 bg-background rounded-xl border border-border">
-                                <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap antialiased font-medium">{currentOrder.description}</p>
-                            </div>
-
-                            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                <div className="space-y-3">
-                                    <p className="text-xs font-bold text-muted-foreground uppercase ">جهة التكليف (المعرض)</p>
-                                    <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
-                                        <div className="w-2 h-2 rounded-full bg-indigo-500 " />
-                                        <p className="text-sm font-semibold text-foreground">{shop?.name || '-'}</p>
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <p className="text-xs font-bold text-muted-foreground uppercase ">جهة التنفيذ (المصنع)</p>
-                                    <div className="flex items-center gap-3 p-4 bg-background rounded-xl border border-border">
-                                        <div className="w-2 h-2 rounded-full bg-orange-500 " />
-                                        <p className="text-sm font-semibold text-foreground">{factory?.name || '-'}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Images */}
-                        {currentOrder.images && (currentOrder.images as string[]).length > 0 && (
-                            <div className="bg-card rounded-xl p-8 border border-border ">
-                                <h3 className="text-sm font-semibold text-gradient-gold uppercase  mb-6 flex items-center gap-2">
-                                    <div className="w-1 h-4 bg-primary rounded-full" />
-                                    المرفقات البصرية
-                                </h3>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                    {(currentOrder.images as string[]).map((_, idx: number) => (
-                                        <AnimatedOrderImage key={idx} src={`/api/orders/${id}/images/${idx}`} index={idx} />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Sidebar: Financials & Actions */}
-                    <div className="space-y-8">
-                        {canViewFinancials && (
-                            <div className="bg-card rounded-xl p-8 border border-border">
-                                <h3 className="text-sm font-semibold text-gradient-gold uppercase  mb-6 flex items-center gap-2">
-                                    <div className="w-1 h-4 bg-primary rounded-full" />
-                                    الملخص المالي
-                                </h3>
-                                <div className="space-y-6">
-                                    <div className="flex justify-between items-center group">
-                                        <span className="text-xs font-bold text-muted-foreground uppercase ">{closed ? 'القيمة الأصلية قبل الإغلاق' : 'القيمة الإجمالية'}</span>
-                                        <span className="text-xl font-semibold font-mono text-foreground" dir="ltr">{formatCurrency(currentOrder.totalAmount)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center bg-green-500/5 p-4 rounded-xl border border-green-500/10">
-                                        <span className="text-xs font-semibold text-green-500 uppercase ">{closed ? 'الدفعات الأصلية قبل الرد' : 'المبلغ المحصل'}</span>
-                                        <span className="text-xl font-semibold font-mono text-green-500" dir="ltr">{formatCurrency(currentOrder.paidAmount)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center pt-2">
-                                        <span className="text-xs font-bold text-muted-foreground uppercase ">{closed ? 'الرصيد الأصلي الملغى تحصيله' : 'الرصيد المتبقي'}</span>
-                                        <span className={`text-2xl font-semibold font-mono ${currentOrder.remainingAmount > 0 ? 'text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'text-zinc-500'}`} dir="ltr">
-                                            {formatCurrency(currentOrder.remainingAmount)}
-                                        </span>
-                                    </div>
-                                </div>
-                                {/* Payment History Section */}
-                                {[ORDER_STATUS.COMPLETED, 'COMPLETED'].includes(currentOrder.status) && currentOrder.remainingAmount > 0 && (
-                                    <p className="mt-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm">تم تسليم الطلب، وما زال المبلغ المتبقي مستحقاً. يمكن تسجيل تحصيله من صفحة الحركات المالية.</p>
-                                )}
-                                {transactions.length > 0 && (
-                                    <div className="mt-12 border-t border-border pt-8">
-                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase  mb-6">سجل الدفعات المالية</h4>
-                                        <div className="space-y-4">
-                                            {transactions.map((t) => (
-                                                <div key={t.id} className="flex justify-between items-center p-4 bg-background border border-border rounded-xl">
-                                                    <div>
-                                                        <p className="text-xs font-bold text-muted-foreground uppercase">{formatDate(t.date)}</p>
-                                                        <p className="text-sm font-bold text-foreground">{t.category === 'ORDER_REFUND' ? 'رد مبلغ للعميل' : t.category}</p>
-                                                        {t.reversalOfId && <p className="text-xs text-muted-foreground">قيد عكسي — {t.reversalReason}</p>}
-                                                        {t.reversedBy && <p className="text-xs text-muted-foreground">حركة معكوسة مع حفظ الأصل</p>}
-                                                    </div>
-                                                    <span className={`text-sm font-semibold ${(t.type === 'EXPENSE' ? -Number(t.amount) : Number(t.amount)) < 0 ? 'text-red-600' : 'text-green-600'}`} dir="ltr">{formatCurrency(t.type === 'EXPENSE' ? -Number(t.amount) : Number(t.amount))}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        <div>
-                            {!adjustmentOpen && <OrderActions order={currentOrder} currentUser={user} />}
-                        </div>
-                        {(user.permissions.includes(PERMISSIONS.ORDERS_REVOKE_SHARES) || (canViewFinancials && user.permissions.includes(PERMISSIONS.ORDERS_SHARE))) && (
-                            <RevokeShares orderId={id} canIssue={canViewFinancials && user.permissions.includes(PERMISSIONS.ORDERS_SHARE)} canRevoke={user.permissions.includes(PERMISSIONS.ORDERS_REVOKE_SHARES)} />
-                        )}
-                    </div>
-                </div>
-            </main>
+    return <main className="ui-page max-w-6xl space-y-6">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm text-primary min-h-11"><ArrowRight size={17} aria-hidden="true" />العودة إلى الطلبات</Link>
+        <header className="ui-page-header">
+            <div><p className="ui-eyebrow">تفاصيل الطلب</p><h1 className="ui-page-title">الطلب <bdi>#{currentOrder.serialNumber}</bdi></h1><p className="ui-page-description">سُجّل في {formatDate(currentOrder.createdAt)}</p></div>
+            <div className="flex flex-wrap items-center gap-3"><OrderStatusBadge status={order.status} />{user.permissions.includes(PERMISSIONS.ORDERS_EDIT) && !adjustmentOpen && <Link href={`/orders/${id}/edit`} className="ui-button"><Edit3 size={17} aria-hidden="true" />تعديل الطلب</Link>}</div>
+        </header>
+        <section className="ui-card flex flex-wrap gap-x-8 gap-y-4 text-sm" aria-label="موعد الطلب والمنشآت"><p className="flex items-center gap-2"><CalendarDays size={18} className="text-primary" aria-hidden="true" /><span className="text-muted-foreground">التسليم</span><strong>{new Date(order.dueDate).toLocaleDateString('ar-LY', { timeZone: 'Africa/Tripoli', day: 'numeric', month: 'long', year: 'numeric' })}</strong></p><p className="flex items-center gap-2"><Store size={18} className="text-primary" aria-hidden="true" /><span className="text-muted-foreground">المحل</span><strong>{shop?.name || 'غير محدد'}</strong></p><p className="flex items-center gap-2"><Factory size={18} className="text-primary" aria-hidden="true" /><span className="text-muted-foreground">المصنع</span><strong>{factory?.name || 'غير محدد'}</strong></p></section>
+        {!closed && <ol className="order-stage-list" aria-label="مراحل الطلب الأربع">{PRIMARY_ORDER_STATUSES.map((phase, index) => <li key={phase} aria-current={index === phaseIndex ? 'step' : undefined} data-done={index < phaseIndex || undefined}><span aria-hidden="true">{index < phaseIndex ? <Check size={16} /> : index + 1}</span>{ORDER_STATUS_LABELS[phase]}</li>)}</ol>}
+        {order.reviewRequired && <section className="ui-feedback border-amber-400 bg-amber-50" role="status"><div className="flex-1 space-y-2"><h2 className="font-bold text-amber-900">يحتاج تصحيحاً</h2><p className="text-sm whitespace-pre-wrap">{order.rejectionReason || 'راجع بيانات الطلب مع المصنع.'}</p><p className="text-xs text-muted-foreground">تبقى مرحلة الطلب محفوظة، ويُشعر المصنع بعد حفظ التصحيح.</p></div>{user.permissions.includes(PERMISSIONS.ORDERS_EDIT) && !adjustmentOpen && <Link className="ui-button" href={`/orders/${id}/edit`}>تصحيح بيانات الطلب</Link>}</section>}
+        {adjustments.length > 0 && <OrderAdjustments orderId={id} orderStatus={order.status} permissions={user.permissions} items={adjustments.map(item => ({ ...adjustmentResponse(item, canViewFinancials), requestedAt: item.requestedAt.toISOString() }))} />}
+        {!pendingAdjustment && <OrderActions order={currentOrder} currentUser={user} />}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+            <div className="min-w-0 space-y-6">
+                <section className="ui-card order-detail-section"><h2><User size={18} className="text-primary" aria-hidden="true" />بيانات العميل</h2><dl className="grid grid-cols-1 sm:grid-cols-2 gap-5"><div><dt className="text-xs text-muted-foreground">اسم العميل</dt><dd className="mt-2 font-semibold break-words">{currentOrder.customerName}</dd></div><div><dt className="text-xs text-muted-foreground">رقم التواصل</dt><dd className="mt-2 font-semibold"><bdi>{currentOrder.customerPhone}</bdi></dd></div></dl></section>
+                <section className="ui-card order-detail-section"><h2><FileText size={18} className="text-primary" aria-hidden="true" />مواصفات الطلب</h2><p className="text-sm leading-loose whitespace-pre-wrap break-words">{currentOrder.description}</p></section>
+                {currentOrder.images.length > 0 && <section className="ui-card order-detail-section"><h2><ImageIcon size={18} className="text-primary" aria-hidden="true" />صور الطلب<span className="text-xs font-normal text-muted-foreground">({currentOrder.images.length})</span></h2><div className="grid grid-cols-2 sm:grid-cols-3 gap-4">{currentOrder.images.map((_, index) => <AnimatedOrderImage key={index} src={`/api/orders/${id}/images/${index}`} index={index} />)}</div></section>}
+                {!adjustments.length && canRequestAdjustment && <details className="order-adjustment-disclosure"><summary className="flex items-center justify-between gap-3 p-5 cursor-pointer font-semibold text-sm">الإلغاء والمرتجعات<ChevronDown size={18} aria-hidden="true" /></summary><OrderAdjustments orderId={id} orderStatus={order.status} permissions={user.permissions} items={[]} /></details>}
+            </div>
+            <aside className="min-w-0 space-y-6">
+                {canViewFinancials && <section className="ui-card order-detail-section"><h2><Wallet size={18} className="text-primary" aria-hidden="true" />الملخص المالي</h2><dl className="space-y-5"><div className="flex flex-wrap justify-between gap-2"><dt className="text-xs text-muted-foreground">{closed ? 'القيمة الأصلية قبل الإغلاق' : 'قيمة الطلب'}</dt><dd className="font-semibold"><bdi>{formatCurrency(currentOrder.totalAmount)}</bdi></dd></div><div className="flex flex-wrap justify-between gap-2"><dt className="text-xs text-muted-foreground">{closed ? 'الدفعات الأصلية قبل الرد' : 'المبلغ المحصل'}</dt><dd className="font-semibold text-emerald-800"><bdi>{formatCurrency(currentOrder.paidAmount)}</bdi></dd></div><div className="rounded-xl bg-muted p-4 space-y-2"><dt className="text-xs text-muted-foreground">{closed ? 'الرصيد الأصلي الملغى تحصيله' : 'المتبقي للتحصيل'}</dt><dd className={`text-xl font-bold ${!closed && currentOrder.remainingAmount > 0 ? 'text-amber-900' : 'text-foreground'}`}><bdi>{formatCurrency(currentOrder.remainingAmount)}</bdi></dd></div></dl>{closed && <p className="text-xs text-muted-foreground leading-relaxed mt-4">الأرقام أعلاه أصلية للتدقيق. المبلغ الواجب رده وتسجيل تسويته يظهران في الإلغاء والمرتجعات.</p>}{normalizeOrderStatus(order.status) === ORDER_STATUS.COMPLETED && currentOrder.remainingAmount > 0 && <p className="mt-4 rounded-lg bg-amber-50 text-amber-900 p-3 text-xs leading-relaxed">تم تسليم الطلب ويبقى الرصيد مستحقاً. يتابع المسؤول المالي تحصيله بشكل مستقل.</p>}{transactions.length > 0 && <details className="mt-5 border-t border-border pt-4"><summary className="flex cursor-pointer items-center justify-between gap-2 text-sm font-semibold">سجل الدفعات المالية<span className="text-xs text-muted-foreground">{transactions.length} حركة</span></summary><div className="mt-4 space-y-3">{transactions.map(transaction => <article key={transaction.id} className="rounded-lg bg-background p-3 text-xs space-y-2"><div className="flex flex-wrap justify-between gap-2"><strong>{transaction.category === 'ORDER_REFUND' ? 'رد مبلغ للعميل' : transaction.category === 'SALES' ? 'دفعة طلب' : transaction.category}</strong><bdi className={transaction.type === 'EXPENSE' ? 'text-red-700 font-semibold' : 'text-emerald-800 font-semibold'}>{formatCurrency(transaction.type === 'EXPENSE' ? -Number(transaction.amount) : Number(transaction.amount))}</bdi></div><p className="text-muted-foreground">{formatDate(transaction.date)}</p>{transaction.reversalOfId && <p className="text-muted-foreground break-words">قيد عكسي — {transaction.reversalReason}</p>}{transaction.reversedBy && <p className="text-muted-foreground">حركة معكوسة مع حفظ الأصل</p>}</article>)}</div></details>}</section>}
+                {(user.permissions.includes(PERMISSIONS.ORDERS_REVOKE_SHARES) || (canViewFinancials && user.permissions.includes(PERMISSIONS.ORDERS_SHARE))) && <RevokeShares orderId={id} canIssue={canViewFinancials && user.permissions.includes(PERMISSIONS.ORDERS_SHARE)} canRevoke={user.permissions.includes(PERMISSIONS.ORDERS_REVOKE_SHARES)} />}
+            </aside>
         </div>
-    );
+    </main>;
 }

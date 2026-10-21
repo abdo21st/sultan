@@ -32,6 +32,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     }, [user, standalone]);
     if (!user || user.mustChangePassword || standalone) return children;
     const groups = NAVIGATION_GROUPS.map(group => ({ ...group, items: group.items.filter(item => canAccessDestination(user, item)) })).filter(group => group.items.length);
+    const activeGroup = groups.find(group => group.items.some(item => isNavigationActive(pathname, item.href)))?.label;
     const links = (compact: boolean) => <nav aria-label="أقسام التطبيق" className="app-navigation">
         {groups.map(group => <section key={group.label} className="app-navigation-group">
             {!compact && <h2 className="app-navigation-label">{group.label}</h2>}
@@ -41,10 +42,10 @@ export default function AppShell({ children }: { children: ReactNode }) {
     return <div className="app-shell" data-sidebar-collapsed={collapsed} style={{ '--primary': branding.themeColor, '--color-primary': branding.themeColor } as CSSProperties}>
         <a href="#main-content" className="ui-skip-link">الانتقال إلى المحتوى</a>
         <aside className="app-sidebar">
-            <Link href="/" className="app-brand" aria-label={branding.appName}><span className="app-brand-mark">{branding.logoUrl ? <Image src={branding.logoUrl} alt="" width={32} height={32} unoptimized /> : 'س'}</span>{!collapsed && <span>{branding.appName}</span>}</Link>
+            <Link href="/" className="app-brand" aria-label={branding.appName}><span className="app-brand-mark">{branding.logoUrl ? <Image src={branding.logoUrl} alt="" width={32} height={32} unoptimized /> : 'س'}</span>{!collapsed && <span className="min-w-0"><span className="block truncate">{branding.appName}</span><span className="app-brand-subtitle">إدارة الطلبات والتشغيل</span></span>}</Link>
             {links(collapsed)}
             <footer className="app-sidebar-footer">
-                <Link href="/profile" className="app-navigation-link" aria-label={collapsed ? 'الملف الشخصي' : undefined} title={collapsed ? 'الملف الشخصي' : undefined}><User size={20} aria-hidden="true" />{!collapsed && <span className="min-w-0"><span className="block truncate">{user.displayName || user.name || user.username}</span><span className="block text-xs text-muted-foreground">{roleLabel(user.role)}</span></span>}</Link>
+                <Link href="/profile" className="app-navigation-link app-profile-link" aria-label={collapsed ? 'الملف الشخصي' : undefined} title={collapsed ? 'الملف الشخصي' : undefined}><span className="app-avatar" aria-hidden="true">{(user.displayName || user.name || user.username || 'س').trim().charAt(0)}</span>{!collapsed && <span className="min-w-0"><span className="block truncate font-semibold">{user.displayName || user.name || user.username}</span><span className="block text-xs text-muted-foreground">{roleLabel(user.role)}</span></span>}</Link>
                 <button type="button" className="app-navigation-link w-full" onClick={() => signOut({ callbackUrl: '/login' })} aria-label={collapsed ? 'تسجيل الخروج' : undefined} title={collapsed ? 'تسجيل الخروج' : undefined}><LogOut size={20} aria-hidden="true" />{!collapsed && <span>تسجيل الخروج</span>}</button>
             </footer>
         </aside>
@@ -53,7 +54,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                 <div className="flex min-w-0 items-center gap-2">
                     <button type="button" className="ui-icon-button lg:hidden" aria-label="فتح القائمة" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><Menu size={21} aria-hidden="true" /></button>
                     <button type="button" className="ui-icon-button hidden lg:inline-flex" aria-label={collapsed ? 'توسيع القائمة' : 'طي القائمة'} aria-expanded={!collapsed} onClick={() => setCollapsed(value => !value)}>{collapsed ? <PanelRightOpen size={20} aria-hidden="true" /> : <PanelRightClose size={20} aria-hidden="true" />}</button>
-                    <span className="truncate text-sm font-semibold">{pageTitle(pathname)}</span>
+                    <div className="min-w-0"><span className="app-header-section">{activeGroup || 'حسابي'}</span><span className="block truncate text-sm font-semibold">{pageTitle(pathname)}</span></div>
                 </div>
                 {pathname !== '/' && <form action="/" method="get" className="hidden md:flex items-center gap-2 app-header-search" role="search"><Search size={18} aria-hidden="true" /><input type="search" name="q" aria-label="بحث في الطلبات" placeholder="بحث بالطلب أو العميل أو الهاتف" className="min-w-0 w-full bg-transparent outline-none" /><button type="submit" className="sr-only">بحث</button></form>}
                 <div className="flex items-center gap-2 shrink-0">
