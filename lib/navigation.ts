@@ -1,4 +1,4 @@
-import { BarChart3, BellRing, Building2, CalendarDays, List, Settings, Users, Wallet, type LucideIcon } from 'lucide-react';
+import { BarChart3, BellRing, Building2, CalendarDays, List, RotateCcw, Settings, Users, Wallet, type LucideIcon } from 'lucide-react';
 import { PERMISSIONS } from './permissions';
 
 export const NAVIGATION_GROUPS: { label: string; items: { href: string; label: string; icon: LucideIcon; permissions: string[]; adminOnly?: boolean }[] }[] = [
@@ -6,7 +6,7 @@ export const NAVIGATION_GROUPS: { label: string; items: { href: string; label: s
         { href: '/', label: 'الطلبات', icon: List, permissions: [PERMISSIONS.ORDERS_VIEW] },
         { href: '/admin/booking', label: 'سعة الإنتاج', icon: CalendarDays, permissions: [PERMISSIONS.BOOKING_MANAGE] },
         { href: '/admin/alerts', label: 'متابعة الاستحقاقات', icon: BellRing, permissions: [PERMISSIONS.ALERTS_MANAGE] },
-        { href: '/adjustments', label: 'الإلغاء والمرتجعات', icon: List, permissions: [PERMISSIONS.ORDERS_ADJUSTMENT_REQUEST, PERMISSIONS.ORDERS_ADJUSTMENT_APPROVE, PERMISSIONS.ORDERS_REFUND] },
+        { href: '/adjustments', label: 'الإلغاء والمرتجعات', icon: RotateCcw, permissions: [PERMISSIONS.ORDERS_ADJUSTMENT_REQUEST, PERMISSIONS.ORDERS_ADJUSTMENT_APPROVE, PERMISSIONS.ORDERS_REFUND] },
     ] },
     { label: 'الماليات', items: [
         { href: '/transactions', label: 'التحصيل والحركات المالية', icon: Wallet, permissions: [PERMISSIONS.TRANSACTIONS_VIEW] },

@@ -57,7 +57,7 @@ function OrdersPage({ initialSearch }: { initialSearch: string }) {
     };
     return <main className="ui-page space-y-5">
         <header className="ui-page-header">
-            <div><p className="ui-eyebrow">العمل اليومي</p><h1 className="ui-page-title">الطلبات</h1><p className="ui-page-description">من تسجيل الطلب إلى تسليم العميل، كل مرحلة أمامك.</p></div>
+            <div><h1 className="ui-page-title">الطلبات</h1><p className="ui-page-description">من تسجيل الطلب إلى تسليم العميل، كل مرحلة أمامك.</p></div>
             {hasPermission(PERMISSIONS.ORDERS_VIEW_FINANCIALS) && <button type="button" className="ui-button" onClick={exportPDF} disabled={exporting}><FileDown size={18} aria-hidden="true" />{exporting ? 'جاري التصدير...' : 'تصدير PDF'}</button>}
         </header>
         <section className="order-workspace-controls" aria-label="البحث وتصفية الطلبات">
@@ -65,6 +65,7 @@ function OrdersPage({ initialSearch }: { initialSearch: string }) {
                 <button type="button" className="order-phase-filter" aria-pressed={!activeFilters.status?.length} onClick={() => setActiveFilters(previous => ({ ...previous, status: [] }))}><span className="order-phase-number" aria-hidden="true">الكل</span><span>جميع الطلبات</span></button>
                 {PRIMARY_ORDER_STATUSES.map((phase, index) => <button type="button" key={phase} className="order-phase-filter" aria-pressed={activeFilters.status?.length === 1 && activeFilters.status[0] === phase} onClick={() => setActiveFilters(previous => ({ ...previous, status: [phase] }))}><span className="order-phase-number" aria-hidden="true">{index + 1}</span><span>{ORDER_STATUS_LABELS[phase]}</span></button>)}
             </div>
+            <label className="order-mobile-phase"><span className="sr-only">حالة الطلب</span><select className="ui-field" value={activeFilters.status?.length === 1 ? activeFilters.status[0] : activeFilters.status?.length ? 'multiple' : ''} onChange={event => setActiveFilters(previous => ({ ...previous, status: event.target.value ? [event.target.value] : [] }))}><option value="">جميع مراحل الطلب</option>{activeFilters.status && activeFilters.status.length > 1 && <option value="multiple" disabled>حالات متعددة</option>}{PRIMARY_ORDER_STATUSES.map(phase => <option key={phase} value={phase}>{ORDER_STATUS_LABELS[phase]}</option>)}</select></label>
             <div className="orders-toolbar">
             <form role="search" className="flex gap-2 min-w-0" onSubmit={event => { event.preventDefault(); setSearch(searchInput.trim()); }}>
                 <div className="relative flex-1 min-w-0"><Search size={19} className="absolute right-3 top-3 text-muted-foreground" aria-hidden="true" /><input id="orders-search" name="q" type="search" maxLength={120} value={searchInput} onChange={event => setSearchInput(event.target.value)} className="ui-field pr-10" aria-label="بحث برقم الطلب أو اسم العميل أو الهاتف" placeholder="رقم الطلب، اسم العميل، أو الهاتف" /></div>
@@ -76,10 +77,10 @@ function OrdersPage({ initialSearch }: { initialSearch: string }) {
             <div className="flex flex-wrap items-center gap-2">
                 <button className="order-quick-filter" type="button" aria-pressed={activeFilters.reviewRequired === 'true'} onClick={() => setActiveFilters(previous => ({ ...previous, reviewRequired: previous.reviewRequired === 'true' ? '' : 'true' }))}>يحتاج تصحيحاً</button>
                 {hasPermission(PERMISSIONS.ORDERS_VIEW_FINANCIALS) && <button className="order-quick-filter" type="button" aria-pressed={activeFilters.paymentStatus === 'unpaid'} onClick={() => setActiveFilters(previous => ({ ...previous, paymentStatus: previous.paymentStatus === 'unpaid' ? '' : 'unpaid' }))}>له مبلغ مستحق</button>}
+                <div className="ms-auto"><DateTabs activeMode={grouping} onModeChange={setGrouping} /></div>
                 {hasFilters && <button type="button" className="order-clear-filters" onClick={clearFilters}><X size={15} aria-hidden="true" />مسح التصفية</button>}
             </div>
         </section>
-        <DateTabs activeMode={grouping} onModeChange={setGrouping} />
         <OrderList queryParams={queryParams} groupingMode={grouping} onClearFilters={clearFilters} />
         {showFilters && <OrderFilters isOpen onClose={() => setShowFilters(false)} initialFilters={activeFilters} onApply={filters => { setActiveFilters(filters); setDatePreset(filters.startDate || filters.endDate ? 'custom' : 'all'); }} />}
     </main>;
