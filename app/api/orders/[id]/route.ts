@@ -31,6 +31,8 @@ export async function GET(
                 customerPhone: true,
                 description: true,
                 status: true,
+                reviewRequired: true,
+                rejectionReason: true,
                 dueDate: true,
                 createdAt: true,
                 factoryId: true,

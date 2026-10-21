@@ -47,7 +47,7 @@ export default function PrintAndShareButtons({ orderData, canViewFinancials }: P
             exportToPDF({
                 title: `${orderData.appName} · طلب #${orderData.serialNumber}`,
                 subtitle: 'مستند الطلب · امسح الرمز لفتح النسخة الرقمية',
-                columns: [{ header: 'البيان', dataKey: 'label' }, { header: 'التفاصيل', dataKey: 'value' }],
+                columns: [{ header: 'التفاصيل', dataKey: 'value' }, { header: 'البيان', dataKey: 'label' }],
                 rows: [
                     { label: 'المنشأة', value: orderData.printHeader || orderData.appName },
                     { label: 'العميل', value: orderData.customerName },
