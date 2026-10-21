@@ -175,6 +175,7 @@ input, select, textarea { min-width: 0; max-width: 100%; }
 .order-phase-filters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .order-phase-filter { display: flex; align-items: center; gap: 9px; padding: 8px; min-height: 46px; font-size: .8125rem; text-align: start; line-height: 1.6; border: 1px solid var(--border); border-radius: 10px; color: var(--muted-foreground); background: var(--card); }
 .order-mobile-phase { display: none; }
+.order-mobile-grouping { display: none; }
 .order-phase-filter:hover { background: var(--background); }
 .order-phase-filter[aria-pressed="true"] { background: var(--secondary); color: var(--foreground); border-color: var(--primary); font-weight: 700; }
 .order-phase-number { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; background: var(--muted); font-size: .75rem; }
@@ -252,6 +253,10 @@ input, select, textarea { min-width: 0; max-width: 100%; }
   .orders-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .order-phase-filters { display: none; }
   .order-mobile-phase { display: block; }
+  .order-mobile-grouping { display: block; }
+  .order-mobile-grouping select { width: 100%; }
+  .order-extra-controls .order-quick-filter, .order-desktop-grouping { display: none; }
+  .order-extra-controls:not(:has(.order-clear-filters)) { display: none; }
   .order-phase-filter:first-child { grid-column: 1 / -1; min-height: 44px; }
   .order-phase-filter { min-height: 48px; padding: 8px; }
   .orders-toolbar { grid-template-columns: 1fr 1fr; }
