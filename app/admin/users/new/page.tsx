@@ -17,7 +17,6 @@ export default function NewUserPage() {
         phoneNumber: '',
         role: 'USER',
         facilityId: '',
-        permissions: [] as string[],
         roleIds: [] as string[]
     });
 
@@ -64,7 +63,7 @@ export default function NewUserPage() {
             const res = await fetch('/api/users', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ ...formData, facilityId: formData.facilityId || null }),
             });
 
             if (res.ok) {

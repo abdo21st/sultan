@@ -28,9 +28,8 @@ export default function EditUserPage() {
         password: '', // Optional for edit
         displayName: '',
         phoneNumber: '',
-        role: 'EMPLOYEE',
+        role: 'USER',
         facilityId: '',
-        permissions: [] as string[],
         roleIds: [] as string[]
     });
 
@@ -58,7 +57,6 @@ export default function EditUserPage() {
                     phoneNumber: data.phoneNumber || '',
                     role: data.role,
                     facilityId: data.facilityId || '',
-                    permissions: data.permissions || [],
                     roleIds: data.roles ? data.roles.map((r: { id: string }) => r.id) : []
                 });
                 setLoading(false);
@@ -86,9 +84,15 @@ export default function EditUserPage() {
 
         try {
             const id = Array.isArray(params.id) ? params.id[0] : params.id;
-            // Only send password if it's not empty
-            const body: Partial<typeof formData> = { ...formData };
-            if (!body.password) delete body.password;
+            const body = {
+                username: formData.username,
+                displayName: formData.displayName,
+                phoneNumber: formData.phoneNumber,
+                role: formData.role,
+                facilityId: formData.facilityId || null,
+                roleIds: formData.roleIds,
+                ...(formData.password ? { password: formData.password } : {}),
+            };
 
             const res = await fetch(`/api/users/${id}`, {
                 method: 'PATCH',

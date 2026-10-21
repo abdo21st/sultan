@@ -71,7 +71,7 @@ export async function PATCH(
         if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
         const requestedRoleIds = body.roleIds;
-        const requestedFacilityId = body.facilityId ?? null;
+        const requestedFacilityId = body.facilityId || null;
         const isChangingAccess = body.role !== existing.role ||
             (requestedRoleIds !== undefined && requestedRoleIds.slice().sort().join(",") !== existing.roles.map((role) => role.id).sort().join(",")) ||
             requestedFacilityId !== existing.facilityId;
