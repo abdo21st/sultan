@@ -164,8 +164,8 @@ export default function EditOrderPage() {
     const shops = Array.isArray(facilities) ? facilities.filter(f => f.type === 'SHOP' || f.type === 'OFFICE') : [];
 
     return (
-        <div className="min-h-screen bg-background p-6 flex flex-col items-center">
-            <div className="w-full max-w-3xl bg-card border border-border rounded-xl p-8 shadow-sm">
+        <div className="min-h-full bg-background p-6 flex flex-col items-center">
+            <div className="w-full max-w-3xl bg-card border border-border rounded-xl p-8 ">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold text-foreground">تعديل الطلب #{String(params.id).slice(-6)}</h1>
                     <button type="button" onClick={() => router.back()} className="text-sm bg-muted text-foreground hover:bg-muted/80 px-4 py-2 rounded-lg transition-all">رجوع</button>
@@ -307,12 +307,12 @@ export default function EditOrderPage() {
                         {/* Existing Images */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {formData.images.map((img, idx) => (
-                                <div key={`old-${idx}`} className="group relative aspect-video rounded-lg border border-border overflow-hidden bg-muted shadow-sm">
+                                <div key={`old-${idx}`} className="group relative aspect-video rounded-lg border border-border overflow-hidden bg-muted ">
                                     <Image src={`/api/orders/${params.id}/images/${idx}`} alt="Order" fill unoptimized className="object-cover" />
                                     <button
                                         type="button"
                                         onClick={() => removeExistingImage(idx)}
-                                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full  transition-opacity"
                                         title="حذف الصورة"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -324,19 +324,19 @@ export default function EditOrderPage() {
 
                             {/* New Previews */}
                             {newImagePreviews.map((preview, idx) => (
-                                <div key={`new-${idx}`} className="group relative aspect-video rounded-lg border border-primary/30 overflow-hidden bg-muted shadow-sm">
+                                <div key={`new-${idx}`} className="group relative aspect-video rounded-lg border border-primary/30 overflow-hidden bg-muted ">
                                     <Image src={preview} alt="New Preview" fill className="object-cover" />
                                     <button
                                         type="button"
                                         onClick={() => removeNewImage(idx)}
-                                        className="absolute top-1 right-1 bg-black/60 hover:bg-destructive/90 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-all"
+                                        className="absolute top-1 right-1 bg-black/60 hover:bg-destructive/90 text-white p-1 rounded-full  transition-all"
                                         title="إزالة المرفق الجديد"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="6 18L18 6M6 6l12 12" />
                                         </svg>
                                     </button>
-                                    <div className="absolute bottom-0 inset-x-0 bg-primary text-[10px] text-white text-center py-0.5">جديد</div>
+                                    <div className="absolute bottom-0 inset-x-0 bg-primary text-xs text-white text-center py-0.5">جديد</div>
                                 </div>
                             ))}
 
@@ -375,7 +375,7 @@ export default function EditOrderPage() {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="px-6 py-2.5 text-sm font-medium text-white bg-amber-700 hover:bg-amber-600 hover:scale-105 rounded-lg shadow-sm transition-all disabled:opacity-50"
+                            className="px-6 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90  rounded-lg  transition-all disabled:opacity-50"
                         >
                             {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
                         </button>

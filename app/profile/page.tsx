@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import NavBar from '../components/NavBar';
 import { User, Shield, LogOut, Save, Lock, Loader2, Eye, EyeOff, Pencil } from 'lucide-react'; // Added Pencil
 import { type User as NextAuthUser } from "next-auth";
 import { signOut } from 'next-auth/react';
@@ -111,7 +110,7 @@ export default function ProfilePage() {
     };
 
     if (loading) return (
-        <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="min-h-full bg-background flex items-center justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
     );
@@ -119,19 +118,18 @@ export default function ProfilePage() {
     if (!user) return null;
 
     return (
-        <div className="min-h-screen bg-background pb-20 md:pb-8">
+        <div className="min-h-full bg-background pb-20 md:pb-8">
             <Toaster position="top-center" />
-            <NavBar />
 
             <main className="max-w-4xl mx-auto px-4 py-8">
-                <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                <div className="bg-card border border-border rounded-xl overflow-hidden ">
                     {/* Header Background */}
-                    <div className="h-32 bg-gradient-to-r from-primary/20 to-amber-500/20"></div>
+                    <div className="h-32 bg-muted"></div>
 
                     <div className="px-6 sm:px-8 pb-8">
                         <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-end -mt-12 mb-8 gap-4">
                             <div className="flex items-end gap-6">
-                                <div className="w-24 h-24 rounded-full bg-background p-1 shadow-lg shrink-0">
+                                <div className="w-24 h-24 rounded-full bg-background p-1  shrink-0">
                                     <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center text-primary">
                                         <User className="w-10 h-10" />
                                     </div>
@@ -152,7 +150,7 @@ export default function ProfilePage() {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             {/* Personal Information Section */}
                             <div className="space-y-6">
-                                <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
+                                <div className="bg-card rounded-xl border border-border/50  p-6">
                                     <div className="flex items-center justify-between mb-6">
                                         <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                                             <User className="w-5 h-5 text-primary" />
@@ -161,7 +159,7 @@ export default function ProfilePage() {
                                         {!isEditingInfo && (
                                             <button
                                                 onClick={() => setIsEditingInfo(true)}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-bold transition-all hover:scale-105"
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg text-sm font-bold transition-all "
                                             >
                                                 <Pencil className="w-3.5 h-3.5" />
                                                 تعديل
@@ -234,7 +232,7 @@ export default function ProfilePage() {
 
                             {/* Security Section */}
                             <div className="space-y-6">
-                                <div className="bg-card rounded-xl border border-border/50 shadow-sm p-6">
+                                <div className="bg-card rounded-xl border border-border/50  p-6">
                                     <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-6">
                                         <Lock className="w-5 h-5 text-primary" />
                                         الأمان وكلمة المرور

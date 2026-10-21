@@ -1,341 +1,88 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useMemo } from "react";
-import Link from "next/link";
-import { Calendar, ArrowRight, Edit3, ShoppingBag, ChevronDown, FileText } from "lucide-react";
-import { useSession } from "next-auth/react";
-import { PERMISSIONS } from "@/lib/permissions";
-import { ORDER_STATUS_LABELS } from "@/lib/constants";
-import { formatCurrency } from "@/lib/utils";
-import { GroupingMode } from "./DateTabs";
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { Calendar, ChevronDown, Edit3, FileText, ShoppingBag } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { PERMISSIONS } from '@/lib/permissions';
+import { ORDER_STATUS_LABELS } from '@/lib/constants';
+import { formatCurrency } from '@/lib/utils';
+import { type GroupingMode } from './DateTabs';
 
-interface Order {
-    id: string;
-    customerName: string;
-    totalAmount: number;
-    paidAmount: number;
-    remainingAmount: number;
-    status: string;
-    dueDate: string;
-    serialNumber: number;
-    images?: string[];
+interface Order { id: string; customerName: string; customerPhone: string; totalAmount?: number; remainingAmount?: number; status: string; dueDate: string; serialNumber: number; images?: string[]; }
+interface OrderPage { orders: Order[]; nextCursor: string | null; }
+
+export default function OrderList({ queryParams = '', groupingMode = 'none' }: { queryParams?: string; groupingMode?: GroupingMode }) {
+    return <OrderResults key={queryParams} queryParams={queryParams} groupingMode={groupingMode} />;
 }
 
-interface OrderListProps {
-    queryParams?: string;
-    groupingMode?: GroupingMode;
-}
-
-export default function OrderList({ queryParams, groupingMode = 'none' }: OrderListProps) {
+function OrderResults({ queryParams, groupingMode }: { queryParams: string; groupingMode: GroupingMode }) {
     const { data: session } = useSession();
-    const [orders, setOrders] = useState<Order[]>([]);
+    const [result, setResult] = useState<OrderPage>({ orders: [], nextCursor: null });
     const [loading, setLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [nextCursor, setNextCursor] = useState<string | null>(null);
+    const [error, setError] = useState('');
     const [loadingMore, setLoadingMore] = useState(false);
-    const ordersPerPage = 20;
-
-    const hasPermission = (permission: string) => {
-        return session?.user?.role === 'ADMIN' || session?.user?.permissions?.includes(permission);
-    };
-
-    const canViewFinancials = hasPermission(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
+    const [page, setPage] = useState(1);
+    const [retry, setRetry] = useState(0);
+    const can = (permission: string) => Boolean(session?.user?.role === 'ADMIN' || session?.user?.permissions?.includes(permission));
+    const canViewFinancials = can(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
 
     useEffect(() => {
-        async function fetchOrders() {
-            setLoading(true);
+        const abort = new AbortController();
+        async function load() {
+            setLoading(true); setError('');
             try {
-                const params = new URLSearchParams(queryParams ?? "");
-                params.set('limit', '100');
-                params.delete('cursor');
-                const url = `/api/orders?${params}`;
-                const res = await fetch(url);
-                if (res.ok) {
-                    const data = await res.json();
-                    setOrders(data);
-                    setNextCursor(res.headers.get('X-Next-Cursor'));
-                    setCurrentPage(1);
-                }
-            } catch (error) {
-                console.error("Failed to fetch orders", error);
-            } finally {
-                setLoading(false);
-            }
+                const params = new URLSearchParams(queryParams); params.set('limit', '100');
+                const response = await fetch(`/api/orders?${params}`, { signal: abort.signal });
+                if (!response.ok) throw new Error('تعذر تحميل الطلبات. تحقق من الاتصال وصلاحية الدخول.');
+                const orders: unknown = await response.json();
+                if (!Array.isArray(orders)) throw new Error('تعذر قراءة قائمة الطلبات.');
+                if (!abort.signal.aborted) { setResult({ orders, nextCursor: response.headers.get('X-Next-Cursor') }); setPage(1); }
+            } catch (reason) { if (!abort.signal.aborted) setError(reason instanceof Error ? reason.message : 'تعذر تحميل الطلبات.'); }
+            finally { if (!abort.signal.aborted) setLoading(false); }
         }
-        fetchOrders();
-    }, [queryParams]);
+        void load();
+        return () => abort.abort();
+    }, [queryParams, retry]);
 
-    async function loadMoreOrders() {
-        if (!nextCursor || loadingMore) return;
-        setLoadingMore(true);
+    const loadMore = async () => {
+        if (!result.nextCursor || loadingMore) return;
+        setLoadingMore(true); setError('');
         try {
-            const params = new URLSearchParams(queryParams ?? "");
-            params.set('limit', '100');
-            params.set('cursor', nextCursor);
-            const res = await fetch(`/api/orders?${params}`);
-            if (!res.ok) throw new Error('تعذر تحميل بقية الطلبات.')
-            const data = await res.json();
-            setOrders((previous) => [...previous, ...data]);
-            setNextCursor(res.headers.get('X-Next-Cursor'));
-        } catch (error) {
-            console.error('Failed to load more orders', error);
-        } finally {
-            setLoadingMore(false);
-        }
-    }
-
-    // Grouping Logic
-    // Pagination calculations
-    const totalPages = Math.ceil(orders.length / ordersPerPage);
-    const startIndex = (currentPage - 1) * ordersPerPage;
-    const endIndex = startIndex + ordersPerPage;
-    const currentOrders = orders.slice(startIndex, endIndex);
-
-    const groupedOrders = useMemo(() => {
-        if (groupingMode === 'none') return { 'الكل': currentOrders };
-
-        const groups: Record<string, Order[]> = {};
-
-        currentOrders.forEach(order => {
+            const params = new URLSearchParams(queryParams); params.set('limit', '100'); params.set('cursor', result.nextCursor);
+            const response = await fetch(`/api/orders?${params}`);
+            if (!response.ok) throw new Error('تعذر تحميل بقية الطلبات.');
+            const orders: Order[] = await response.json();
+            if (!Array.isArray(orders)) throw new Error('تعذر قراءة بقية الطلبات.');
+            setResult(previous => ({ orders: [...previous.orders, ...orders], nextCursor: response.headers.get('X-Next-Cursor') }));
+        } catch { setError('تعذر تحميل بقية الطلبات. يمكنك المحاولة مجدداً.'); }
+        finally { setLoadingMore(false); }
+    };
+    const pageSize = 20;
+    const pages = Math.max(1, Math.ceil(result.orders.length / pageSize));
+    const groups = useMemo(() => {
+        const grouped: Record<string, Order[]> = {};
+        result.orders.slice((page - 1) * pageSize, page * pageSize).forEach(order => {
             const date = new Date(order.dueDate);
-            let key = "";
-
-            if (groupingMode === 'day') {
-                key = date.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            } else if (groupingMode === 'week') {
-                // Get Saturday of that week (start)
-                const d = new Date(date);
-                const day = d.getDay();
-                const diff = (day >= 6 ? day - 6 : day + 1);
-                d.setDate(d.getDate() - diff);
-                const end = new Date(d);
-                end.setDate(d.getDate() + 6);
-                key = `أسبوع ${d.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' })}`;
-            } else if (groupingMode === 'month') {
-                key = date.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-            }
-
-            if (!groups[key]) groups[key] = [];
-            groups[key].push(order);
+            let key = 'الطلبات';
+            if (groupingMode === 'day') key = date.toLocaleDateString('ar-LY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            if (groupingMode === 'month') key = date.toLocaleDateString('ar-LY', { month: 'long', year: 'numeric' });
+            if (groupingMode === 'week') { date.setDate(date.getDate() - ((date.getDay() + 1) % 7)); const end = new Date(date); end.setDate(end.getDate() + 6); key = `أسبوع ${date.toLocaleDateString('ar-LY')} – ${end.toLocaleDateString('ar-LY')}`; }
+            (grouped[key] ||= []).push(order);
         });
+        return grouped;
+    }, [result.orders, page, groupingMode]);
 
-        return groups;
-    }, [currentOrders, groupingMode]);
-
-    if (loading) {
-        return (
-            <div className="space-y-8 animate-pulse">
-                {[1, 2].map((i) => (
-                    <div key={i} className="space-y-4">
-                        <div className="h-8 w-48 bg-muted rounded-lg" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {[1, 2, 3].map((j) => (
-                                <div key={j} className="h-64 bg-card border border-border rounded-3xl" />
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        );
-    }
-
-    if (orders.length === 0) {
-        return (
-            <div className="text-center py-24 bg-muted/10 rounded-[3rem] border-2 border-dashed border-border/30 animate-in fade-in zoom-in-95 duration-700">
-                <div className="w-24 h-24 bg-muted/30 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
-                    <ShoppingBag className="w-12 h-12 text-muted-foreground/20" />
-                </div>
-                <h3 className="text-3xl font-black text-foreground mb-3 antialiased">قائمة الطلبات فارغة</h3>
-                <p className="text-muted-foreground max-w-xs mx-auto font-bold leading-relaxed opacity-70">لم يتم العثور على أي بيانات تطابق معايير الفهرسة الحالية.</p>
-                <Link
-                    href="/orders/new"
-                    className="inline-flex items-center gap-3 mt-10 px-10 py-4 rounded-[1.5rem] bg-amber-700 text-white font-black text-sm shadow-xl hover:scale-105 active:scale-95 transition-all"
-                >
-                    إنشاء طلب جديد
-                </Link>
-            </div>
-        );
-    }
-
-    return (
-        <div className="space-y-16">
-            {Object.entries(groupedOrders).map(([groupName, groupOrders]) => (
-                <CollapsibleGroup key={groupName} title={groupName} orders={groupOrders} hasPermission={hasPermission} canViewFinancials={canViewFinancials} />
-            ))}
-
-            {/* Pagination */}
-            {(totalPages > 1 || nextCursor) && (
-                <div className="flex flex-wrap items-center justify-center gap-3 mt-12 pb-8 px-4">
-                    <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="h-12 px-6 rounded-2xl bg-card border border-border text-foreground font-black text-xs uppercase tracking-widest disabled:opacity-30 disabled:grayscale hover:bg-muted active:scale-95 transition-all shadow-sm flex items-center gap-2"
-                    >
-                        <span>السابق</span>
-                    </button>
-
-                    <div className="flex items-center gap-2">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                            <button
-                                key={page}
-                                onClick={() => setCurrentPage(page)}
-                                className={`w-12 h-12 rounded-2xl font-black text-xs transition-all duration-500 shadow-sm active:scale-90 ${page === currentPage
-                                    ? 'bg-gradient-to-br from-primary to-amber-800 text-white shadow-gold scale-110 border-b-4 border-amber-950/20'
-                                    : 'bg-card border border-border text-foreground hover:bg-muted'
-                                    }`}
-                            >
-                                {page}
-                            </button>
-                        ))}
-                    </div>
-
-                    <button
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="h-12 px-6 rounded-2xl bg-card border border-border text-foreground font-black text-xs uppercase tracking-widest disabled:opacity-30 disabled:grayscale hover:bg-muted active:scale-95 transition-all shadow-sm flex items-center gap-2"
-                    >
-                        <span>التالي</span>
-                    </button>
-                    {nextCursor && (
-                        <button
-                            onClick={loadMoreOrders}
-                            disabled={loadingMore}
-                            className="h-12 px-6 rounded-2xl bg-primary text-white font-black text-xs disabled:opacity-50"
-                        >
-                            {loadingMore ? 'جاري التحميل...' : 'تحميل المزيد'}
-                        </button>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
-
-function CollapsibleGroup({ title, orders, hasPermission, canViewFinancials }: { title: string, orders: Order[], hasPermission: (p: string) => boolean | undefined, canViewFinancials: boolean | undefined }) {
-    const [isOpen, setIsOpen] = useState(true);
-
-    return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
-            {/* Group Header */}
-            <div
-                className="flex items-center gap-4 group/header cursor-pointer select-none"
-                onClick={() => setIsOpen(!isOpen)}
-            >
-                <div className={`h-10 w-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-sm group-hover/header:scale-110 transition-all duration-500 ${!isOpen ? '-rotate-90' : ''}`}>
-                    <ChevronDown className="w-5 h-5 text-primary" strokeWidth={3} />
-                </div>
-                <div className="flex flex-col">
-                    <h2 className="text-xl font-black text-foreground tracking-tight antialiased">{title}</h2>
-                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{orders.length} طلبات</p>
-                </div>
-                <div className="h-px flex-1 bg-gradient-to-l from-transparent via-border/60 to-transparent" />
-            </div>
-
-            {/* Order Cards Grid */}
-            {isOpen && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-top-4 duration-500">
-                    {orders.map((order) => (
-                        <div
-                            key={order.id}
-                            className="group relative bg-card rounded-[2.5rem] border border-border/40 hover:border-primary/30 transition-all duration-500 shadow-premium hover:shadow-gold overflow-hidden"
-                        >
-                            {/* Status Accent Bar */}
-                            <div className="absolute top-0 right-0 left-0 h-2 bg-muted/20" />
-
-                            {order.images && (order.images as string[]).length > 0 && (
-                                <div className="absolute top-4 left-4 z-10">
-                                    <div className="w-10 h-10 rounded-xl bg-white/90 backdrop-blur-md border border-white/50 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500">
-                                        <span className="text-[10px] font-black text-amber-700">+{(order.images as string[]).length}</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="p-8 space-y-8">
-                                <div className="flex justify-between items-start">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">التسلسل الرقمي</span>
-                                            <span className="text-[11px] font-black text-primary bg-primary/5 px-3 py-1 rounded-xl border border-primary/10 shadow-sm">
-                                                #{order.serialNumber}
-                                            </span>
-                                        </div>
-                                        <h3 className="text-2xl font-black text-foreground tracking-tight line-clamp-1 group-hover:text-primary transition-colors">
-                                            {order.customerName}
-                                        </h3>
-                                    </div>
-
-                                    <div className={`px-5 py-2 rounded-2xl text-[10px] font-black tracking-widest border transition-all duration-500 shadow-sm ${order.status.includes('completed') ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                                        order.status.includes('pending') ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                                            'bg-primary/10 text-primary border-primary/30'
-                                        }`}>
-                                        {ORDER_STATUS_LABELS[order.status] || order.status}
-                                    </div>
-                                </div>
-
-                                {canViewFinancials && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500 shadow-sm">
-                                            <span className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-wider mb-2">القيمة الإجمالية</span>
-                                            <p className="text-xl font-black text-foreground tracking-tighter">
-                                                {formatCurrency(order.totalAmount)}
-                                            </p>
-                                        </div>
-                                        <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500">
-                                            <span className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-wider mb-2">الرصيد المتبقي</span>
-                                            <p className={`text-xl font-black tracking-tighter ${order.remainingAmount > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
-                                                {formatCurrency(order.remainingAmount)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="grid grid-cols-1 gap-4 mt-4">
-                                    <div className="p-5 rounded-[1.5rem] bg-muted/30 border border-border/20 group-hover:bg-muted/50 transition-all duration-500">
-                                        <span className="block text-[10px] font-black text-muted-foreground/60 uppercase tracking-wider mb-2">الاستحقاق</span>
-                                        <div className="flex items-center gap-2 text-foreground font-black">
-                                            <Calendar className="w-4 h-4 text-primary" strokeWidth={3} />
-                                            <span className="text-sm">
-                                                {order.dueDate ? new Date(order.dueDate).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }) : '---'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between pt-6 border-t border-slate-800/60">
-                                    <Link
-                                        href={`/orders/${order.id}`}
-                                        className="flex items-center gap-3 px-6 py-3.5 bg-gradient-to-br from-primary to-amber-800 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-wider shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:scale-105 active:scale-95 transition-all group/review"
-                                    >
-                                        <span>مراجعة الطلب</span>
-                                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" strokeWidth={3} />
-                                    </Link>
-
-                                    <div className="flex items-center gap-3">
-                                        <Link
-                                            href={`/orders/print/${order.id}`}
-                                            target="_blank"
-                                            className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-blue-400 hover:bg-blue-600 hover:text-white hover:border-blue-500 hover:scale-110 flex items-center justify-center transition-all duration-500 shadow-sm group/pdf"
-                                            title="طباعة PDF"
-                                        >
-                                            <FileText className="w-5 h-5 group-hover/pdf:scale-110 transition-transform" />
-                                        </Link>
-
-                                        {hasPermission(PERMISSIONS.ORDERS_EDIT) && (
-                                            <Link
-                                                href={`/orders/${order.id}/edit`}
-                                                className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 text-amber-500 hover:bg-amber-700 hover:text-white hover:border-amber-600 hover:scale-110 flex items-center justify-center transition-all duration-500 shadow-sm group/edit"
-                                                title="تعديل سريع"
-                                            >
-                                                <Edit3 className="w-5 h-5 group-hover/edit:scale-110 transition-transform" />
-                                            </Link>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
+    if (loading) return <div className="ui-card text-sm text-muted-foreground" role="status" aria-busy="true">جاري تحميل الطلبات...</div>;
+    return <section className="space-y-5" aria-label="نتائج الطلبات">
+        {error && <div role="alert" className="ui-card flex flex-wrap justify-between gap-3"><span>{error}</span><button type="button" className="ui-button" onClick={() => result.orders.length ? void loadMore() : setRetry(value => value + 1)}>إعادة المحاولة</button></div>}
+        {!error && !result.orders.length && <div className="ui-card text-center py-10"><ShoppingBag size={32} className="mx-auto mb-3 text-muted-foreground" aria-hidden="true" /><h2 className="text-lg font-semibold">{queryParams ? 'لا توجد طلبات مطابقة' : 'لا توجد طلبات بعد'}</h2><p className="mt-2 text-sm text-muted-foreground">{queryParams ? 'جرّب تعديل البحث أو مسح التصفية.' : 'ابدأ بإضافة أول طلب من زر طلب جديد.'}</p></div>}
+        {Object.entries(groups).map(([title, orders]) => <details open key={title} className="group space-y-3"><summary className="flex items-center gap-2 cursor-pointer list-none rounded-lg py-2 focus-visible:outline"><ChevronDown size={18} aria-hidden="true" /><h2 className="text-base font-semibold">{title}</h2><span className="text-sm text-muted-foreground">({orders.length})</span></summary><div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">{orders.map(order => <article key={order.id} className="ui-card space-y-4">
+            <div className="flex justify-between items-start gap-3"><div className="min-w-0"><Link className="text-sm text-primary font-semibold" href={`/orders/${order.id}`}><bdi>#{order.serialNumber}</bdi></Link><h3 className="font-semibold break-words mt-1">{order.customerName}</h3><p className="text-sm text-muted-foreground mt-1"><bdi>{order.customerPhone}</bdi></p></div><span className={`text-xs rounded-md px-2 py-1 shrink-0 ${order.status.includes('completed') ? 'bg-emerald-50 text-emerald-800' : 'bg-muted text-primary'}`}>{ORDER_STATUS_LABELS[order.status] || order.status}</span></div>
+            {canViewFinancials && <dl className="grid grid-cols-2 gap-3 border-y border-border py-3"><div><dt className="text-xs text-muted-foreground">الإجمالي</dt><dd className="text-sm font-semibold mt-1"><bdi>{formatCurrency(order.totalAmount || 0)}</bdi></dd></div><div><dt className="text-xs text-muted-foreground">المستحق</dt><dd className={`text-sm font-semibold mt-1 ${(order.remainingAmount || 0) > 0 ? 'text-red-700' : 'text-emerald-800'}`}><bdi>{formatCurrency(order.remainingAmount || 0)}</bdi></dd></div></dl>}
+            <p className="flex items-center gap-2 text-sm text-muted-foreground"><Calendar size={16} aria-hidden="true" />الاستحقاق: <bdi>{new Date(order.dueDate).toLocaleDateString('ar-LY')}</bdi>{Boolean(order.images?.length) && <span className="ms-auto text-xs">{order.images!.length} صور</span>}</p>
+            <div className="flex justify-between gap-2"><Link className="ui-button" href={`/orders/${order.id}`}>تفاصيل الطلب</Link><div className="flex gap-2">{canViewFinancials && <Link href={`/orders/print/${order.id}`} target="_blank" className="ui-icon-button" aria-label={`طباعة الطلب ${order.serialNumber}`}><FileText size={18} aria-hidden="true" /></Link>}{can(PERMISSIONS.ORDERS_EDIT) && <Link href={`/orders/${order.id}/edit`} className="ui-icon-button" aria-label={`تعديل الطلب ${order.serialNumber}`}><Edit3 size={18} aria-hidden="true" /></Link>}</div></div>
+        </article>)}</div></details>)}
+        {(pages > 1 || result.nextCursor) && <nav aria-label="صفحات الطلبات" className="flex flex-wrap justify-center items-center gap-3"><button type="button" className="ui-button" disabled={page === 1} onClick={() => setPage(value => value - 1)}>السابق</button><span className="text-sm" aria-live="polite">الصفحة {page} من {pages}</span><button type="button" className="ui-button" disabled={page === pages} onClick={() => setPage(value => value + 1)}>التالي</button>{result.nextCursor && <button type="button" className="ui-button" disabled={loadingMore} onClick={loadMore}>{loadingMore ? 'جاري التحميل...' : 'تحميل المزيد'}</button>}</nav>}
+    </section>;
 }

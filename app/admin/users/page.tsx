@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { roleLabel } from '@/lib/navigation';
 import Link from 'next/link';
 import {
     Plus, Trash2, Edit, User as UserIcon, Users, Shield,
@@ -8,7 +9,6 @@ import {
     CheckCircle2, Save, X, LayoutGrid, Settings,
     UserPlus, CreditCard, FileText, History, RefreshCw
 } from 'lucide-react';
-import NavBar from '../../components/NavBar';
 import { useToast } from '@/app/components/ToastProvider';
 import { usePermission } from '../../../lib/usePermission';
 import { PERMISSIONS, PERMISSION_LABELS } from '../../../lib/permissions';
@@ -270,30 +270,29 @@ export default function AccessManagementPage() {
     );
 
     return (
-        <div className="min-h-screen bg-background">
-            <NavBar />
+        <div className="min-h-full bg-background">
 
-            <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+            <main className="ui-page space-y-5">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                     <div className="space-y-1">
-                        <h1 className="text-4xl font-black text-foreground tracking-tight">إدارة <span className="text-gradient-gold">النظام</span></h1>
+                        <h1 className="text-2xl font-semibold text-foreground ">المستخدمون والصلاحيات</h1>
                         <p className="text-muted-foreground font-semibold">التحكم في المستخدمين، الأدوار، وصلاحيات الوصول.</p>
                     </div>
 
-                    <div className="flex bg-muted/50 p-1 rounded-2xl border border-border/50 backdrop-blur-sm">
+                    <div className="flex bg-muted/50 p-1 rounded-xl border border-border/50 ">
                         <button
                             onClick={() => setActiveTab('users')}
-                            className={`px-8 py-3 rounded-xl font-black text-sm transition-all duration-300 ${activeTab === 'users' ? 'bg-background text-primary shadow-lg border border-border' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={`px-8 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${activeTab === 'users' ? 'bg-background text-primary  border border-border' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             <div className="flex items-center gap-2">
                                 <UserIcon className="w-4 h-4" />
-                                <span>المستخدمين</span>
+                                <span>المستخدمون</span>
                             </div>
                         </button>
                         <button
                             onClick={() => setActiveTab('roles')}
-                            className={`px-8 py-3 rounded-xl font-black text-sm transition-all duration-300 ${activeTab === 'roles' ? 'bg-background text-primary shadow-lg border border-border' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={`px-8 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${activeTab === 'roles' ? 'bg-background text-primary  border border-border' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             <div className="flex items-center gap-2">
                                 <Shield className="w-4 h-4" />
@@ -305,20 +304,20 @@ export default function AccessManagementPage() {
 
                 {activeTab === 'users' ? (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex justify-between items-center bg-card/50 backdrop-blur-md p-6 rounded-3xl border border-border/50 shadow-xl shadow-black/5">
+                        <div className="flex justify-between items-center bg-card/50  p-6 rounded-xl border border-border/50  ">
                             <div className="flex items-center gap-4">
-                                <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                                <div className="p-3 bg-primary/10 rounded-xl text-primary">
                                     <UserIcon className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-foreground">قائمة الموظفين</h2>
+                                    <h2 className="text-xl font-bold text-foreground">المستخدمون</h2>
                                     <p className="text-sm text-muted-foreground">إدارة الحسابات النشطة في النظام</p>
                                 </div>
                             </div>
                             {hasPermission(PERMISSIONS.USERS_ADD) && (
                                 <Link
                                     href="/admin/users/new"
-                                    className="flex items-center gap-3 px-8 py-4 bg-gradient-to-br from-primary to-amber-800 text-white rounded-2xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-500 font-black text-sm uppercase tracking-widest gold-glow transform hover:-translate-y-0.5"
+                                    className="flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-xl   transition-all duration-500 font-semibold text-sm uppercase  gold-glow transform hover:-translate-y-0.5"
                                 >
                                     <Plus className="w-5 h-5" strokeWidth={3} />
                                     <span>مستخدم جديد</span>
@@ -326,7 +325,7 @@ export default function AccessManagementPage() {
                             )}
                         </div>
 
-                        <div className="bg-card/50 backdrop-blur-md rounded-3xl border border-border/50 shadow-xl shadow-black/5 overflow-hidden">
+                        <div className="bg-card/50  rounded-xl border border-border/50   overflow-hidden">
                             {usersLoading ? (
                                 <div className="p-20 text-center text-muted-foreground font-bold animate-pulse">جاري تحميل المستخدمين...</div>
                             ) : (
@@ -334,18 +333,18 @@ export default function AccessManagementPage() {
                                     <table className="w-full text-sm text-right">
                                         <thead>
                                             <tr className="bg-muted/30 text-muted-foreground border-b border-border/50">
-                                                <th className="p-6 font-black uppercase tracking-wider">الموظف</th>
-                                                <th className="p-6 font-black uppercase tracking-wider">الأدوار الوظيفية</th>
-                                                <th className="p-6 font-black uppercase tracking-wider">تاريخ الانضمام</th>
-                                                <th className="p-6 font-black uppercase tracking-wider text-left">التحكم</th>
+                                                <th className="p-4 font-semibold uppercase ">الموظف</th>
+                                                <th className="p-4 font-semibold uppercase ">الأدوار الوظيفية</th>
+                                                <th className="p-4 font-semibold uppercase ">تاريخ الانضمام</th>
+                                                <th className="p-4 font-semibold uppercase  text-left">التحكم</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-border/50">
                                             {users.map((user) => (
                                                 <tr key={user.id} className="hover:bg-muted/20 transition-all group">
-                                                    <td className="p-6">
+                                                    <td className="p-4">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                                            <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary  transition-transform">
                                                                 <UserIcon className="w-6 h-6" />
                                                             </div>
                                                             <div>
@@ -354,30 +353,30 @@ export default function AccessManagementPage() {
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td className="p-6">
+                                                    <td className="p-4">
                                                         <div className="flex flex-wrap gap-2">
                                                             {user.roles && user.roles.length > 0 ? (
                                                                 user.roles.map((r) => (
-                                                                    <span key={r.id} className="px-3 py-1 bg-primary/5 text-primary rounded-xl text-[10px] font-black border border-primary/20 uppercase tracking-tighter">
+                                                                    <span key={r.id} className="px-3 py-1 bg-primary/5 text-primary rounded-xl text-xs font-semibold border border-primary/20 uppercase er">
                                                                         {r.displayName}
                                                                     </span>
                                                                 ))
                                                             ) : (
-                                                                <span className="px-3 py-1 bg-muted text-muted-foreground rounded-xl text-[10px] font-black border border-border uppercase">
-                                                                    {user.role}
+                                                                <span className="px-3 py-1 bg-muted text-muted-foreground rounded-xl text-xs font-semibold border border-border uppercase">
+                                                                    {roleLabel(user.role)}
                                                                 </span>
                                                             )}
                                                         </div>
                                                     </td>
-                                                    <td className="p-6 text-muted-foreground font-semibold" dir="ltr">
+                                                    <td className="p-4 text-muted-foreground font-semibold" dir="ltr">
                                                         {new Date(user.createdAt).toLocaleDateString()}
                                                     </td>
-                                                    <td className="p-6 text-left">
-                                                        <div className="flex justify-end gap-3 translate-x-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
-                                                            <Link href={`/admin/users/${user.id}/edit`} className="p-3 text-blue-500 hover:bg-blue-500/10 rounded-2xl transition-colors border border-transparent hover:border-blue-500/20" title="تعديل">
+                                                    <td className="p-4 text-left">
+                                                        <div className="flex justify-end gap-3  transition-all">
+                                                            <Link href={`/admin/users/${user.id}/edit`} className="p-3 text-blue-500 hover:bg-blue-500/10 rounded-xl transition-colors border border-transparent hover:border-blue-500/20" title="تعديل">
                                                                 <Edit className="w-5 h-5" />
                                                             </Link>
-                                                            <button onClick={() => handleUserDelete(user.id)} className="p-3 text-red-500 hover:bg-red-500/10 rounded-2xl transition-colors border border-transparent hover:border-red-500/20" title="حذف">
+                                                            <button onClick={() => handleUserDelete(user.id)} className="p-3 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors border border-transparent hover:border-red-500/20" title="حذف">
                                                                 <Trash2 className="w-5 h-5" />
                                                             </button>
                                                         </div>
@@ -399,14 +398,14 @@ export default function AccessManagementPage() {
                                 <input
                                     type="text"
                                     placeholder="ابحث عن دور أو مسمى وظيفي..."
-                                    className="w-full bg-card/50 backdrop-blur-md border border-border/50 rounded-2xl p-4 pr-12 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all shadow-xl shadow-black/5"
+                                    className="w-full bg-card/50  border border-border/50 rounded-xl p-4 pr-12 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all  "
                                     value={roleSearchTerm}
                                     onChange={e => setRoleSearchTerm(e.target.value)}
                                 />
                             </div>
                             <button
                                 onClick={handleRoleCreate}
-                                className="flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-br from-primary to-amber-800 text-white rounded-2xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-500 font-black text-sm uppercase tracking-widest gold-glow transform hover:-translate-y-0.5"
+                                className="flex items-center justify-center gap-3 px-8 py-4 bg-primary text-white rounded-xl   transition-all duration-500 font-semibold text-sm uppercase  gold-glow transform hover:-translate-y-0.5"
                             >
                                 <Plus className="w-5 h-5" />
                                 <span>إضافة دور جديد</span>
@@ -415,19 +414,19 @@ export default function AccessManagementPage() {
 
                         {rolesLoading ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
-                                {[1, 2, 3].map(i => <div key={i} className="h-48 bg-card/50 rounded-3xl border border-border/50" />)}
+                                {[1, 2, 3].map(i => <div key={i} className="h-48 bg-card/50 rounded-xl border border-border/50" />)}
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {filteredRoles.map(role => (
-                                    <div key={role.id} className="group bg-card/50 backdrop-blur-md p-8 rounded-3xl border border-border/50 shadow-xl shadow-black/5 hover:shadow-2xl hover:shadow-primary/10 transition-all relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 w-1.5 h-full bg-primary opacity-0 group-hover:opacity-100 transition-all" />
+                                    <div key={role.id} className="group bg-card/50  p-8 rounded-xl border border-border/50     transition-all relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-1.5 h-full bg-primary  transition-all" />
 
                                         <div className="flex justify-between items-start mb-6">
-                                            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+                                            <div className="w-14 h-14 rounded-xl bg-primary/10 text-primary flex items-center justify-center  transition-transform">
                                                 <Shield className="w-7 h-7" />
                                             </div>
-                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                                            <div className="flex gap-1  transition-all ">
                                                 <button onClick={() => handleRoleDuplicate(role)} className="p-3 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all" title="نسخ الدور">
                                                     <Copy className="w-4 h-4" />
                                                 </button>
@@ -440,8 +439,8 @@ export default function AccessManagementPage() {
                                             </div>
                                         </div>
 
-                                        <h3 className="text-2xl font-black text-foreground mb-1 group-hover:text-primary transition-colors">{role.displayName}</h3>
-                                        <p className="text-xs font-mono text-muted-foreground/60 mb-4" dir="ltr">@{role.name}</p>
+                                        <h3 className="text-2xl font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">{role.displayName}</h3>
+                                        <p className="text-xs font-mono text-muted-foreground mb-4" dir="ltr">@{role.name}</p>
 
                                         {role.description && (
                                             <p className="text-sm text-muted-foreground line-clamp-2 mb-6 h-10 font-semibold leading-relaxed">
@@ -450,11 +449,11 @@ export default function AccessManagementPage() {
                                         )}
 
                                         <div className="flex items-center gap-6 pt-6 border-t border-border/30">
-                                            <div className="flex items-center gap-2 text-xs font-black text-muted-foreground">
+                                            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                                                 <CheckCircle2 className="w-4 h-4 text-green-500" />
                                                 <span>{role.permissions.length} صلاحية</span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-xs font-black text-muted-foreground">
+                                            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                                                 <Users className="w-4 h-4 text-primary" />
                                                 <span>{role._count?.users || 0} مستخدم</span>
                                             </div>
@@ -468,16 +467,16 @@ export default function AccessManagementPage() {
 
                 {/* Editor Modal for Roles */}
                 {editingRole && (
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                        <div className="bg-card rounded-[2.5rem] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-border animate-in zoom-in-95 duration-300">
+                    <div className="fixed inset-0 bg-black/60  flex items-center justify-center z-50 p-4">
+                        <div className="bg-card rounded-xl  w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-border animate-in zoom-in-95 duration-300">
                             {/* Modal Header */}
                             <div className="p-8 border-b border-border/50 flex justify-between items-center bg-muted/30">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
+                                    <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
                                         {editingRole.id === 'new' ? <UserPlus className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
                                     </div>
                                     <div>
-                                        <h2 className="text-2xl font-black text-foreground">
+                                        <h2 className="text-2xl font-semibold text-foreground">
                                             {editingRole.id === 'new' ? 'إنشاء دور جديد' : `تعديل دور: ${roleFormData.displayName}`}
                                         </h2>
                                         <p className="text-xs text-muted-foreground font-semibold">قم بتخصيص المعلومات والصلاحيات بدقة عالية.</p>
@@ -498,34 +497,34 @@ export default function AccessManagementPage() {
                                 {/* Basic Info */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="space-y-3">
-                                        <label className="text-sm font-black text-foreground flex items-center gap-2">
+                                        <label className="text-sm font-semibold text-foreground flex items-center gap-2">
                                             الاسم البرمجي <Info className="w-4 h-4 text-primary" />
                                         </label>
                                         <input
                                             required
                                             value={roleFormData.name}
                                             onChange={e => setRoleFormData({ ...roleFormData, name: e.target.value.toUpperCase().replace(/\s/g, '_') })}
-                                            className="w-full bg-muted/50 border border-border p-4 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/10 outline-none transition-all font-mono"
+                                            className="w-full bg-muted/50 border border-border p-4 rounded-xl text-sm font-bold focus:ring-4 focus:ring-primary/10 outline-none transition-all font-mono"
                                             dir="ltr"
                                             placeholder="MANAGER_SALES"
                                         />
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-sm font-black text-foreground">الاسم الظاهر</label>
+                                        <label className="text-sm font-semibold text-foreground">الاسم الظاهر</label>
                                         <input
                                             required
                                             value={roleFormData.displayName}
                                             onChange={e => setRoleFormData({ ...roleFormData, displayName: e.target.value })}
-                                            className="w-full bg-muted/50 border border-border p-4 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/10 outline-none transition-all"
+                                            className="w-full bg-muted/50 border border-border p-4 rounded-xl text-sm font-bold focus:ring-4 focus:ring-primary/10 outline-none transition-all"
                                             placeholder="مثال: مدير مبيعات"
                                         />
                                     </div>
                                     <div className="md:col-span-2 space-y-3">
-                                        <label className="text-sm font-black text-foreground">وصف الدور</label>
+                                        <label className="text-sm font-semibold text-foreground">وصف الدور</label>
                                         <textarea
                                             value={roleFormData.description}
                                             onChange={e => setRoleFormData({ ...roleFormData, description: e.target.value })}
-                                            className="w-full bg-muted/50 border border-border p-4 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-primary/10 outline-none transition-all min-h-[100px] resize-none"
+                                            className="w-full bg-muted/50 border border-border p-4 rounded-xl text-sm font-bold focus:ring-4 focus:ring-primary/10 outline-none transition-all min-h-[100px] resize-none"
                                             placeholder="اشرح الغرض من هذا الدور والصلاحيات الممنوحة له بوضوح..."
                                         />
                                     </div>
@@ -534,9 +533,9 @@ export default function AccessManagementPage() {
                                 {/* Permissions Grid */}
                                 <div className="space-y-8">
                                     <div className="flex items-center justify-between border-b border-border pb-6">
-                                        <h3 className="text-xl font-black text-foreground flex items-center gap-3">
+                                        <h3 className="text-xl font-semibold text-foreground flex items-center gap-3">
                                             مصفوفة الصلاحيات
-                                            <span className="text-[10px] font-black text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                                            <span className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
                                                 {roleFormData.permissions.length} عنصر مختار
                                             </span>
                                         </h3>
@@ -544,45 +543,45 @@ export default function AccessManagementPage() {
                                             <button
                                                 type="button"
                                                 onClick={() => setRoleFormData({ ...roleFormData, permissions: Object.values(PERMISSIONS) })}
-                                                className="text-xs font-black text-primary hover:underline underline-offset-4"
+                                                className="text-xs font-semibold text-primary hover:underline underline-offset-4"
                                             >اختيار الكل</button>
                                             <div className="w-1 h-1 bg-border rounded-full" />
                                             <button
                                                 type="button"
                                                 onClick={() => setRoleFormData({ ...roleFormData, permissions: [] })}
-                                                className="text-xs font-black text-red-500 hover:underline underline-offset-4"
+                                                className="text-xs font-semibold text-red-500 hover:underline underline-offset-4"
                                             >إلغاء الكل</button>
                                         </div>
                                     </div>
 
                                     <div className="space-y-6">
                                         {Object.entries(permissionCategories).map(([category, { icon, perms }]) => (
-                                            <div key={category} className="border border-border/50 rounded-[1.5rem] overflow-hidden bg-muted/20">
+                                            <div key={category} className="border border-border/50 rounded-xl overflow-hidden bg-muted/20">
                                                 <button
                                                     type="button"
                                                     onClick={() => toggleCategory(category)}
-                                                    className="w-full flex items-center justify-between p-6 hover:bg-muted/40 transition-all font-black"
+                                                    className="w-full flex items-center justify-between p-6 hover:bg-muted/40 transition-all font-semibold"
                                                 >
                                                     <div className="flex items-center gap-4">
-                                                        <div className="p-2 bg-background border border-border rounded-xl text-primary shadow-sm">{icon}</div>
+                                                        <div className="p-2 bg-background border border-border rounded-xl text-primary ">{icon}</div>
                                                         <span className="text-foreground">{category}</span>
                                                     </div>
                                                     {expandedCategories[category] ? <ChevronUp className="w-5 h-5 text-primary" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
                                                 </button>
 
                                                 {expandedCategories[category] && (
-                                                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border-t border-border/30 bg-background/50">
+                                                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border-t border-border/30 bg-background/50">
                                                         {perms.map(perm => {
                                                             const isSelected = roleFormData.permissions.includes(perm);
                                                             return (
                                                                 <label
                                                                     key={perm}
-                                                                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group/label ${isSelected
-                                                                        ? 'bg-primary/5 border-primary/40 shadow-inner'
+                                                                    className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer group/label ${isSelected
+                                                                        ? 'bg-primary/5 border-primary/40 '
                                                                         : 'bg-background border-border hover:border-primary/30'
                                                                         }`}
                                                                 >
-                                                                    <span className={`text-xs font-black transition-colors ${isSelected ? 'text-primary' : 'text-muted-foreground group-hover/label:text-foreground'}`}>
+                                                                    <span className={`text-xs font-semibold transition-colors ${isSelected ? 'text-primary' : 'text-muted-foreground group-hover/label:text-foreground'}`}>
                                                                         {PERMISSION_LABELS[perm] || perm}
                                                                     </span>
                                                                     <div
@@ -592,7 +591,7 @@ export default function AccessManagementPage() {
                                                                             togglePermission(perm);
                                                                         }}
                                                                     >
-                                                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-lg transition-all duration-300 ${isSelected ? 'right-7' : 'right-1'}`} />
+                                                                        <div className={`absolute top-1 w-4 h-4 bg-card rounded-full  transition-all duration-300 ${isSelected ? 'right-7' : 'right-1'}`} />
                                                                     </div>
                                                                 </label>
                                                             );
@@ -610,7 +609,7 @@ export default function AccessManagementPage() {
                                 <button
                                     type="button"
                                     onClick={() => setEditingRole(null)}
-                                    className="px-8 py-4 text-muted-foreground hover:bg-muted border border-border/50 rounded-2xl transition-all font-black text-sm"
+                                    className="px-8 py-4 text-muted-foreground hover:bg-muted border border-border/50 rounded-xl transition-all font-semibold text-sm"
                                 >
                                     إلغاء التعديلات
                                 </button>
@@ -618,7 +617,7 @@ export default function AccessManagementPage() {
                                     type="button"
                                     disabled={savingRole}
                                     onClick={handleRoleSubmit}
-                                    className="flex items-center gap-3 px-10 py-4 bg-gradient-to-br from-primary to-amber-800 text-white rounded-2xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-500 font-black text-sm uppercase tracking-widest gold-glow transform hover:-translate-y-0.5 disabled:opacity-50"
+                                    className="flex items-center gap-3 px-10 py-4 bg-primary text-white rounded-xl   transition-all duration-500 font-semibold text-sm uppercase  gold-glow transform hover:-translate-y-0.5 disabled:opacity-50"
                                 >
                                     {savingRole ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                                     <span>{savingRole ? 'جاري الحفظ...' : 'حفظ الدور بالكامل'}</span>

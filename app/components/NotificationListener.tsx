@@ -86,7 +86,7 @@ export default function NotificationListener() {
             {toasts.map((toast) => (
                 <div
                     key={toast.id}
-                    className="bg-zinc-900 text-white rounded-2xl p-4 shadow-2xl border border-white/10 animate-in slide-in-from-left duration-500 pointer-events-auto flex items-start gap-3"
+                    className="bg-zinc-900 text-white rounded-xl p-4  border border-white/10 animate-in slide-in-from-left duration-500 pointer-events-auto flex items-start gap-3"
                 >
                     <div className="bg-primary/20 p-2 rounded-xl">
                         <Bell className="w-5 h-5 text-primary" />

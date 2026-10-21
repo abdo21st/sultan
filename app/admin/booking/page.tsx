@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import NavBar from "../../components/NavBar";
 import { Plus, Trash2, CalendarDays, Calendar, Clock, Loader2, Factory, ShieldAlert, Settings } from 'lucide-react';
 
 interface CapacityRule {
@@ -142,18 +141,18 @@ export default function BookingPage() {
     };
 
     return (
-        <div className="min-h-screen pb-20 bg-background">
-            <NavBar />
-            <main className="max-w-4xl mx-auto px-4 py-8">
+        <div className="min-h-full pb-20 bg-background">
+
+            <main className="ui-page max-w-5xl">
                 <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-foreground">إدارة الحجز والسعة</h1>
+                    <h1 className="text-2xl font-bold text-foreground">سعة الإنتاج</h1>
                     <p className="text-muted-foreground mt-2">حدد الحد الأقصى للطلبات المقبولة لكل يوم أو مصنع.</p>
                 </header>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {/* New Rule Form */}
                     <div className="md:col-span-1">
-                        <div className="bg-card border border-border rounded-xl p-6 shadow-sm sticky top-8">
+                        <div className="bg-card border border-border rounded-xl p-6  sticky top-8">
                             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                                 <Plus className="w-5 h-5" /> إضافة قاعدة جديدة
                             </h2>
@@ -178,12 +177,12 @@ export default function BookingPage() {
                                     <div className="flex bg-muted rounded-lg p-1">
                                         <button
                                             type="button"
-                                            className={`flex-1 py-1 text-xs rounded-md ${form.type === 'dayOfWeek' ? 'bg-card shadow-sm' : ''}`}
+                                            className={`flex-1 py-1 text-xs rounded-md ${form.type === 'dayOfWeek' ? 'bg-card ' : ''}`}
                                             onClick={() => setForm({ ...form, type: 'dayOfWeek' })}
                                         >أسبوعي</button>
                                         <button
                                             type="button"
-                                            className={`flex-1 py-1 text-xs rounded-md ${form.type === 'specificDate' ? 'bg-card shadow-sm' : ''}`}
+                                            className={`flex-1 py-1 text-xs rounded-md ${form.type === 'specificDate' ? 'bg-card ' : ''}`}
                                             onClick={() => setForm({ ...form, type: 'specificDate' })}
                                         >تاريخ محدد</button>
                                     </div>
@@ -273,7 +272,7 @@ export default function BookingPage() {
                         ) : (
                             <div className="space-y-3">
                                 {rules.map(rule => (
-                                    <div key={rule.id} className="bg-card border border-border rounded-xl p-4 flex justify-between items-center shadow-sm">
+                                    <div key={rule.id} className="bg-card border border-border rounded-xl p-4 flex justify-between items-center ">
                                         <div className="flex items-center gap-4">
                                             <div className="p-2 bg-primary/10 rounded-lg text-primary">
                                                 {rule.specificDate ? <Calendar className="w-5 h-5" /> : <Clock className="w-5 h-5" />}

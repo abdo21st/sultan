@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, Wifi, WifiOff } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, X, Wifi, WifiOff } from "lucide-react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 
@@ -140,129 +141,37 @@ export default function NewOrderPage() {
 
     if (!user) return <div className="p-8 text-center text-muted-foreground">جاري التحميل...</div>;
 
-    return (
-        <div className="min-h-screen bg-background p-6 flex flex-col items-center">
-            <div className="w-full max-w-2xl bg-card rounded-xl shadow-sm border border-border p-8">
-                <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-2xl font-bold text-foreground">إنشاء طلب جديد</h1>
-                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${isOnline ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500 animate-pulse'}`}>
-                        {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                        {isOnline ? 'متصل' : 'بدون إنترنت'}
-                    </div>
+    return <main className="ui-page max-w-5xl space-y-5">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm text-primary min-h-11"><ArrowRight size={18} aria-hidden="true" />العودة إلى الطلبات</Link>
+        <header className="ui-page-header"><div><h1 className="ui-page-title">طلب جديد</h1><p className="ui-page-description">الحقول المعلّمة بـ * مطلوبة.</p></div><span className={`flex items-center gap-2 text-sm ${isOnline ? 'text-emerald-800' : 'text-red-700'}`}>{isOnline ? <Wifi size={17} aria-hidden="true" /> : <WifiOff size={17} aria-hidden="true" />}{isOnline ? 'متصل' : 'بدون إنترنت'}</span></header>
+        {error && <div role="alert" className="ui-card text-red-700">{error}</div>}
+        <form onSubmit={handleSubmit} className="space-y-5">
+            <fieldset className="ui-card space-y-4"><legend className="px-2 text-base font-semibold">بيانات العميل</legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label><span className="ui-field-label">اسم العميل *</span><input required name="customerName" type="text" autoComplete="name" className="ui-field" placeholder="اسم العميل" /></label>
+                    <label><span className="ui-field-label">رقم الهاتف *</span><input required name="customerPhone" type="tel" autoComplete="tel" dir="ltr" className="ui-field" placeholder="09xxxxxxxx" /></label>
                 </div>
-
-                {error && (
-                    <div role="alert" className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-600 rounded-lg text-sm flex items-center gap-2">
-                        <span>{error}</span>
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Customer Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">اسم العميل</label>
-                            <input required name="customerName" type="text" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none" placeholder="اسم العميل الرباعي" />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">رقم الهاتف</label>
-                            <input required name="customerPhone" type="tel" dir="ltr" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none font-mono" placeholder="09xxxxxxxx" />
-                        </div>
-                    </div>
-
-                    {/* Order Details */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-muted-foreground">الوصف</label>
-                        <textarea required name="description" rows={3} className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm resize-none focus:ring-1 focus:ring-primary outline-none" placeholder="تفاصيل الطلب..." />
-                    </div>
-
-                    {/* Images Upload */}
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-muted-foreground">صور الطلب (حد أقصى 3)</label>
-                        <div className="flex flex-wrap gap-4">
-                            {previews.map((src, idx) => (
-                                <div key={idx} className="relative w-24 h-24 rounded-lg overflow-hidden border border-border group">
-                                    <Image src={src} alt="preview" width={96} height={96} className="w-full h-full object-cover" />
-                                    <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity" aria-label="حذف الصورة">
-                                        <X className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            ))}
-                            {images.length < 3 && (
-                                <label className="w-24 h-24 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors">
-                                    <Upload className="w-6 h-6 text-muted-foreground" />
-                                    <span className="text-[10px] text-muted-foreground mt-1">رفع صورة</span>
-                                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} />
-                                </label>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Financials */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">الإجمالي</label>
-                            <input required name="totalAmount" type="number" step="0.01" dir="ltr" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm font-mono focus:ring-1 focus:ring-primary outline-none" placeholder="0.00" />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">المدفوع</label>
-                            <input name="paidAmount" type="number" step="0.01" defaultValue="0" dir="ltr" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm font-mono focus:ring-1 focus:ring-primary outline-none" placeholder="0.00" />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">تاريخ الاستحقاق</label>
-                            <input required name="dueDate" type="date" min={new Date().toISOString().split('T')[0]} className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none" aria-label="تاريخ الاستحقاق" />
-                        </div>
-                    </div>
-
-                    {/* Facility Selection */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">تعيين المصنع (الهدف)</label>
-                            {userFactoryId && user?.role !== 'ADMIN' ? (
-                                <div className="w-full rounded-lg border border-input bg-muted px-4 py-2.5 text-sm text-muted-foreground">
-                                    {assignedFacility?.name}
-                                    <input type="hidden" name="factoryId" value={userFactoryId} />
-                                </div>
-                            ) : (
-                                <select name="factoryId" required defaultValue="" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none" aria-label="تعيين المصنع">
-                                    <option value="" disabled>اختر مصنعاً</option>
-                                    {factories.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                                </select>
-                            )}
-                        </div>
-
-                        {/* Source Shop - Auto selected if restricted */}
-                        {!userShopId ? (
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-muted-foreground">المعرض (المصدر) - <span className="text-red-500">للإدارة فقط</span></label>
-                                <select name="shopId" required defaultValue="" className="w-full rounded-lg border border-input bg-background/50 px-4 py-2.5 text-sm focus:ring-1 focus:ring-primary outline-none" aria-label="المعرض المصدر">
-                                    <option value="" disabled>اختر معرضاً</option>
-                                    {shops.map(s => (
-                                        <option key={s.id} value={s.id}>{s.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        ) : (
-                            <div className="space-y-2 opacity-75">
-                                <label className="text-sm font-medium text-muted-foreground">المعرض (المصدر)</label>
-                                <div className="w-full rounded-lg border border-input bg-muted px-4 py-2.5 text-sm text-muted-foreground">
-                                    {facilities.find(f => f.id === userShopId)?.name || 'جاري التحميل...'}
-                                    <input type="hidden" name="shopId" value={userShopId} />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex justify-end gap-3 pt-6 border-t border-border">
-                        <button type="button" onClick={() => router.back()} className="px-6 py-2.5 text-sm font-medium bg-muted text-foreground hover:bg-muted/80 rounded-lg transition-all">إلغاء</button>
-                        <button type="submit" disabled={loading || !isOnline || facilities.length === 0 || !canCreateForFacility} className="px-6 py-2.5 text-sm font-medium text-white bg-amber-700 hover:bg-amber-600 hover:scale-105 rounded-lg shadow-sm transition-all disabled:opacity-50">
-                            {loading ? "جاري الإنشاء..." : "إنشاء الطلب"}
-                        </button>
-                    </div>
-                    {user && !canCreateForFacility && <p className="text-sm text-red-600 text-left">يجب إسنادك إلى منشأة قبل إنشاء طلب.</p>}
-                </form>
-            </div>
-        </div>
-    );
+            </fieldset>
+            <fieldset className="ui-card space-y-4"><legend className="px-2 text-base font-semibold">تفاصيل الطلب</legend>
+                <label className="block"><span className="ui-field-label">الوصف *</span><textarea required name="description" rows={4} className="ui-field" placeholder="تفاصيل الأثاث والمقاسات والملاحظات" /></label>
+                <div><label htmlFor="order-images" className="ui-field-label">صور الطلب — حتى 3 صور</label><input id="order-images" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple onChange={handleImageChange} className="ui-field" /><p className="mt-2 text-xs text-muted-foreground">اختياري · صورة لا تزيد عن 4.5 ميجابايت.</p></div>
+                {previews.length > 0 && <div className="flex flex-wrap gap-3">{previews.map((src, index) => <div key={src} className="relative w-24 h-24 rounded-lg overflow-hidden border border-border"><Image src={src} alt={`معاينة الصورة ${index + 1}`} width={96} height={96} className="w-full h-full object-cover" /><button type="button" onClick={() => removeImage(index)} className="absolute top-0 left-0 bg-card text-red-700 w-11 h-11 flex items-center justify-center" aria-label={`حذف الصورة ${index + 1}`}><X size={18} aria-hidden="true" /></button></div>)}</div>}
+            </fieldset>
+            <fieldset className="ui-card space-y-4"><legend className="px-2 text-base font-semibold">المبالغ</legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label><span className="ui-field-label">الإجمالي بالدينار الليبي *</span><input required name="totalAmount" type="number" min="0.01" step="0.01" inputMode="decimal" dir="ltr" className="ui-field" placeholder="0.00" /></label>
+                    <label><span className="ui-field-label">المدفوع بالدينار الليبي</span><input name="paidAmount" type="number" min="0" step="0.01" defaultValue="0" inputMode="decimal" dir="ltr" className="ui-field" /></label>
+                </div>
+            </fieldset>
+            <fieldset className="ui-card space-y-4"><legend className="px-2 text-base font-semibold">التنفيذ والتسليم</legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label><span className="ui-field-label">تاريخ الاستحقاق *</span><input required name="dueDate" type="date" min={new Date().toISOString().split('T')[0]} className="ui-field" aria-label="تاريخ الاستحقاق" /></label>
+                    <div><label htmlFor="order-factory" className="ui-field-label">المصنع المنفذ *</label>{userFactoryId && user.role !== 'ADMIN' ? <div className="ui-field bg-muted">{assignedFacility?.name}<input type="hidden" name="factoryId" value={userFactoryId} /></div> : <select id="order-factory" name="factoryId" required defaultValue="" className="ui-field"><option value="" disabled>اختر مصنعاً</option>{factories.map(factory => <option key={factory.id} value={factory.id}>{factory.name}</option>)}</select>}</div>
+                    <div><label htmlFor="order-shop" className="ui-field-label">المعرض *</label>{userShopId ? <div className="ui-field bg-muted">{facilities.find(facility => facility.id === userShopId)?.name}<input type="hidden" name="shopId" value={userShopId} /></div> : <select id="order-shop" name="shopId" required defaultValue="" className="ui-field"><option value="" disabled>اختر معرضاً</option>{shops.map(shop => <option key={shop.id} value={shop.id}>{shop.name}</option>)}</select>}</div>
+                </div>
+            </fieldset>
+            <div className="flex flex-wrap justify-end gap-3 border-t border-border pt-4"><Link href="/" className="ui-button">إلغاء</Link><button type="submit" disabled={loading || !isOnline || facilities.length === 0 || !canCreateForFacility} className="ui-button ui-button-primary">{loading ? 'جاري إنشاء الطلب...' : 'إنشاء الطلب'}</button></div>
+            {!canCreateForFacility && <p className="text-sm text-red-700">يجب إسنادك إلى منشأة قبل إنشاء طلب.</p>}
+        </form>
+    </main>;
 }

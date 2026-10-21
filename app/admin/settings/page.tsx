@@ -1,25 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import NavBar from "../../components/NavBar";
-import { Save, Download, Trash2, RefreshCw, AlertTriangle, Building2, Plus, X } from 'lucide-react';
+import Link from 'next/link';
+import { Save, Download, Trash2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/app/components/ToastProvider';
 import { DESTRUCTIVE_CONFIRMATIONS } from '@/lib/constants';
 
 export default function SettingsPage() {
     const { showToast } = useToast();
-    const [activeTab, setActiveTab] = useState<'general' | 'whatsapp' | 'facilities' | 'actions'>('general');
+    const [activeTab, setActiveTab] = useState<'general' | 'whatsapp' | 'actions'>('general');
     const [loading, setLoading] = useState(false);
     const [hasWhatsappApiKey, setHasWhatsappApiKey] = useState(false);
     const [clearWhatsappApiKey, setClearWhatsappApiKey] = useState(false);
-    const [facilities, setFacilities] = useState<{ id: string; name: string; type: string; location: string; createdAt: string }[]>([]);
-    const [newFacility, setNewFacility] = useState({ name: '', type: 'FACTORY', location: '' });
     const [settings, setSettings] = useState({
         appName: '',
         logoUrl: '',
         printHeader: '',
         printFooter: '',
-        themeColor: '#d97706',
+        themeColor: '#796453',
         whatsappAutoSend: false,
         whatsappApiUrl: '',
         whatsappApiKey: ''
@@ -36,7 +34,7 @@ export default function SettingsPage() {
                         logoUrl: data.logoUrl || '',
                         printHeader: data.printHeader || '',
                         printFooter: data.printFooter || '',
-                        themeColor: data.themeColor || '#d97706',
+                        themeColor: data.themeColor || '#796453',
                         whatsappAutoSend: data.whatsappAutoSend || false,
                         whatsappApiUrl: data.whatsappApiUrl || '',
                         whatsappApiKey: ''
@@ -45,17 +43,6 @@ export default function SettingsPage() {
                 }
             });
     }, []);
-
-    // Fetch facilities
-    const fetchFacilities = async () => {
-        const res = await fetch('/api/facilities');
-        const data = await res.json();
-        if (Array.isArray(data)) setFacilities(data);
-    };
-
-    useEffect(() => {
-        if (activeTab === 'facilities') fetchFacilities();
-    }, [activeTab]);
 
     const handleSaveSettings = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -71,6 +58,7 @@ export default function SettingsPage() {
                 setClearWhatsappApiKey(false);
                 setSettings(current => ({ ...current, whatsappApiKey: '' }));
                 showToast('تم حفظ الإعدادات بنجاح', 'success');
+                window.dispatchEvent(new Event('sultan:settings-updated'));
             } else showToast('حدث خطأ أثناء حفظ الإعدادات', 'error');
         } catch (error) {
             console.error(error);
@@ -131,49 +119,6 @@ export default function SettingsPage() {
         }
     };
 
-    const handleCreateFacility = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const res = await fetch('/api/facilities', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newFacility)
-            });
-            if (res.ok) {
-                showToast('تم إضافة المنشأة بنجاح', 'success');
-                setNewFacility({ name: '', type: 'FACTORY', location: '' });
-                fetchFacilities();
-            } else {
-                showToast('حدث خطأ أثناء إضافة المنشأة', 'error');
-            }
-        } catch {
-            alert('حدث خطأ في الاتصال');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDeleteFacility = async (id: string, name: string) => {
-        if (!confirm(`هل أنت متأكد من حذف المنشأة "${name}"؟`)) return;
-
-        setLoading(true);
-        try {
-            const res = await fetch(`/api/facilities/${id}`, { method: 'DELETE' });
-            const data = await res.json();
-            if (res.ok) {
-                showToast(data.message, 'success');
-                fetchFacilities();
-            } else {
-                showToast(data.error || 'حدث خطأ أثناء حذف المنشأة', 'error');
-            }
-        } catch {
-            alert('حدث خطأ في الاتصال');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleDeleteAllUsers = async () => {
         const confirmMsg = "تحذير: سيتم حذف جميع المستخدمين (ماعدا حسابك الحالي).\n\nهل أنت متأكد؟";
         if (!confirm(confirmMsg)) return;
@@ -201,14 +146,13 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50/50 pb-10">
-            <NavBar />
+        <div className="min-h-full bg-gray-50/50 pb-10">
 
-            <div className="max-w-4xl mx-auto px-4 py-8">
+            <div className="ui-page max-w-4xl">
                 <h1 className="text-2xl font-bold mb-6">إعدادات النظام</h1>
 
                 {/* Tabs */}
-                <div className="flex gap-4 mb-6 border-b">
+                <div className="flex flex-wrap gap-2 mb-6 border-b border-border">
                     <button
                         onClick={() => setActiveTab('general')}
                         className={`pb-3 px-4 font-medium transition-colors border-b-2 ${activeTab === 'general' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-gray-700'}`}
@@ -221,12 +165,7 @@ export default function SettingsPage() {
                     >
                         الواتساب
                     </button>
-                    <button
-                        onClick={() => setActiveTab('facilities')}
-                        className={`pb-3 px-4 font-medium transition-colors border-b-2 ${activeTab === 'facilities' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-gray-700'}`}
-                    >
-                        المنشآت
-                    </button>
+                    <Link href="/facilities" className="pb-3 px-4 text-sm text-primary">المنشآت</Link>
                     <button
                         onClick={() => setActiveTab('actions')}
                         className={`pb-3 px-4 font-medium transition-colors border-b-2 ${activeTab === 'actions' ? 'border-red-500 text-red-600' : 'border-transparent text-muted-foreground hover:text-gray-700'}`}
@@ -236,7 +175,7 @@ export default function SettingsPage() {
                 </div>
 
                 {activeTab === 'general' ? (
-                    <div className="bg-white p-6 rounded-xl shadow-sm border">
+                    <div className="bg-card p-6 rounded-xl  border">
                         <form onSubmit={handleSaveSettings} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
@@ -249,7 +188,7 @@ export default function SettingsPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">لون الثيم (Hex)</label>
+                                    <label className="text-sm font-medium">لون التمييز</label>
                                     <div className="flex gap-2">
                                         <input
                                             type="color"
@@ -261,7 +200,7 @@ export default function SettingsPage() {
                                         <input
                                             value={settings.themeColor}
                                             onChange={e => setSettings({ ...settings, themeColor: e.target.value })}
-                                            className="flex-1 border p-2 rounded-lg text-left"
+                                            className="w-28 border border-border p-2 rounded-lg text-left text-sm"
                                             dir="ltr"
                                             aria-label="كود اللون"
                                         />
@@ -270,7 +209,7 @@ export default function SettingsPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">رابط الشعار (URL)</label>
+                                <label className="text-sm font-medium">شعار التطبيق — رابط الصورة</label>
                                 <input
                                     value={settings.logoUrl}
                                     onChange={e => setSettings({ ...settings, logoUrl: e.target.value })}
@@ -315,7 +254,7 @@ export default function SettingsPage() {
                         </form>
                     </div>
                 ) : activeTab === 'whatsapp' ? (
-                    <div className="bg-white p-6 rounded-xl shadow-sm border">
+                    <div className="bg-card p-6 rounded-xl  border">
                         <form onSubmit={handleSaveSettings} className="space-y-6">
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
@@ -331,7 +270,7 @@ export default function SettingsPage() {
                                             className="sr-only peer"
                                             aria-label="تفعيل إرسال المستندات تلقائياً عبر الواتساب"
                                         />
-                                        <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600"></div>
+                                        <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-card after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600"></div>
                                     </label>
                                 </div>
 
@@ -380,96 +319,10 @@ export default function SettingsPage() {
                             </div>
                         </form>
                     </div>
-                ) : activeTab === 'facilities' ? (
-                    <div className="space-y-6">
-                        {/* Create New Facility Form */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border">
-                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                                <Plus className="w-5 h-5" />
-                                إضافة منشأة جديدة
-                            </h2>
-                            <form onSubmit={handleCreateFacility} className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">اسم المنشأة</label>
-                                        <input
-                                            required
-                                            value={newFacility.name}
-                                            onChange={e => setNewFacility({ ...newFacility, name: e.target.value })}
-                                            className="w-full border p-2 rounded-lg"
-                                            placeholder="مثال: المصنع الرئيسي"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">النوع</label>
-                                        <select
-                                            value={newFacility.type}
-                                            onChange={e => setNewFacility({ ...newFacility, type: e.target.value })}
-                                            className="w-full border p-2 rounded-lg"
-                                            aria-label="نوع المنشأة"
-                                        >
-                                            <option value="FACTORY">مصنع</option>
-                                            <option value="SHOP">معرض</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">الموقع</label>
-                                        <input
-                                            required
-                                            value={newFacility.location}
-                                            onChange={e => setNewFacility({ ...newFacility, location: e.target.value })}
-                                            className="w-full border p-2 rounded-lg"
-                                            placeholder="مثال: القاهرة"
-                                        />
-                                    </div>
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 flex items-center gap-2"
-                                >
-                                    {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                                    إضافة المنشأة
-                                </button>
-                            </form>
-                        </div>
-
-                        {/* Facilities List */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border">
-                            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                                <Building2 className="w-5 h-5" />
-                                المنشآت الحالية ({facilities.length})
-                            </h2>
-                            <div className="space-y-3">
-                                {facilities.length === 0 ? (
-                                    <p className="text-gray-500 text-center py-8">لا توجد منشآت</p>
-                                ) : (
-                                    facilities.map(facility => (
-                                        <div key={facility.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                                            <div>
-                                                <h3 className="font-medium">{facility.name}</h3>
-                                                <p className="text-sm text-gray-600">
-                                                    {facility.type === 'FACTORY' ? 'مصنع' : 'معرض'} • {facility.location}
-                                                </p>
-                                            </div>
-                                            <button
-                                                onClick={() => handleDeleteFacility(facility.id, facility.name)}
-                                                disabled={loading}
-                                                className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                                                title="حذف المنشأة"
-                                            >
-                                                <X className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    </div>
                 ) : (
                     <div className="space-y-6">
                         {/* Backup Section */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-100 relative overflow-hidden">
+                        <div className="bg-card p-6 rounded-xl  border border-blue-100 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-2 h-full bg-blue-500"></div>
                             <div className="flex items-start justify-between">
                                 <div>
@@ -492,7 +345,7 @@ export default function SettingsPage() {
                         </div>
 
                         {/* Delete All Users Section */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-orange-100 relative overflow-hidden">
+                        <div className="bg-card p-6 rounded-xl  border border-orange-100 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-2 h-full bg-orange-500"></div>
                             <div className="flex items-start justify-between">
                                 <div>
@@ -516,7 +369,7 @@ export default function SettingsPage() {
                         </div>
 
                         {/* Clear Data Section */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-amber-100 relative overflow-hidden">
+                        <div className="bg-card p-6 rounded-xl  border border-amber-100 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-2 h-full bg-amber-500"></div>
                             <div className="flex items-start justify-between">
                                 <div>
@@ -540,7 +393,7 @@ export default function SettingsPage() {
                         </div>
 
                         {/* Factory Reset Section */}
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-red-100 relative overflow-hidden">
+                        <div className="bg-card p-6 rounded-xl  border border-red-100 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-2 h-full bg-red-600"></div>
                             <div className="flex items-start justify-between">
                                 <div>

@@ -4,7 +4,6 @@ import { MIN_PASSWORD_LENGTH } from '@/lib/password-constraints';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import NavBar from "../../../../components/NavBar";
 import { User, Shield, Briefcase, Lock, Save } from 'lucide-react';
 
 // Unused AVAILABLE_PERMISSIONS removed
@@ -114,11 +113,10 @@ export default function EditUserPage() {
     if (loading) return <div className="p-8 text-center">جاري التحميل...</div>;
 
     return (
-        <div className="min-h-screen bg-background">
-            <NavBar />
+        <div className="min-h-full bg-background">
 
             <main className="max-w-3xl mx-auto px-4 py-8">
-                <div className="bg-card border border-border rounded-xl p-8 shadow-sm">
+                <div className="bg-card border border-border rounded-xl p-8 ">
                     <div className="flex items-center gap-4 mb-8 pb-6 border-b border-border">
                         <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                             <User className="w-6 h-6" />
@@ -139,7 +137,7 @@ export default function EditUserPage() {
 
                         {/* Basic Info */}
                         <div className="space-y-4">
-                            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+                            <h3 className="text-sm font-bold text-foreground uppercase  flex items-center gap-2">
                                 <Shield className="w-4 h-4" />
                                 البيانات الأساسية
                             </h3>
@@ -204,7 +202,7 @@ export default function EditUserPage() {
 
                         {/* Role & Facility */}
                         <div className="space-y-4">
-                            <h3 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+                            <h3 className="text-sm font-bold text-foreground uppercase  flex items-center gap-2">
                                 <Briefcase className="w-4 h-4" />
                                 الوظيفة والمنشأة
                             </h3>
@@ -250,7 +248,7 @@ export default function EditUserPage() {
                             <button
                                 type="submit"
                                 disabled={saving}
-                                className="flex items-center gap-2 px-8 py-3 bg-primary text-white font-bold rounded-xl hover:bg-amber-600 shadow-lg transition-all disabled:opacity-50"
+                                className="flex items-center gap-2 px-8 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90  transition-all disabled:opacity-50"
                             >
                                 <Save className="w-5 h-5" />
                                 {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}

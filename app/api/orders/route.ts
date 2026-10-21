@@ -29,6 +29,8 @@ export async function GET(request: Request) {
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
         const customerName = searchParams.get('customerName');
+        const search = searchParams.get('q')?.trim();
+        if (search && search.length > 120) return NextResponse.json({ error: 'نص البحث أطول من الحد المسموح.' }, { status: 400 });
         const paymentStatus = searchParams.get('paymentStatus'); // 'unpaid'
 
         const where: Prisma.OrderWhereInput = {};
@@ -100,6 +102,17 @@ export async function GET(request: Request) {
         }
 
         if (customerName) where.customerName = { contains: customerName, mode: 'insensitive' };
+        if (search) {
+            const normalized = search.replace(/[٠-٩]/g, digit => String(digit.charCodeAt(0) - 1632)).replace(/[۰-۹]/g, digit => String(digit.charCodeAt(0) - 1776));
+            const serial = normalized.replace(/^#/, '');
+            const matches: Prisma.OrderWhereInput[] = [
+                { customerName: { contains: search, mode: 'insensitive' } },
+                { customerPhone: { contains: normalized, mode: 'insensitive' } },
+            ];
+            if (/^\d+$/.test(serial) && Number(serial) > 0 && Number(serial) <= 2147483647) matches.push({ serialNumber: Number(serial) });
+            const scoped = where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : [];
+            where.AND = [...scoped, { OR: matches }];
+        }
 
         if (paymentStatus === 'unpaid') {
             where.remainingAmount = { gt: 0 };

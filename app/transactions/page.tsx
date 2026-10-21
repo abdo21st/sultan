@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Modal from '../components/Modal';
 import { Plus, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
-import NavBar from '../components/NavBar';
 import { usePermission } from '../../lib/usePermission';
 import { PERMISSIONS } from '../../lib/permissions';
 import { formatCurrency } from '../../lib/utils';
@@ -163,31 +163,30 @@ export default function TransactionsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background pb-20">
-            <NavBar />
+        <div className="min-h-full bg-background pb-20">
 
-            <main className="max-w-7xl mx-auto px-4 py-8">
+            <main className="ui-page">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                    <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
+                    <div className="bg-card border border-border p-4 rounded-xl ">
                         <p className="text-sm text-muted-foreground mb-1">الخزينة (الكاش)</p>
                         <p className={`text-2xl font-bold font-mono ${stats.treasuryBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {formatCurrency(stats.treasuryBalance)}
                         </p>
                     </div>
-                    <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
+                    <div className="bg-card border border-border p-4 rounded-xl ">
                         <p className="text-sm text-muted-foreground mb-1">ديون العملاء</p>
                         <p className="text-2xl font-bold font-mono text-orange-600">
                             {formatCurrency(stats.totalDebt)}
                         </p>
                     </div>
-                    <div className="bg-card border border-border p-4 rounded-xl shadow-sm opacity-75">
+                    <div className="bg-card border border-border p-4 rounded-xl  opacity-75">
                         <p className="text-sm text-muted-foreground mb-1">صافي المقبوضات</p>
                         <p className="text-xl font-bold font-mono text-foreground">
                             {formatCurrency(stats.totalIncome)}
                         </p>
                     </div>
-                    <div className="bg-card border border-border p-4 rounded-xl shadow-sm opacity-75">
+                    <div className="bg-card border border-border p-4 rounded-xl  opacity-75">
                         <p className="text-sm text-muted-foreground mb-1">صافي المصروفات</p>
                         <p className="text-xl font-bold font-mono text-foreground">
                             {formatCurrency(stats.totalExpense)}
@@ -195,21 +194,21 @@ export default function TransactionsPage() {
                     </div>
                 </div>
 
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold text-foreground">المعاملات المالية</h1>
-                    <div className="flex gap-2">
+                <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <h1 className="text-2xl font-bold text-foreground">التحصيل والحركات المالية</h1>
+                    <div className="flex flex-wrap gap-2">
                         {hasPermission(PERMISSIONS.TRANSACTIONS_ADD) && (
                             <>
                                 <button
                                     onClick={() => setShowPaymentModal(true)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors "
                                 >
                                     <ArrowUpCircle className="w-5 h-5" />
                                     <span>استلام دفعة طلب</span>
                                 </button>
                                 <button
                                     onClick={() => setShowForm(!showForm)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-600 transition-colors shadow-sm"
+                                    className="flex items-center gap-2 px-4 py-2 bg-card text-foreground border border-border rounded-lg hover:bg-muted transition-colors "
                                 >
                                     <Plus className="w-5 h-5" />
                                     <span>تسجيل حركة عامة</span>
@@ -219,32 +218,16 @@ export default function TransactionsPage() {
                     </div>
                 </div>
 
-                {/* Pay Order Modal */}
-                {showPaymentModal && (
-                    <div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 animate-in fade-in duration-500">
-                        <div className="bg-[#0f172a] w-full max-w-xl rounded-[2.5rem] border border-slate-800 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] p-12 relative overflow-hidden">
-                            {/* Decorative subtle header line */}
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500/20 to-transparent" />
-
-                            <button
-                                onClick={() => setShowPaymentModal(false)}
-                                className="absolute top-8 left-8 w-10 h-10 flex items-center justify-center bg-slate-900 border border-slate-800 rounded-full text-slate-500 hover:text-white hover:bg-slate-800 transition-all z-10"
-                            >✕</button>
-
-                            <div className="mb-10">
-                                <h3 className="text-3xl font-black text-white tracking-tight">استلام دفعة لطلب</h3>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2">تسجيل إيراد جديد من مديونية عميل للسلطان.</p>
-                            </div>
-
-                            <form onSubmit={handlePaymentSubmit} className="space-y-8">
+                <Modal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} title="استلام دفعة طلب">
+<form onSubmit={handlePaymentSubmit} className="space-y-5">
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 px-1">
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase  flex items-center gap-2 px-1">
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                                        اختر الطلب المعلق
+                                        الطلب المراد تحصيله
                                     </label>
                                     <select
                                         required
-                                        className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl p-4 text-sm font-bold text-slate-200 focus:border-amber-500/50 outline-none transition-all duration-300 shadow-inner appearance-none cursor-pointer"
+                                        className="w-full bg-card border-2 border-border rounded-xl p-4 text-sm font-bold text-foreground focus:border-amber-500/50 outline-none transition-all duration-300  appearance-none cursor-pointer"
                                         value={selectedOrder}
                                         onChange={e => {
                                             setSelectedOrder(e.target.value);
@@ -254,9 +237,9 @@ export default function TransactionsPage() {
                                         }}
                                         aria-label="اختر الطلب"
                                     >
-                                        <option value="" className="bg-slate-900">اختر من القائمة...</option>
+                                        <option value="" className="bg-muted">اختر من القائمة...</option>
                                         {unpaidOrders.map(o => (
-                                            <option key={o.id} value={o.id} className="bg-slate-900">
+                                            <option key={o.id} value={o.id} className="bg-muted">
                                                 طلب رقم #{o.serialNumber} - {o.customerName} (المتبقي: {o.remainingAmount} د.ل)
                                             </option>
                                         ))}
@@ -264,16 +247,16 @@ export default function TransactionsPage() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 px-1">
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase  flex items-center gap-2 px-1">
                                         <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                        المبلغ المورد للخزينة
+                                        المبلغ المستلم
                                     </label>
                                     <div className="relative">
                                         <input
                                             type="number"
                                             required
                                             step="0.01"
-                                            className="w-full bg-slate-950 border-2 border-slate-800 rounded-2xl p-6 text-2xl font-black font-mono text-green-400 focus:border-green-500/30 outline-none transition-all duration-300 placeholder:text-slate-800 shadow-inner"
+                                            className="w-full bg-card border-2 border-border rounded-xl p-3 text-lg font-semibold font-mono text-foreground focus:border-green-500/30 outline-none transition-all duration-300 placeholder:text-muted-foreground "
                                             placeholder="0.00"
                                             value={paymentAmount}
                                             onChange={e => {
@@ -282,7 +265,7 @@ export default function TransactionsPage() {
                                             }}
                                             aria-label="المبلغ المستلم"
                                         />
-                                        <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-700 font-bold text-xs">دينار ليبي</span>
+                                        <span className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-xs">دينار ليبي</span>
                                     </div>
                                 </div>
 
@@ -290,32 +273,30 @@ export default function TransactionsPage() {
                                     <button
                                         type="submit"
                                         disabled={isSubmittingPayment}
-                                        className="flex-[2] py-5 bg-gradient-to-br from-green-600 to-green-900 text-white rounded-[1.5rem] font-black text-[12px] uppercase tracking-widest shadow-xl shadow-green-900/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50"
+                                        className="flex-[2] py-3 bg-primary text-white rounded-xl font-semibold text-[12px] uppercase      transition-all duration-300 disabled:opacity-50"
                                     >
                                         {isSubmittingPayment ? 'جارٍ تسجيل الدفعة...' : 'تأكيد تحصيل الدفعة'}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setShowPaymentModal(false)}
-                                        className="flex-1 py-5 bg-slate-900 text-slate-400 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest border border-slate-800 hover:bg-slate-800 hover:text-white transition-all"
+                                        className="flex-1 py-3 bg-muted text-muted-foreground rounded-xl font-semibold text-xs uppercase  border border-border hover:bg-muted hover:text-foreground transition-all"
                                     >
                                         إلغاء
                                     </button>
                                 </div>
                             </form>
-                        </div>
-                    </div>
-                )}
+                </Modal>
 
                 {/* Add Transaction Form */}
                 {showForm && (
-                    <div className="mb-8 bg-card border border-border rounded-xl p-6 shadow-sm animate-in slide-in-from-top-4 fade-in duration-300">
+                    <div className="mb-8 bg-card border border-border rounded-xl p-6  animate-in slide-in-from-top-4 fade-in duration-300">
                         <h3 className="text-lg font-semibold mb-4 text-foreground">تسجيل حركة جديدة (عامة)</h3>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-muted-foreground mb-1">النوع</label>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-wrap gap-2">
                                         <button
                                             type="button"
                                             onClick={() => setFormData({ ...formData, type: 'INCOME' })}
@@ -395,7 +376,7 @@ export default function TransactionsPage() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 text-sm font-medium text-white bg-amber-700 hover:bg-amber-600 rounded-lg shadow-sm"
+                                    className="px-6 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg "
                                 >
                                     حفظ
                                 </button>
@@ -414,7 +395,7 @@ export default function TransactionsPage() {
                         </div>
                     ) : (
                         transactions.map((tx) => (
-                            <div key={tx.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between hover:shadow-md transition-shadow">
+                            <div key={tx.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between  transition-shadow">
                                 <div className="flex items-center gap-4">
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'INCOME' ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'
                                         }`}>

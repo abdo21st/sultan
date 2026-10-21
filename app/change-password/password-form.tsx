@@ -34,7 +34,7 @@ export default function ChangePasswordForm() {
 
     return (
         <main className="min-h-screen bg-background flex items-center justify-center p-6">
-            <section className="w-full max-w-md rounded-2xl border border-border bg-card p-7 space-y-6">
+            <section className="w-full max-w-md rounded-xl border border-border bg-card p-7 space-y-6">
                 <LockKeyhole className="h-8 w-8 text-primary" aria-hidden="true" />
                 <div className="space-y-2">
                     <h1 className="text-2xl font-bold">غيّر كلمة المرور الأولية</h1>

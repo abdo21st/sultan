@@ -63,7 +63,7 @@ export async function GET() {
 
         if (!settings) {
             settings = await prisma.systemSettings.create({
-                data: { id: "default", appName: "سلطان", themeColor: "#d97706" },
+                data: { id: "default", appName: "سلطان", themeColor: "#796453" },
                 select: publicSettingsSelect,
             });
         }

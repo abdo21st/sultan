@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import NavBar from "../../components/NavBar";
 import {
     BarChart, Bar, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis
 } from "recharts";
 import {
-    LayoutDashboard,
     Download,
     Calendar,
     DollarSign,
@@ -300,78 +298,42 @@ export default function FlexibleReportsPage() {
 
     if (status === "loading" || (loading && !reportData)) {
         return (
-            <div className="min-h-screen bg-background">
-                <NavBar />
+            <div className="min-h-full bg-background">
+
                 <div className="flex flex-col items-center justify-center h-[70vh] gap-6">
                     <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                    <p className="text-muted-foreground font-black animate-pulse">جاري إعداد تقاريرك المرنة...</p>
+                    <p className="text-muted-foreground font-semibold animate-pulse">جاري تحميل التقارير...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#FDFBF7] pb-24">
-            <NavBar />
+        <div className="min-h-full bg-background pb-24">
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
-                {/* Modern Header */}
-                <div className="bg-card/40 backdrop-blur-md rounded-[2.5rem] p-8 sm:p-12 border border-border/50 shadow-sm relative overflow-hidden">
-                    <div className="absolute -right-20 -top-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
-                    <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl" />
-
-                    <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2.5 rounded-2xl bg-primary/10 text-primary">
-                                    <LayoutDashboard className="w-6 h-6" />
-                                </div>
-                                <span className="text-[11px] font-black uppercase tracking-[0.3em] text-primary/60">نظام التقارير الذكية</span>
-                            </div>
-                            <h2 className="text-5xl sm:text-6xl font-black tracking-tight text-foreground antialiased">
-                                مركز <span className="text-gradient-gold">القرار</span>
-                            </h2>
-                            <p className="text-muted-foreground font-bold text-lg max-w-xl opacity-80 leading-relaxed">
-                                تحكم كامل في البيانات، استعرض أداء متجرك من كافة الزوايا بمرونة مطلقة.
-                            </p>
-                        </div>
-
-                        <div className="flex flex-wrap gap-3">
-                            <button
-                                onClick={handlePDFExport}
-                                className="h-14 px-8 rounded-2xl bg-gradient-gold text-white font-black text-sm flex items-center gap-3 shadow-gold hover:scale-105 hover:shadow-gold-lg active:scale-95 transition-all duration-300 group border border-white/10"
-                            >
-                                <div className="p-1.5 rounded-lg bg-white/20 group-hover:bg-white/30 transition-colors">
-                                    <Download className="w-5 h-5 text-white" />
-                                </div>
-                                <span className="tracking-wide">تصدير PDF الاحترافي</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <main className="ui-page space-y-5">
+                <header className="ui-page-header">
+                    <div><h1 className="ui-page-title">التقارير والتحليلات</h1><p className="ui-page-description">ملخص المالية والتشغيل والإنتاج ونشاط المستخدمين.</p></div>
+                    <button type="button" onClick={handlePDFExport} className="ui-button"><Download size={18} aria-hidden="true" />تصدير PDF</button>
+                </header>
 
                 {/* Filters Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="flex flex-wrap gap-3 items-center">
                     {/* Report Type Tabs */}
-                    <div className="lg:col-span-3 bg-stone-100 p-2 rounded-[2rem] border border-stone-200 flex flex-wrap gap-2 shadow-inner">
+                    <div className="ui-tabs flex-1">
                         {[
                             { id: "financial", label: "المالية", icon: DollarSign },
                             { id: "operational", label: "التشغيل", icon: ClipboardList },
                             { id: "production", label: "الإنتاج", icon: FactoryIcon },
-                            { id: "users", label: "المستخدمين", icon: UsersIcon }
+                            { id: "users", label: "المستخدمون", icon: UsersIcon }
                         ].map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setReportType(tab.id as "financial" | "operational" | "production" | "users")}
-                                className={`flex-1 min-w-[120px] h-14 rounded-2xl flex items-center justify-center gap-3 font-black text-sm transition-all duration-500 relative overflow-hidden group ${reportType === tab.id
-                                    ? "bg-gradient-gold text-white shadow-gold scale-[1.02] border border-white/10"
-                                    : "bg-transparent text-stone-600 hover:bg-white hover:text-amber-800"
-                                    }`}
+                                aria-pressed={reportType === tab.id}
+                                className="ui-tab flex-1"
                             >
-                                {reportType === tab.id && (
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer" />
-                                )}
-                                <tab.icon className={`w-5 h-5 transition-transform duration-500 ${reportType === tab.id ? 'scale-110' : 'group-hover:scale-110'}`} />
+                                <tab.icon className="w-4 h-4" />
                                 <span>{tab.label}</span>
                             </button>
                         ))}
@@ -381,24 +343,24 @@ export default function FlexibleReportsPage() {
                     <button
                         onClick={fetchReport}
                         disabled={loading}
-                        className="bg-white p-4 rounded-3xl border border-stone-200 shadow-sm flex items-center justify-between gap-4 group hover:border-amber-600 transition-all hover:shadow-md active:scale-95 disabled:opacity-50"
+                        className="ui-button disabled:opacity-50"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-amber-100 text-amber-900 group-hover:bg-amber-700 group-hover:text-white transition-colors">
+                            <div className="text-primary">
                                 <Filter className="w-5 h-5" />
                             </div>
-                            <span className="text-sm font-black text-stone-800 group-hover:text-amber-900 transition-colors">تحديث البيانات</span>
+                            <span className="text-sm font-semibold text-foreground transition-colors">تحديث البيانات</span>
                         </div>
                         <RefreshCw
-                            className={`w-5 h-5 text-stone-500 transition-all duration-700 ${loading ? 'animate-spin text-amber-700' : 'group-hover:rotate-180 group-hover:text-amber-700'}`}
+                            className={`w-5 h-5 text-muted-foreground transition-all duration-700 ${loading ? 'animate-spin text-primary' : ''}`}
                         />
                     </button>
                 </div>
 
                 {/* Advanced Filter Panel */}
-                <div className="bg-white/60 backdrop-blur-sm p-8 rounded-[2rem] border border-border/50 grid grid-cols-1 sm:grid-cols-3 gap-8">
+                <div className="ui-card grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-2 flex items-center gap-2">
+                        <label className="text-xs font-semibold uppercase  text-muted-foreground px-2 flex items-center gap-2">
                             <Calendar className="w-4 h-4" /> من تاريخ
                         </label>
                         <input
@@ -407,11 +369,11 @@ export default function FlexibleReportsPage() {
                             aria-label="من تاريخ"
                             value={filters.start}
                             onChange={(e) => setFilters(f => ({ ...f, start: e.target.value }))}
-                            className="w-full h-14 px-5 rounded-2xl bg-muted/30 border border-border focus:ring-2 focus:ring-primary/20 outline-none font-bold"
+                            className="ui-field"
                         />
                     </div>
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-2 flex items-center gap-2">
+                        <label className="text-xs font-semibold uppercase  text-muted-foreground px-2 flex items-center gap-2">
                             <Calendar className="w-4 h-4" /> إلى تاريخ
                         </label>
                         <input
@@ -420,23 +382,23 @@ export default function FlexibleReportsPage() {
                             aria-label="إلى تاريخ"
                             value={filters.end}
                             onChange={(e) => setFilters(f => ({ ...f, end: e.target.value }))}
-                            className="w-full h-14 px-5 rounded-2xl bg-muted/30 border border-border focus:ring-2 focus:ring-primary/20 outline-none font-bold"
+                            className="ui-field"
                         />
                     </div>
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-2 flex items-center gap-2">
-                            <FactoryIcon className="w-4 h-4" /> المرفق
+                        <label className="text-xs font-semibold uppercase  text-muted-foreground px-2 flex items-center gap-2">
+                            <FactoryIcon className="w-4 h-4" /> المنشأة
                         </label>
                         <select
-                            title="اختر المرفق"
-                            aria-label="تصفية حسب المرفق"
+                            title="اختر المنشأة"
+                            aria-label="تصفية حسب المنشأة"
                             value={filters.facilityId}
                             onChange={(e) => setFilters(f => ({ ...f, facilityId: e.target.value }))}
-                            className="w-full h-14 px-5 rounded-2xl bg-muted/30 border border-border focus:ring-2 focus:ring-primary/20 outline-none font-bold appearance-none"
+                            className="ui-field appearance-none"
                         >
-                            <option value="">جميع المرافق</option>
+                            <option value="">جميع المنشآت</option>
                             {facilities.map(f => (
-                                <option key={f.id} value={f.id}>{f.name} ({f.type === 'FACTORY' ? 'مصنع' : 'محل'})</option>
+                                <option key={f.id} value={f.id}>{f.name} ({f.type === 'FACTORY' ? 'مصنع' : 'معرض'})</option>
                             ))}
                         </select>
                     </div>
@@ -458,7 +420,7 @@ export default function FlexibleReportsPage() {
                                 <button
                                     onClick={loadMoreReport}
                                     disabled={loadingMore}
-                                    className="min-h-12 px-8 rounded-xl border border-border bg-white font-bold text-foreground hover:border-primary disabled:opacity-60"
+                                    className="min-h-12 px-8 rounded-xl border border-border bg-card font-bold text-foreground hover:border-primary disabled:opacity-60"
                                 >
                                     {loadingMore ? "جاري تحميل المزيد..." : "تحميل المزيد من السجلات"}
                                 </button>
@@ -481,12 +443,12 @@ function FinancialView({ data }: { data: ReportData }) {
                 <StatCardSmall title="صافي الأرباح" value={data.summary.netProfit || 0} color="text-primary" bg="bg-primary/10" icon={DollarSign} />
             </div>
 
-            <div className="bg-card/40 backdrop-blur-md rounded-[2.5rem] border border-border/50 p-8">
-                <h4 className="text-xl font-black mb-6">سجل المعاملات المالية</h4>
+            <div className="bg-card  rounded-xl border border-border p-5">
+                <h4 className="text-xl font-semibold mb-6">سجل الحركات المالية</h4>
                 <div className="overflow-x-auto">
                     <table className="w-full text-right">
                         <thead>
-                            <tr className="border-b border-border text-[11px] font-black text-muted-foreground/60 uppercase tracking-widest">
+                            <tr className="border-b border-border text-xs font-semibold text-muted-foreground uppercase ">
                                 <th className="pb-4 px-4">التاريخ</th>
                                 <th className="pb-4 px-4">النوع</th>
                                 <th className="pb-4 px-4">التصنيف</th>
@@ -495,15 +457,15 @@ function FinancialView({ data }: { data: ReportData }) {
                         </thead>
                         <tbody className="divide-y divide-border/40">
                             {(data.details as FinancialDetail[]).map((t) => (
-                                <tr key={t.id} className="group hover:bg-white/40 transition-colors">
+                                <tr key={t.id} className="group hover:bg-card transition-colors">
                                     <td className="py-5 px-4 font-bold">{new Date(t.date).toLocaleDateString('ar-EG')}</td>
-                                    <td className="py-5 px-4 font-black">
+                                    <td className="py-5 px-4 font-semibold">
                                         <span className={t.type === "INCOME" ? "text-emerald-600" : "text-rose-600"}>
                                             {t.reversalOfId ? 'قيد عكسي / ' : ''}{t.type === "INCOME" ? "دخل" : "مصروف"}
                                         </span>
                                     </td>
                                     <td className="py-5 px-4 text-muted-foreground font-bold">{t.category}</td>
-                                    <td className="py-5 px-4 font-black text-left" dir="ltr">{formatCurrency(t.amount || 0)}</td>
+                                    <td className="py-5 px-4 font-semibold text-left" dir="ltr">{formatCurrency(t.amount || 0)}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -541,8 +503,8 @@ function OperationalView({ data }: { data: ReportData }) {
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 bg-card/40 backdrop-blur-md rounded-[2.5rem] border border-border/50 p-8 h-[400px]">
-                    <h4 className="text-xl font-black mb-6">توزيع حالات الطلبات</h4>
+                <div className="lg:col-span-2 bg-card  rounded-xl border border-border p-5 h-[400px]">
+                    <h4 className="text-xl font-semibold mb-6">توزيع حالات الطلبات</h4>
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={localizedDistribution}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
@@ -553,11 +515,11 @@ function OperationalView({ data }: { data: ReportData }) {
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
-                <div className="bg-card/40 backdrop-blur-md rounded-[2.5rem] border border-border/50 p-8 flex flex-col justify-center items-center gap-4 text-center">
+                <div className="bg-card  rounded-xl border border-border p-5 flex flex-col justify-center items-center gap-4 text-center">
                     <div className="p-6 rounded-full bg-primary/10 text-primary">
                         <Package className="w-12 h-12" />
                     </div>
-                    <h5 className="text-4xl font-black">{data.summary.totalOrders}</h5>
+                    <h5 className="text-4xl font-semibold">{data.summary.totalOrders}</h5>
                     <p className="text-muted-foreground font-bold">إجمالي الطلبات المنفذة</p>
                 </div>
             </div>
@@ -569,23 +531,23 @@ function ProductionView({ data }: { data: ReportData }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {(data.details as ProductionDetail[]).map((f, i) => (
-                <div key={f.name} className="bg-card/40 backdrop-blur-md rounded-[2.5rem] border border-border/50 p-8 space-y-6">
+                <div key={f.name} className="bg-card  rounded-xl border border-border p-5 space-y-6">
                     <div className="flex justify-between items-start">
-                        <div className={`p-4 rounded-2xl bg-primary/10 text-primary`}>
+                        <div className={`p-4 rounded-xl bg-primary/10 text-primary`}>
                             <FactoryIcon className="w-6 h-6" />
                         </div>
-                        <span className="text-[10px] font-black bg-white/50 px-3 py-1 rounded-full border border-border">#{i + 1}</span>
+                        <span className="text-xs font-semibold bg-card/50 px-3 py-1 rounded-full border border-border">#{i + 1}</span>
                     </div>
                     <div className="space-y-4">
-                        <h4 className="text-2xl font-black tracking-tight">{f.name}</h4>
+                        <h4 className="text-2xl font-semibold ">{f.name}</h4>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <p className="text-[10px] font-black text-muted-foreground uppercase opacity-60">الطلبات</p>
-                                <p className="text-xl font-black">{f.count}</p>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase opacity-60">الطلبات</p>
+                                <p className="text-xl font-semibold">{f.count}</p>
                             </div>
                             <div>
-                                <p className="text-[10px] font-black text-muted-foreground uppercase opacity-60">القيمة</p>
-                                <p className="text-xl font-black text-emerald-600">{formatCurrency(f.value || 0)}</p>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase opacity-60">القيمة</p>
+                                <p className="text-xl font-semibold text-emerald-600">{formatCurrency(f.value || 0)}</p>
                             </div>
                         </div>
                     </div>
@@ -597,23 +559,23 @@ function ProductionView({ data }: { data: ReportData }) {
 
 function UserActivityView({ data }: { data: ReportData }) {
     return (
-        <div className="bg-card/40 backdrop-blur-md rounded-[2.5rem] border border-border/50 p-8 overflow-hidden">
-            <h4 className="text-xl font-black mb-8">نشاط المستخدمين والنظام</h4>
+        <div className="bg-card  rounded-xl border border-border p-5 overflow-hidden">
+            <h4 className="text-xl font-semibold mb-8">نشاط المستخدمين والنظام</h4>
             <div className="grid grid-cols-1 gap-4">
                 {(data.details as UserDetail[]).map((u) => (
-                    <div key={u.id} className="flex items-center justify-between p-6 rounded-3xl bg-white/40 hover:bg-white/60 transition-all border border-transparent hover:border-primary/20 group">
+                    <div key={u.id} className="flex items-center justify-between p-6 rounded-xl bg-card hover:bg-card/60 transition-all border border-transparent hover:border-primary/20 group">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center font-black text-primary border border-border group-hover:bg-primary group-hover:text-white transition-all">
+                            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center font-semibold text-primary border border-border group-hover:bg-primary group-hover:text-white transition-all">
                                 {u.id.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                                <p className="text-sm font-black text-foreground">المستخدم: {u.name}</p>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{u.transactionCount} معاملة مسجلة</p>
+                                <p className="text-sm font-semibold text-foreground">المستخدم: {u.name}</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase ">{u.transactionCount} معاملة مسجلة</p>
                             </div>
                         </div>
                         <div className="text-right">
-                            <p className="text-lg font-black text-emerald-600">{formatCurrency(u.volume || 0)}</p>
-                            <p className="text-[10px] font-black text-muted-foreground/40 uppercase">حجم العمليات</p>
+                            <p className="text-lg font-semibold text-emerald-600">{formatCurrency(u.volume || 0)}</p>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase">حجم العمليات</p>
                         </div>
                     </div>
                 ))}
@@ -622,14 +584,14 @@ function UserActivityView({ data }: { data: ReportData }) {
     );
 }
 
-function StatCardSmall({ title, value, color, bg, icon: Icon }: { title: string; value: number; color: string; bg: string; icon: React.ElementType }) {
+function StatCardSmall({ title, value, color, icon: Icon }: { title: string; value: number; color: string; bg: string; icon: React.ElementType }) {
     return (
-        <div className={`${bg} rounded-3xl p-8 border border-border/20 flex items-center justify-between gap-4`}>
+        <div className={`ui-card flex items-center justify-between gap-4`}>
             <div className="space-y-1">
-                <p className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">{title}</p>
-                <h5 className={`text-3xl font-black ${color}`} dir="ltr">{formatCurrency(value || 0)}</h5>
+                <p className="text-xs font-semibold text-muted-foreground uppercase ">{title}</p>
+                <h5 className={`text-3xl font-semibold ${color}`} dir="ltr">{formatCurrency(value || 0)}</h5>
             </div>
-            <div className={`p-4 rounded-2xl bg-white/80 ${color} shadow-sm`}>
+            <div className={`p-4 rounded-xl bg-card ${color} `}>
                 <Icon className="w-6 h-6" />
             </div>
         </div>

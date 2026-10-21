@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import NavBar from "../../../components/NavBar";
 import { MIN_PASSWORD_LENGTH } from '@/lib/password-constraints';
 
 
@@ -85,8 +84,8 @@ export default function NewUserPage() {
     if (!mounted) return null;
 
     return (
-        <div className="min-h-screen bg-background">
-            <NavBar />
+        <div className="min-h-full bg-background">
+
             <div className="max-w-2xl mx-auto py-10 px-4">
                 <h1 className="text-2xl font-bold mb-6 text-foreground">إضافة مستخدم جديد</h1>
 
@@ -96,7 +95,7 @@ export default function NewUserPage() {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6 bg-card p-6 rounded-xl border border-border shadow-sm">
+                <form onSubmit={handleSubmit} className="space-y-6 bg-card p-6 rounded-xl border border-border ">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">اسم المستخدم</label>
@@ -202,7 +201,7 @@ export default function NewUserPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-12 py-4 bg-gradient-to-br from-primary to-amber-800 text-white rounded-2xl hover:shadow-2xl hover:shadow-primary/30 transition-all duration-500 font-bold text-base transform hover:-translate-y-0.5 hover:scale-105 disabled:opacity-50 disabled:transform-none shadow-lg shadow-primary/20"
+                            className="px-12 py-4 bg-primary text-white rounded-xl   transition-all duration-500 font-bold text-base transform hover:-translate-y-0.5  disabled:opacity-50 disabled:transform-none  "
                         >
                             {loading ? (
                                 <div className="flex items-center gap-2">

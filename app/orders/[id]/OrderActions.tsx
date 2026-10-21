@@ -83,14 +83,14 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
     if (order.status === ORDER_STATUS.COMPLETED) return null;
 
     return (
-        <div className="bg-[#0f172a] rounded-[2rem] p-8 border border-slate-800 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)]">
-            <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] mb-6 border-b border-slate-800 pb-4">الإجراءات والعمليات الفورية</h3>
+        <div className="bg-[#0f172a] rounded-xl p-8 border border-slate-800 ">
+            <h3 className="text-xs font-semibold text-amber-500 uppercase  mb-6 border-b border-slate-800 pb-4">الإجراءات والعمليات الفورية</h3>
 
             <div className="flex flex-col gap-4">
                 <Link
                     href={`/orders/print/${order.id}`}
                     target="_blank"
-                    className="w-full py-4 bg-slate-900 text-slate-300 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-800 hover:text-white transition-all duration-300 border border-slate-800 flex items-center justify-center gap-3 active:scale-95 shadow-inner"
+                    className="w-full py-4 bg-slate-900 text-slate-300 rounded-xl font-semibold text-xs uppercase  hover:bg-slate-800 hover:text-white transition-all duration-300 border border-slate-800 flex items-center justify-center gap-3  "
                 >
                     <Printer className="w-4 h-4 text-amber-500" />
                     طباعة المستند الرسمي
@@ -115,7 +115,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                                 key={nextStatus}
                                 onClick={() => handleStatusUpdate(nextStatus)}
                                 disabled={loading}
-                                className="w-full py-5 bg-gradient-to-br from-amber-600 to-amber-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-amber-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-500 flex items-center justify-center gap-3"
+                                className="w-full py-5 bg-gradient-to-br from-amber-600 to-amber-900 text-white rounded-xl font-semibold text-xs uppercase      transition-all duration-500 flex items-center justify-center gap-3"
                             >
                                 <RefreshCw className="w-5 h-5 animate-spin-slow" />
                                 استلام وبدء التجهيز
@@ -129,7 +129,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                                 key={nextStatus}
                                 onClick={() => setShowRejectModal(true)}
                                 disabled={loading}
-                                className="w-full py-5 bg-red-950/30 text-red-500 border-2 border-red-900/50 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-900/20 transition-all duration-300 flex items-center justify-center gap-3 active:scale-95"
+                                className="w-full py-5 bg-red-950/30 text-red-500 border-2 border-red-900/50 rounded-xl font-semibold text-xs uppercase  hover:bg-red-900/20 transition-all duration-300 flex items-center justify-center gap-3 "
                             >
                                 <XCircle className="w-5 h-5" />
                                 إعادة للمراجعة الفنية
@@ -143,7 +143,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                                 key={nextStatus}
                                 onClick={handleFinishProcessing}
                                 disabled={loading}
-                                className="w-full py-5 bg-indigo-950/30 text-indigo-400 border-2 border-indigo-900/50 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-900/20 transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-inner"
+                                className="w-full py-5 bg-indigo-950/30 text-indigo-400 border-2 border-indigo-900/50 rounded-xl font-semibold text-xs uppercase  hover:bg-indigo-900/20 transition-all duration-300 flex items-center justify-center gap-3  "
                             >
                                 <Package className="w-5 h-5" />
                                 إرسال للمعرض (جاهز)
@@ -157,7 +157,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                                 key={nextStatus}
                                 onClick={() => setShowPaymentModal(true)}
                                 disabled={loading}
-                                className="w-full py-5 bg-gradient-to-br from-green-600 to-green-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-xl shadow-green-900/30"
+                                className="w-full py-5 bg-gradient-to-br from-green-600 to-green-900 text-white rounded-xl font-semibold text-xs uppercase   transition-all duration-300 flex items-center justify-center gap-3   "
                             >
                                 <CheckCircle className="w-5 h-5" />
                                 إتمام التسليم والدفع
@@ -170,7 +170,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                             key={nextStatus}
                             onClick={() => handleStatusUpdate(nextStatus)}
                             disabled={loading}
-                            className="w-full py-5 bg-slate-900 text-slate-300 rounded-2xl font-black text-[11px] uppercase tracking-widest border border-slate-800 hover:bg-slate-800 hover:text-white transition-all duration-300 flex items-center justify-center gap-3 shadow-inner"
+                            className="w-full py-5 bg-slate-900 text-slate-300 rounded-xl font-semibold text-xs uppercase  border border-slate-800 hover:bg-slate-800 hover:text-white transition-all duration-300 flex items-center justify-center gap-3 "
                         >
                             {nextStatus === ORDER_STATUS.DELIVERING ? <Truck className="w-5 h-5 text-amber-500" /> : <Package className="w-5 h-5 text-amber-500" />}
                             {ORDER_STATUS_LABELS[nextStatus as keyof typeof ORDER_STATUS_LABELS]}
@@ -182,7 +182,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                 {order.status === ORDER_STATUS.REVIEW && (
                     <Link
                         href={`/orders/${order.id}/edit`}
-                        className="w-full py-5 bg-amber-950/30 text-amber-500 border-2 border-amber-900/50 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-amber-900/20 transition-all duration-300 flex items-center justify-center gap-3 shadow-inner"
+                        className="w-full py-5 bg-amber-950/30 text-amber-500 border-2 border-amber-900/50 rounded-xl font-semibold text-xs uppercase  hover:bg-amber-900/20 transition-all duration-300 flex items-center justify-center gap-3 "
                     >
                         تعديل للمراجعة
                     </Link>
@@ -192,15 +192,15 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
             {/* Rejection Modal */}
             {showRejectModal && (
                 <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4 animate-in fade-in duration-500">
-                    <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-12 w-full max-w-xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] relative overflow-hidden">
+                    <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-12 w-full max-w-xl  relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
 
-                        <h3 className="text-3xl font-black text-white tracking-tight mb-2">إعادة للمراجعة</h3>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-10">يرجى توضيح سبب الرفض أو الملاحظات الفنية للسلطان.</p>
+                        <h3 className="text-3xl font-semibold text-white  mb-2">إعادة للمراجعة</h3>
+                        <p className="text-xs font-bold text-slate-500 uppercase  mb-10">يرجى توضيح سبب الرفض أو الملاحظات الفنية للسلطان.</p>
 
                         <div className="mb-10">
                             <textarea
-                                className="w-full h-48 p-6 bg-slate-950 border-2 border-slate-800 rounded-3xl text-sm font-bold text-slate-300 focus:border-red-500/50 focus:ring-0 outline-none transition-all duration-300 resize-none shadow-inner"
+                                className="w-full h-48 p-6 bg-slate-950 border-2 border-slate-800 rounded-xl text-sm font-bold text-slate-300 focus:border-red-500/50 focus:ring-0 outline-none transition-all duration-300 resize-none "
                                 placeholder="اكتب تفاصيل المراجعة الفنية هنا..."
                                 value={rejectReason}
                                 onChange={(e) => setRejectReason(e.target.value)}
@@ -211,13 +211,13 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                             <button
                                 onClick={() => handleStatusUpdate(ORDER_STATUS.REVIEW, rejectReason)}
                                 disabled={loading || !rejectReason}
-                                className="flex-[2] py-5 bg-gradient-to-br from-red-600 to-red-900 text-white rounded-[1.5rem] font-black text-[12px] uppercase tracking-widest shadow-xl shadow-red-900/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all duration-300"
+                                className="flex-[2] py-5 bg-gradient-to-br from-red-600 to-red-900 text-white rounded-xl font-semibold text-[12px] uppercase      disabled:opacity-50 transition-all duration-300"
                             >
                                 تأكيد الإعادة الفنية
                             </button>
                             <button
                                 onClick={() => setShowRejectModal(false)}
-                                className="flex-1 py-5 bg-slate-900 text-slate-400 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest border border-slate-800 hover:bg-slate-800 hover:text-white transition-all"
+                                className="flex-1 py-5 bg-slate-900 text-slate-400 rounded-xl font-semibold text-xs uppercase  border border-slate-800 hover:bg-slate-800 hover:text-white transition-all"
                             >
                                 إلغاء
                             </button>
@@ -229,14 +229,14 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
             {/* Payment Modal */}
             {showPaymentModal && typeof document !== 'undefined' && createPortal(
                 <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4 animate-in fade-in duration-500">
-                    <div className="bg-[#0f172a] border border-slate-800 rounded-[2.5rem] p-12 w-full max-w-xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] relative overflow-hidden">
+                    <div className="bg-[#0f172a] border border-slate-800 rounded-xl p-12 w-full max-w-xl  relative overflow-hidden">
                         {/* Decorative subtle gradient for matte feel */}
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
 
                         <div className="flex justify-between items-center mb-12">
                             <div>
-                                <h3 className="text-3xl font-black text-white tracking-tight">إتمام التحصيل</h3>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2">تأكيد استلام المبلغ المتبقي للسلطان.</p>
+                                <h3 className="text-3xl font-semibold text-white ">إتمام التحصيل</h3>
+                                <p className="text-xs font-bold text-slate-500 uppercase  mt-2">تأكيد استلام المبلغ المتبقي للسلطان.</p>
                             </div>
                             <button
                                 onClick={() => setShowPaymentModal(false)}
@@ -244,11 +244,11 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                             >✕</button>
                         </div>
 
-                        <div className="bg-slate-900/40 p-10 rounded-[2rem] mb-10 border border-slate-800/50 group hover:border-amber-500/20 transition-all duration-500">
+                        <div className="bg-slate-900/40 p-10 rounded-xl mb-10 border border-slate-800/50 group hover:border-amber-500/20 transition-all duration-500">
                             <div className="flex flex-col gap-2">
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">المبلغ المكتوب فى الإيصال</span>
+                                <span className="text-xs font-semibold text-slate-500 uppercase ">المبلغ المكتوب فى الإيصال</span>
                                 <div className="flex items-baseline gap-2">
-                                    <span className="text-5xl font-black text-amber-500 font-mono tracking-tighter" dir="ltr">
+                                    <span className="text-5xl font-semibold text-amber-500 font-mono er" dir="ltr">
                                         {formatCurrency(order.remainingAmount)}
                                     </span>
                                 </div>
@@ -256,7 +256,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                         </div>
 
                         <div className="mb-10 space-y-4">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 px-1">
+                            <label className="text-xs font-semibold text-slate-500 uppercase  flex items-center gap-2 px-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
                                 المبلغ المقبوض فعلياً
                             </label>
@@ -265,7 +265,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                                     type="number"
                                     required
                                     step="0.01"
-                                    className="w-full bg-slate-950 border-2 border-slate-800 rounded-3xl p-6 text-2xl font-black font-mono text-green-400 focus:border-amber-500/50 focus:ring-0 outline-none transition-all duration-300 placeholder:text-slate-800 shadow-inner"
+                                    className="w-full bg-slate-950 border-2 border-slate-800 rounded-xl p-6 text-2xl font-semibold font-mono text-green-400 focus:border-amber-500/50 focus:ring-0 outline-none transition-all duration-300 placeholder:text-slate-800 "
                                     placeholder="0.00"
                                     value={paymentAmount}
                                     onChange={(e) => setPaymentAmount(e.target.value)}
@@ -275,12 +275,12 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                         </div>
 
                         <div className="mb-12 space-y-4">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 px-1">
+                            <label className="text-xs font-semibold text-slate-500 uppercase  flex items-center gap-2 px-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-700" />
                                 ملاحظات التحصيل والتحقق
                             </label>
                             <textarea
-                                className="w-full h-32 p-6 bg-slate-950 border-2 border-slate-800 rounded-3xl text-sm font-bold text-slate-300 focus:border-amber-500/50 outline-none transition-all duration-300 resize-none shadow-inner"
+                                className="w-full h-32 p-6 bg-slate-950 border-2 border-slate-800 rounded-xl text-sm font-bold text-slate-300 focus:border-amber-500/50 outline-none transition-all duration-300 resize-none "
                                 placeholder="دون ملاحظاتك هنا..."
                                 value={paymentNote}
                                 onChange={(e) => setPaymentNote(e.target.value)}
@@ -291,13 +291,13 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
                             <button
                                 onClick={handleComplete}
                                 disabled={loading}
-                                className="flex-[2.5] py-5 bg-gradient-to-br from-amber-600 to-amber-900 text-white rounded-[1.5rem] font-black text-[12px] uppercase tracking-widest shadow-xl shadow-amber-900/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all duration-300"
+                                className="flex-[2.5] py-5 bg-gradient-to-br from-amber-600 to-amber-900 text-white rounded-xl font-semibold text-[12px] uppercase      disabled:opacity-50 transition-all duration-300"
                             >
                                 {loading ? 'جاري المعالجة...' : 'تأكيد ودفع الاستحقاق'}
                             </button>
                             <button
                                 onClick={() => setShowPaymentModal(false)}
-                                className="flex-1 py-5 bg-slate-900 text-slate-400 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest border border-slate-800 hover:bg-slate-800 hover:text-white transition-all"
+                                className="flex-1 py-5 bg-slate-900 text-slate-400 rounded-xl font-semibold text-xs uppercase  border border-slate-800 hover:bg-slate-800 hover:text-white transition-all"
                             >
                                 رجوع
                             </button>

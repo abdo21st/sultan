@@ -90,8 +90,8 @@ export const PERMISSION_LABELS: Record<string, string> = {
     [PERMISSIONS.AUDIT_VIEW]: 'عرض سجل التدقيق',
     [PERMISSIONS.WHATSAPP_SEND]: 'إرسال إشعارات WhatsApp للعملاء',
     [PERMISSIONS.ALERTS_MANAGE]: 'إدارة نظام التنبيهات',
-    [PERMISSIONS.BOOKING_MANAGE]: 'إدارة طاقة الحجز',
-    [PERMISSIONS.DASHBOARD_VIEW]: 'عرض لوحة التحكم',
+    [PERMISSIONS.BOOKING_MANAGE]: 'إدارة سعة الإنتاج',
+    [PERMISSIONS.DASHBOARD_VIEW]: 'عرض التقارير والتحليلات',
 
     // Status Views Labels
     [PERMISSIONS.STATUS_VIEW_REGISTERED]: 'عرض: قيد التسجيل',

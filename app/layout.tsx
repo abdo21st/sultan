@@ -3,7 +3,7 @@ import { Cairo } from "next/font/google";
 import "./globals.css";
 import { auth } from "@/lib/auth";
 import { Providers } from "./providers";
-import BottomNav from "./components/BottomNav";
+import AppShell from "./components/AppShell";
 import { ToastProvider } from "./components/ToastProvider";
 import OnlineRequired from "./components/OnlineRequired";
 import RetireOfflineSupport from "./components/RetireOfflineSupport";
@@ -30,9 +30,7 @@ export const metadata: Metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: "#b45309",
+  themeColor: "#796453",
 };
 
 // ...
@@ -54,8 +52,7 @@ export default async function RootLayout({
           <ToastProvider>
             <OnlineRequired>
               <LegacyDraftNotice />
-              {children}
-              <BottomNav />
+              <AppShell>{children}</AppShell>
             </OnlineRequired>
             <Toaster position="top-center" />
           </ToastProvider>

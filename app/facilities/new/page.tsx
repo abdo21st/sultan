@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function NewFacilityPage() {
@@ -32,7 +33,7 @@ export default function NewFacilityPage() {
                 throw new Error(data.error || "فشل إضافة المنشأة");
             }
 
-            router.push("/"); // Redirect to dashboard
+            router.push("/facilities"); // Redirect to dashboard
             router.refresh(); // Refresh data
         } catch {
             setError("حدث خطأ ما. يرجى المحاولة مرة أخرى.");
@@ -42,8 +43,9 @@ export default function NewFacilityPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background p-6 flex flex-col items-center">
-            <div className="w-full max-w-xl bg-card rounded-xl shadow-sm border border-border p-8">
+        <div className="min-h-full bg-background p-6 flex flex-col items-center">
+            <div className="w-full max-w-xl bg-card rounded-xl  border border-border p-8">
+                <Link href="/facilities" className="inline-flex min-h-11 items-center text-primary text-sm mb-3">العودة إلى المنشآت</Link>
                 <h1 className="text-2xl font-bold mb-6 text-foreground">إضافة منشأة جديدة</h1>
 
                 {error && (
@@ -105,7 +107,7 @@ export default function NewFacilityPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-md transition-colors disabled:opacity-50"
+                            className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-primary rounded-md transition-colors disabled:opacity-50"
                         >
                             {loading ? "جاري الإضافة..." : "إضافة المنشأة"}
                         </button>

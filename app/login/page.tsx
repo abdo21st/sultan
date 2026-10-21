@@ -48,7 +48,7 @@ export default function LoginPage() {
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-background">
-            <div className="w-full max-w-md p-8 bg-card border border-border rounded-xl shadow-lg">
+            <div className="w-full max-w-md p-8 bg-card border border-border rounded-xl ">
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-amber-400 bg-clip-text text-transparent">
                         سلطان
@@ -96,7 +96,7 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={isPending}
-                        className="w-full py-3 px-4 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded-lg transition-colors disabled:opacity-50 shadow-lg shadow-amber-700/20"
+                        className="w-full py-3 px-4 bg-primary hover:bg-primary/90 text-white font-bold rounded-lg transition-colors disabled:opacity-50  "
                     >
                         {isPending ? 'جاري التحقق...' : 'دخول'}
                     </button>

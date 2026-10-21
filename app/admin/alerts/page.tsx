@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import NavBar from "../../components/NavBar";
 import {
     Bell,
     Settings,
@@ -205,24 +204,24 @@ export default function AlertsPage() {
     };
 
     return (
-        <div className="min-h-screen pb-20 bg-background">
-            <NavBar />
-            <main className="max-w-5xl mx-auto px-4 py-8">
+        <div className="min-h-full pb-20 bg-background">
+
+            <main className="ui-page max-w-6xl">
                 <header className="mb-8 flex justify-between items-end">
                     <div>
-                        <h1 className="text-3xl font-bold text-foreground">قسم التنبيهات</h1>
+                        <h1 className="text-2xl font-bold text-foreground">متابعة الاستحقاقات</h1>
                         <p className="text-muted-foreground mt-2">إدارة إشعارات الواتساب ومتابعة الطلبات العاجلة.</p>
                     </div>
                     <div className="flex bg-muted rounded-xl p-1">
                         <button
                             onClick={() => setActiveTab('current')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'current' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'current' ? 'bg-card  text-foreground' : 'text-muted-foreground'}`}
                         >
                             <Bell className="w-4 h-4" /> تنبيهات اليوم
                         </button>
                         <button
                             onClick={() => setActiveTab('settings')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'settings' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground'}`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'settings' ? 'bg-card  text-foreground' : 'text-muted-foreground'}`}
                         >
                             <Settings className="w-4 h-4" /> الإعدادات
                         </button>
@@ -238,14 +237,14 @@ export default function AlertsPage() {
                                 {[1, 2, 3].map(i => <div key={i} className="h-20 bg-muted rounded-xl" />)}
                             </div>
                         ) : matchingOrders.length === 0 ? (
-                            <div className="text-center py-20 bg-card border border-border border-dashed rounded-2xl">
+                            <div className="text-center py-20 bg-card border border-border border-dashed rounded-xl">
                                 <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-10" />
                                 <p className="text-muted-foreground">لا توجد طلبات تحتاج لتنبيه حالياً.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {matchingOrders.map(order => (
-                                    <div key={order.id} className="bg-card border border-border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative group">
+                                    <div key={order.id} className="bg-card border border-border rounded-xl p-5   transition-shadow relative group">
                                         <div className="flex justify-between items-start mb-4">
                                             <div>
                                                 <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-md mb-2 inline-block">#{order.serialNumber}</span>
@@ -281,7 +280,7 @@ export default function AlertsPage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="md:col-span-1">
-                            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm sticky top-24">
+                            <div className="bg-card border border-border rounded-xl p-6  sticky top-24">
                                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                                     {editingId ? <Settings className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                                     {editingId ? 'تعديل التنبيه' : 'إضافة تنبيه آلي'}
@@ -357,7 +356,7 @@ export default function AlertsPage() {
                                                 <Minus className="w-4 h-4" />
                                             </button>
                                         </div>
-                                        <p className="text-[10px] text-muted-foreground mt-1 mr-1">0 = نفس اليوم، -1 = قبل يوم، 1 = بعد يوم</p>
+                                        <p className="text-xs text-muted-foreground mt-1 mr-1">0 = نفس اليوم، -1 = قبل يوم، 1 = بعد يوم</p>
                                     </div>
                                     <div className="bg-muted/30 p-3 rounded-xl">
                                         <label className="flex items-center gap-2 cursor-pointer">
@@ -372,7 +371,7 @@ export default function AlertsPage() {
                                             <input
                                                 type="text"
                                                 placeholder="رقم الواتساب (مثال: 218...)"
-                                                className="w-full mt-2 bg-white/50 border-border rounded-lg p-2 text-xs"
+                                                className="w-full mt-2 bg-card/50 border-border rounded-lg p-2 text-xs"
                                                 value={newSetting.phone}
                                                 onChange={e => setNewSetting({ ...newSetting, phone: e.target.value })}
                                             />
@@ -381,7 +380,7 @@ export default function AlertsPage() {
                                     <div className="flex gap-2">
                                         <button
                                             disabled={loading}
-                                            className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                                            className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-bold  transition-all disabled:opacity-50"
                                         >
                                             {editingId ? 'حفظ التعديلات' : 'إضافة'}
                                         </button>
@@ -402,9 +401,9 @@ export default function AlertsPage() {
                         <div className="md:col-span-2 space-y-4">
                             <h3 className="text-lg font-bold flex items-center gap-2"><Bell className="w-5 h-5" /> القواعد المفعلة</h3>
                             {settings.map(s => (
-                                <div key={s.id} className={`bg-card border rounded-2xl p-4 flex justify-between items-center transition-all ${editingId === s.id ? 'border-primary ring-1 ring-primary' : 'border-border'}`}>
+                                <div key={s.id} className={`bg-card border rounded-xl p-4 flex justify-between items-center transition-all ${editingId === s.id ? 'border-primary ring-1 ring-primary' : 'border-border'}`}>
                                     <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-primary/10 rounded-2xl text-primary"><Bell className="w-6 h-6" /></div>
+                                        <div className="p-3 bg-primary/10 rounded-xl text-primary"><Bell className="w-6 h-6" /></div>
                                         <div>
                                             <h4 className="font-bold">{s.name}</h4>
                                             <p className="text-sm text-muted-foreground">عند حالة {ORDER_STATUS_LABELS[s.triggerStatus as keyof typeof ORDER_STATUS_LABELS]} | موعد {s.timingDays} يوم</p>
