@@ -23,6 +23,7 @@ function OrderResults({ queryParams, groupingMode, onClearFilters }: { queryPara
     const [result, setResult] = useState<OrderPage>({ orders: [], nextCursor: null });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [retryMore, setRetryMore] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [page, setPage] = useState(1);
     const [retry, setRetry] = useState(0);
@@ -35,7 +36,7 @@ function OrderResults({ queryParams, groupingMode, onClearFilters }: { queryPara
         let active = true;
         const timeout = setTimeout(() => abort.abort(), 20000);
         async function load() {
-            setLoading(true); setError('');
+            setLoading(true); setError(''); setRetryMore(false);
             try {
                 const params = new URLSearchParams(queryParams); params.set('limit', '100');
                 const response = await fetch(`/api/orders?${params}`, { signal: abort.signal, cache: 'no-store' });
@@ -63,7 +64,7 @@ function OrderResults({ queryParams, groupingMode, onClearFilters }: { queryPara
             const orders: Order[] = await response.json();
             if (!Array.isArray(orders)) throw new Error();
             setResult(previous => ({ orders: [...previous.orders, ...orders], nextCursor: response.headers.get('X-Next-Cursor') }));
-        } catch { setError('تعذر تحميل بقية الطلبات. الطلبات الظاهرة محفوظة ويمكنك المحاولة مجدداً.'); }
+        } catch { setRetryMore(true); setError('تعذر تحميل بقية الطلبات. الطلبات الظاهرة محفوظة ويمكنك المحاولة مجدداً.'); }
         finally { clearTimeout(timeout); setLoadingMore(false); }
     };
     const pageSize = 20;
@@ -84,7 +85,7 @@ function OrderResults({ queryParams, groupingMode, onClearFilters }: { queryPara
 
     if (loading) return <section role="status" aria-busy="true" aria-label="جاري تحميل الطلبات" className="space-y-4"><span className="sr-only">جاري تحميل الطلبات...</span><div className="orders-grid" aria-hidden="true">{[0, 1, 2].map(index => <div key={index} className="ui-card order-skeleton"><div className="skeleton-line w-1/3" /><div className="skeleton-line w-2/3" /><div className="skeleton-line w-1/2" /><div className="skeleton-line h-16" /><div className="skeleton-line w-3/4" /></div>)}</div></section>;
     return <section ref={top} className="space-y-5 scroll-mt-24" aria-label="نتائج الطلبات">
-        {error && <div role="alert" className="ui-feedback ui-feedback-error"><AlertCircle size={20} aria-hidden="true" /><div className="flex-1"><h2 className="font-semibold">تعذر إكمال التحميل</h2><p className="text-sm mt-1">{error}</p></div><button type="button" className="ui-button" onClick={() => result.orders.length ? void loadMore() : setRetry(value => value + 1)}>إعادة المحاولة</button></div>}
+        {error && <div role="alert" className="ui-feedback ui-feedback-error"><AlertCircle size={20} aria-hidden="true" /><div className="flex-1"><h2 className="font-semibold">تعذر إكمال التحميل</h2><p className="text-sm mt-1">{error}</p></div><button type="button" className="ui-button" onClick={() => retryMore ? void loadMore() : setRetry(value => value + 1)}>إعادة المحاولة</button></div>}
         {!error && !result.orders.length && <div className="ui-card empty-state"><span className="empty-state-icon"><ShoppingBag size={28} aria-hidden="true" /></span><h2 className="text-lg font-semibold">{queryParams ? 'لا توجد طلبات مطابقة' : 'أول طلب يبدأ من هنا'}</h2><p className="text-sm text-muted-foreground max-w-sm">{queryParams ? 'غيّر المرحلة أو الموعد، أو امسح التصفية لعرض بقية الطلبات.' : 'سجّل بيانات العميل، واختر المصنع والموعد، ثم تابع الطلب حتى التسليم.'}</p>{queryParams && onClearFilters ? <button className="ui-button" onClick={onClearFilters}>مسح التصفية</button> : can(PERMISSIONS.ORDERS_ADD) && <Link href="/orders/new" className="ui-button ui-button-primary">إضافة أول طلب<ArrowLeft size={17} aria-hidden="true" /></Link>}</div>}
         {result.orders.length > 0 && <div className="flex items-center justify-between gap-3 text-sm"><p className="text-muted-foreground" aria-live="polite">عرض {((page - 1) * pageSize + 1).toLocaleString('ar-LY')}–{Math.min(page * pageSize, result.orders.length).toLocaleString('ar-LY')} من {result.orders.length.toLocaleString('ar-LY')} طلباً محمّلاً{result.nextCursor ? ' · توجد طلبات إضافية' : ''}</p><button type="button" className="ui-button order-refresh" onClick={() => setRetry(value => value + 1)}><RefreshCw size={16} aria-hidden="true" />تحديث</button></div>}
         {Object.entries(groups).map(([title, orders]) => { const cards = orders.map(order => {
