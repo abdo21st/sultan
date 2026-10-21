@@ -56,7 +56,8 @@ export default function PrintAndShareButtons({ orderData, canViewFinancials }: P
                     { label: 'المصنع', value: orderData.factoryName },
                     { label: 'الحالة', value: orderData.statusLabel },
                     ...(orderData.correctionReason ? [{ label: 'يحتاج تصحيحاً', value: orderData.correctionReason }] : []),
-                    { label: 'موعد التسليم', value: new Date(orderData.dueDate).toLocaleDateString('ar-LY', { timeZone: 'Africa/Tripoli' }) },
+                    // A plain numeric date avoids embedded RTL marks reversing its digits in the PDF renderer.
+                    { label: 'موعد التسليم', value: new Date(orderData.dueDate).toLocaleDateString('en-GB', { timeZone: 'Africa/Tripoli' }) },
                     { label: 'تفاصيل الطلب', value: orderData.description || '' },
                     ...(canViewFinancials ? [
                         { label: 'قيمة الطلب', value: formatCurrency(orderData.totalAmount) },
