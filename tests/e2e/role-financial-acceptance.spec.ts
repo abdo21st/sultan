@@ -11,25 +11,6 @@ function fixture(key: string) {
   return process.env[`E2E_${key}`];
 }
 
-async function readOfflineQueueCount(page: Page) {
-  return page.evaluate(() => new Promise<number>((resolve, reject) => {
-    const open = indexedDB.open("SultanAppDB");
-    open.onerror = () => reject(open.error);
-    open.onsuccess = () => {
-      const database = open.result;
-      const request = database.transaction("orders", "readonly").objectStore("orders").count();
-      request.onerror = () => {
-        database.close();
-        reject(request.error);
-      };
-      request.onsuccess = () => {
-        database.close();
-        resolve(request.result);
-      };
-    };
-  }));
-}
-
 async function signIn(request: APIRequestContext, username: string | undefined, password: string | undefined) {
   if (!username || !password) test.skip(true, "Run with npm run test:e2e:isolated to create temporary role fixtures.");
   const csrfResponse = await request.get("/api/auth/csrf");
@@ -231,14 +212,14 @@ test("manager cannot run destructive operations even with an untrusted confirmat
   }
 });
 
-test("offline order retry with the same client request ID creates only one order", async ({ request }) => {
+test("online request retry with the same client request ID creates only one order", async ({ request }) => {
   await signIn(request, fixture("MANAGER_USERNAME"), fixture("MANAGER_PASSWORD"));
   const clientRequestId = randomUUID();
   const originalOrder = {
     clientRequestId,
-    customerName: "E2E Offline Retry",
+    customerName: "E2E Network Retry",
     customerPhone: "0910000003",
-    description: "Idempotent offline synchronization fixture",
+    description: "Idempotent network retry fixture",
     dueDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
     totalAmount: "50.00",
     paidAmount: "0.00",
@@ -287,82 +268,50 @@ test("admin can see both facilities but destructive endpoints require the exact 
   expect((await after.json()).map((order: { id: string }) => order.id).sort()).toEqual(beforeIds);
 });
 
-test("browser queues an order while offline and synchronizes it once after reconnecting", async ({ page, request }) => {
-  await signIn(request, fixture("MANAGER_USERNAME"), fixture("MANAGER_PASSWORD"));
-  const sessionState = await request.storageState();
-  await page.context().addCookies(sessionState.cookies);
-
-  await page.goto("/orders/new");
-  await expect(page.getByRole("heading", { name: "إنشاء طلب جديد" })).toBeVisible();
+async function prepareOnlineForm(page: Page, name: string, total: string) {
+  await page.goto('/orders/new');
   await expect(page.locator('select[name="factoryId"] option').nth(1)).toBeAttached();
-  await page.context().setOffline(true);
-  await expect(page.getByText("بدون إنترنت", { exact: true })).toBeVisible();
-
-  const customerName = `E2E Browser Offline ${randomUUID()}`;
-  await page.locator('input[name="customerName"]').fill(customerName);
-  await page.locator('input[name="customerPhone"]').fill("0910000005");
-  await page.locator('textarea[name="description"]').fill("Actual browser offline queue and reconnect acceptance");
-  await page.locator('input[name="totalAmount"]').fill("90.00");
-  await page.locator('input[name="dueDate"]').fill(new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
+  await page.locator('input[name="customerName"]').fill(name);
+  await page.locator('input[name="customerPhone"]').fill('0910000005');
+  await page.locator('textarea[name="description"]').fill('Synthetic online-only acceptance');
+  await page.locator('input[name="totalAmount"]').fill(total);
+  await page.locator('input[name="dueDate"]').fill(new Date(Date.now() + 8 * 86400000).toISOString().slice(0,10));
   await page.locator('select[name="factoryId"]').selectOption({ index: 1 });
+}
 
-  await page.getByRole("button", { name: "إنشاء الطلب" }).click();
-  await expect(page.getByRole("status")).toContainText("تم حفظ الطلب محليًا");
-  await expect.poll(() => readOfflineQueueCount(page)).toBe(1);
-
+test('disconnection blocks creation and reconnecting requires an explicit submit', async ({ page, request }) => {
+  await signIn(request, fixture('MANAGER_USERNAME'), fixture('MANAGER_PASSWORD'));
+  await page.context().addCookies((await request.storageState()).cookies);
+  const name = `E2E Browser Online ${randomUUID()}`;
+  await prepareOnlineForm(page, name, '90.00');
+  await page.context().setOffline(true);
+  await expect(page.getByRole('heading', { name: 'يلزم اتصال بالإنترنت' })).toBeVisible();
+  await expect(page.locator('button[type="submit"]')).toBeDisabled();
+  await page.locator('form').evaluate(form => (form as HTMLFormElement).requestSubmit());
+  expect((await page.evaluate(() => indexedDB.databases())).filter(db => ['SultanAppDB','SultanFacilityCache'].includes(db.name || ''))).toEqual([]);
   await page.context().setOffline(false);
-  await expect(page.getByText(/تمت مزامنة 1 طلبات بنجاح/)).toBeVisible({ timeout: 15_000 });
-  await expect.poll(() => readOfflineQueueCount(page)).toBe(0);
-
-  const savedOrders = await page.request.get("http://localhost:4317/api/orders?limit=100");
-  expect(savedOrders.status()).toBe(200);
-  const orders = await savedOrders.json();
-  expect(orders.filter((order: { customerName: string }) => order.customerName === customerName)).toHaveLength(1);
+  await expect(page.getByRole('heading', { name: 'يلزم اتصال بالإنترنت' })).toHaveCount(0);
+  expect((await (await page.request.get('/api/orders?limit=100')).json()).filter((order: {customerName:string}) => order.customerName === name)).toHaveLength(0);
+  const saved = page.waitForResponse(response => response.url().endsWith('/api/orders') && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'إنشاء الطلب', exact: true }).click();
+  expect((await saved).status()).toBe(200);
+  expect((await (await page.request.get('/api/orders?limit=100')).json()).filter((order: {customerName:string}) => order.customerName === name)).toHaveLength(1);
 });
 
-test("offline navigation reopens the app path and syncs its saved order after reconnecting", async ({ page, request }) => {
-  await signIn(request, fixture("MANAGER_USERNAME"), fixture("MANAGER_PASSWORD"));
-  const sessionState = await request.storageState();
-  await page.context().addCookies(sessionState.cookies);
-
-  await page.goto("/orders/new");
-  await expect(page.getByRole("heading", { name: "إنشاء طلب جديد" })).toBeVisible();
-  await page.evaluate(() => navigator.serviceWorker.ready);
-  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
-  const cachedPaths = await page.evaluate(async () => {
-    const cache = await caches.open("sultan-offline-shell-v1");
-    return (await cache.keys()).map((request) => new URL(request.url).pathname);
-  });
-  expect(cachedPaths).toEqual(["/offline.html"]);
-
-
+test('offline navigation has no cached application and creates no local draft', async ({ page, request }) => {
+  await signIn(request, fixture('MANAGER_USERNAME'), fixture('MANAGER_PASSWORD'));
+  await page.context().addCookies((await request.storageState()).cookies);
+  await page.goto('/orders/new');
+  expect((await page.evaluate(() => navigator.serviceWorker.getRegistrations())).length).toBe(0);
+  expect((await page.evaluate(() => caches.keys())).filter(name => name.startsWith('sultan-offline-'))).toEqual([]);
   await page.context().setOffline(true);
-  const customerName = `E2E Reopened Offline ${randomUUID()}`;
-  await page.locator('input[name="customerName"]').fill(customerName);
-  await page.locator('input[name="customerPhone"]').fill("0910000006");
-  await page.locator('textarea[name="description"]').fill("Offline queue survives closing and reopening the app");
-  await page.locator('input[name="totalAmount"]').fill("125.00");
-  await page.locator('input[name="dueDate"]').fill(new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10));
-  await page.locator('select[name="factoryId"]').selectOption({ index: 1 });
-
-  await page.getByRole("button", { name: "إنشاء الطلب" }).click();
-  await expect(page.getByRole("status")).toContainText("تم حفظ الطلب محليًا");
-  await expect.poll(() => readOfflineQueueCount(page)).toBe(1);
-  await page.close();
-
-  const reopenedPage = await page.context().newPage();
-  const offlineResponse = await reopenedPage.goto("/orders/new");
-  expect(offlineResponse?.status()).toBe(200);
-  await expect(reopenedPage.getByRole("heading", { name: "أنت غير متصل بالإنترنت" })).toBeVisible();
-  await expect(reopenedPage.getByText("بانتظار عودة الاتصال.", { exact: true })).toBeVisible();
-
-  await reopenedPage.context().setOffline(false);
-  await expect(reopenedPage.getByRole("heading", { name: "إنشاء طلب جديد" })).toBeVisible({ timeout: 15_000 });
-  await expect(reopenedPage.getByText(/تمت مزامنة 1 طلبات بنجاح/)).toBeVisible({ timeout: 15_000 });
-  await expect.poll(() => readOfflineQueueCount(reopenedPage)).toBe(0);
-
-  const savedOrders = await reopenedPage.request.get("http://localhost:4317/api/orders?limit=100");
-  expect(savedOrders.status()).toBe(200);
-  const orders = await savedOrders.json();
-  expect(orders.filter((order: { customerName: string }) => order.customerName === customerName)).toHaveLength(1);
+  await expect(page.goto('/orders/new')).rejects.toThrow();
+  await page.context().setOffline(false);
+  const name = `E2E Reopened Online ${randomUUID()}`;
+  await prepareOnlineForm(page, name, '125.00');
+  const saved = page.waitForResponse(response => response.url().endsWith('/api/orders') && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'إنشاء الطلب', exact: true }).click();
+  expect((await saved).status()).toBe(200);
+  expect((await page.evaluate(() => indexedDB.databases())).filter(db => db.name === 'SultanAppDB')).toEqual([]);
+  expect((await (await page.request.get('/api/orders?limit=100')).json()).filter((order: {customerName:string}) => order.customerName === name)).toHaveLength(1);
 });

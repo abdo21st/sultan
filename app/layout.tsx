@@ -5,8 +5,9 @@ import { auth } from "@/lib/auth";
 import { Providers } from "./providers";
 import BottomNav from "./components/BottomNav";
 import { ToastProvider } from "./components/ToastProvider";
-import OfflineSyncProvider from "./components/OfflineSyncProvider";
-import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
+import OnlineRequired from "./components/OnlineRequired";
+import RetireOfflineSupport from "./components/RetireOfflineSupport";
+import LegacyDraftNotice from "./components/LegacyDraftNotice";
 import { Toaster } from "react-hot-toast";
 
 const cairo = Cairo({
@@ -49,12 +50,13 @@ export default async function RootLayout({
         className={`${cairo.variable} font-sans antialiased`}
       >
         <Providers session={session}>
-          <ServiceWorkerRegistration />
+          <RetireOfflineSupport />
           <ToastProvider>
-            <OfflineSyncProvider>
+            <OnlineRequired>
+              <LegacyDraftNotice />
               {children}
               <BottomNav />
-            </OfflineSyncProvider>
+            </OnlineRequired>
             <Toaster position="top-center" />
           </ToastProvider>
         </Providers>

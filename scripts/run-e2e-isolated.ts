@@ -177,6 +177,19 @@ function runPerformanceAcceptance(testEnv: NodeJS.ProcessEnv) {
   if (result.status !== 0 || result.error) throw new Error('Shared notification and paged API performance acceptance failed.');
 }
 
+async function runOnlineAcceptance(testEnv: NodeJS.ProcessEnv) {
+  const imagesBefore = new Set(await readdir(imageDirectory!));
+  const result = spawnSync(process.execPath, [path.resolve('node_modules/@playwright/test/cli.js'), 'test', '--config', 'config/playwright/playwright.config.ts', '--grep', '@online_only'], {
+    cwd: process.cwd(), env: testEnv, stdio: 'inherit', timeout: 10 * 60 * 1000,
+  });
+  if (result.error || result.status !== 0) throw new Error('Online-only acceptance failed.');
+  const orders = await prisma!.order.findMany({ where: { customerName: { startsWith: 'E2E Online Only ' } }, select: { id: true, clientRequestId: true, paidAmount: true, images: true } });
+  const imagesAdded = (await readdir(imageDirectory!)).filter(name => !imagesBefore.has(name));
+  const audits = await prisma!.auditLog.count({ where: { entityType: 'ORDER', action: 'CREATED', entityId: { in: orders.map(order => order.id) } } });
+  if (orders.length !== 4 || new Set(orders.map(order => order.clientRequestId)).size !== 4 || orders.some(order => !order.clientRequestId || order.images.length !== 1 || !order.paidAmount.eq(0)) || imagesAdded.length !== 4 || audits !== 4) throw new Error('Online-only acceptance created duplicate records, missing images, or orphaned files.');
+  console.log(JSON.stringify({ onlineOnlyAcceptance: { orders: orders.length, uniqueClientKeys: 4, imageFilesAdded: imagesAdded.length, creationAudits: audits, legacyDataPreserved: true, legacyWorkerRetired: true, mobileViewportOnly: true } }));
+}
+
 async function main() {
   try {
     await createIsolatedDatabase();
@@ -230,6 +243,10 @@ async function main() {
     await cp(path.resolve(process.cwd(), "public"), path.resolve(process.cwd(), ".next/standalone/public"), { recursive: true });
 
     const playwrightCli = path.resolve(process.cwd(), "node_modules/@playwright/test/cli.js");
+    if (process.argv.includes('--focus-online-only')) {
+      await runOnlineAcceptance(testEnv);
+      console.log(JSON.stringify({ focusedOnlineOnlyAcceptanceOnly: true, fullSuiteExecuted: false })); return;
+    }
     if (process.argv.includes('--focus-performance')) {
       await notificationFixtures(fixtures, testEnv); runPerformanceAcceptance(testEnv);
       console.log(JSON.stringify({ focusedPerformanceAcceptanceOnly: true, fullSuiteExecuted: false })); return;
@@ -239,7 +256,7 @@ async function main() {
       console.log(JSON.stringify({ focusedNotificationAcceptanceOnly: true, fullSuiteExecuted: false }));
       return;
     }
-    const tests = spawnSync(process.execPath, [playwrightCli, "test", "--config", "config/playwright/playwright.config.ts", "--grep-invert", "@reversal|@offline_images|@notification_stream"], {
+    const tests = spawnSync(process.execPath, [playwrightCli, "test", "--config", "config/playwright/playwright.config.ts", "--grep-invert", "@reversal|@online_only|@notification_stream"], {
       cwd: process.cwd(),
       env: testEnv,
       stdio: "inherit",
@@ -421,16 +438,7 @@ async function main() {
     }
     if (!resetRollback || await prisma!.order.count() !== beforeReset.orders || await prisma!.transaction.count() !== beforeReset.transactions) throw new Error('Synthetic reset rollback failed.');
     console.log(JSON.stringify({ destructiveResetCompatibility: true, rolledBack: true, restoredFixtureCounts: beforeReset }));
-    const imagesBefore = new Set(await readdir(imageDirectory!));
-    const offlineImages = spawnSync(process.execPath, [playwrightCli, 'test', '--config', 'config/playwright/playwright.config.ts', '--grep', '@offline_images'], {
-      cwd: process.cwd(), env: testEnv, stdio: 'inherit', timeout: 10 * 60 * 1000,
-    });
-    if (offlineImages.error || offlineImages.status !== 0) throw new Error('Offline image acceptance failed.');
-    const offlineOrders = await prisma!.order.findMany({ where: { customerName: { startsWith: 'E2E Offline Image ' } }, select: { id: true, clientRequestId: true, paidAmount: true, images: true } });
-    const imagesAdded = (await readdir(imageDirectory!)).filter(name => !imagesBefore.has(name));
-    const offlineCreatedAudits = await prisma!.auditLog.count({ where: { entityType: 'ORDER', action: 'CREATED', entityId: { in: offlineOrders.map(order => order.id) } } });
-    if (offlineOrders.length !== 5 || new Set(offlineOrders.map(order => order.clientRequestId)).size !== 5 || offlineOrders.some(order => !order.clientRequestId || order.images.length !== 1 || !order.paidAmount.eq(0)) || imagesAdded.length !== 5 || offlineCreatedAudits !== 5) throw new Error('Offline image acceptance created duplicate records, missing images, or orphaned files.');
-    console.log(JSON.stringify({ offlineImageAcceptance: { orders: offlineOrders.length, uniqueClientKeys: 5, imageFilesAdded: imagesAdded.length, creationAudits: offlineCreatedAudits, disposableProfileRestart: true, previousClientQueueCompatible: true } }));
+    await runOnlineAcceptance(testEnv);
     await notificationFixtures(fixtures, testEnv); runNotificationBrowser(testEnv);
     runPerformanceAcceptance(testEnv);
   } finally {

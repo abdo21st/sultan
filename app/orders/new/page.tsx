@@ -4,18 +4,19 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, X, Wifi, WifiOff } from "lucide-react";
 import Image from "next/image";
-import { db, facilityDb, type OfflineFacility } from "@/lib/db";
 import { useSession } from "next-auth/react";
+
+type Facility = { id: string; name: string; type: "FACTORY" | "SHOP" };
 
 export default function NewOrderPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
+
     const { data: session } = useSession();
     const user = session?.user;
-    const [facilities, setFacilities] = useState<OfflineFacility[]>([]);
-    const [usingCachedFacilities, setUsingCachedFacilities] = useState(false);
+    const [facilities, setFacilities] = useState<Facility[]>([]);
+
     const [images, setImages] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
     const [isOnline, setIsOnline] = useState(true);
@@ -37,58 +38,27 @@ export default function NewOrderPage() {
     }, []);
 
     useEffect(() => {
-        if (!user || user.mustChangePassword) return;
+        if (!user || user.mustChangePassword || !isOnline) return;
         let active = true;
-        const actor = user;
+        const abort = new AbortController();
         async function loadFacilities() {
-            const identity = JSON.stringify([actor.id, actor.role, actor.facilityId, actor.sessionVersion, [...actor.permissions].sort()]);
-            const scope = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(identity))))
-                .map(byte => byte.toString(16).padStart(2, '0')).join('');
-            if (!active) return;
-            setFacilities([]);
-            setUsingCachedFacilities(false);
-            let cached;
-            try { cached = await facilityDb.facilityCache.get('current'); } catch { /* Online creation remains available if local storage is unavailable. */ }
-            if (!active) return;
-            if (cached && (cached.scope !== scope || Date.now() - cached.updatedAt > 24 * 60 * 60 * 1000 || cached.updatedAt > Date.now())) {
-                cached = undefined;
-                try { await facilityDb.facilityCache.delete('current'); } catch { /* Never use an incompatible snapshot. */ }
-            }
             try {
-                const response = await fetch('/api/facilities');
+                const response = await fetch('/api/facilities', { cache: 'no-store', signal: abort.signal });
                 if (!active) return;
                 if (response.status === 401 || response.status === 403) {
-                    await facilityDb.facilityCache.clear();
-                    if (active) { setFacilities([]); setError('يلزم تسجيل الدخول بصلاحية عرض المنشآت.'); }
-                    return;
+                    setFacilities([]); setError('يلزم تسجيل الدخول بصلاحية عرض المنشآت.'); return;
                 }
                 if (!response.ok) throw new Error('Facilities unavailable');
                 const data: unknown = await response.json();
                 if (!Array.isArray(data) || data.some(item => !item || typeof item.id !== 'string' || typeof item.name !== 'string' || !['FACTORY', 'SHOP'].includes(item.type))) throw new Error('Invalid facilities');
-                const minimal: OfflineFacility[] = data.map(item => ({ id: item.id, name: item.name, type: item.type }));
-                if (!active) return;
-                setFacilities(minimal);
-                setUsingCachedFacilities(false);
-                try { await facilityDb.facilityCache.put({ key: 'current', scope, updatedAt: Date.now(), facilities: minimal }); }
-                catch { /* A storage quota failure must not disable an online form. */ }
+                if (active) setFacilities(data.map(item => ({ id: item.id, name: item.name, type: item.type })));
             } catch {
-                if (!active) return;
-                const age = cached ? Date.now() - cached.updatedAt : Infinity;
-                if (cached?.scope === scope && age >= 0 && age <= 24 * 60 * 60 * 1000) {
-                    setFacilities(cached.facilities);
-                    setUsingCachedFacilities(true);
-                } else {
-                    setFacilities([]);
-                    setError('تعذر تحميل المنشآت. أعد الاتصال لفتح نموذج الطلب.');
-                }
+                if (active) { setFacilities([]); setError('تعذر تحميل المنشآت. أعد الاتصال ثم افتح نموذج الطلب.'); }
             }
         }
-        void loadFacilities().catch(() => {
-            if (active) { setFacilities([]); setError('تعذر تحميل المنشآت. أعد الاتصال لفتح نموذج الطلب.'); }
-        });
-        return () => { active = false; };
-    }, [user]);
-
+        void loadFacilities();
+        return () => { active = false; abort.abort(); };
+    }, [user, isOnline]);
     const factories = facilities.filter(f => f.type === 'FACTORY');
     const shops = facilities.filter(f => f.type === 'SHOP');
 
@@ -127,7 +97,7 @@ export default function NewOrderPage() {
         e.preventDefault();
         setLoading(true);
         setError("");
-        setSuccess("");
+
 
         const form = e.currentTarget;
         const formData = new FormData(form);
@@ -143,43 +113,11 @@ export default function NewOrderPage() {
         clientRequestId.current = requestId;
         formData.set('clientRequestId', requestId);
 
-        if (!isOnline) {
-            try {
-                // Save to IndexedDB via Dexie
-                await db.orders.add({
-                    customerName: formData.get('customerName') as string,
-                    customerPhone: formData.get('customerPhone') as string,
-                    description: formData.get('description') as string,
-                    totalAmount: formData.get('totalAmount') as string,
-                    paidAmount: formData.get('paidAmount') as string,
-                    dueDate: formData.get('dueDate') as string,
-                    factoryId: formData.get('factoryId') as string,
-                    shopId: formData.get('shopId') as string,
-                    images: images, // Already Blobs essentially (File extends Blob)
-                    status: 'pending',
-                    idempotencyKey: requestId,
-                    attempts: 0,
-                    nextAttemptAt: Date.now(),
-                    createdAt: Date.now()
-                });
-
-                setSuccess("تم حفظ الطلب محليًا، وسيُرسل تلقائيًا عند عودة الاتصال.");
-                window.dispatchEvent(new Event("sultan:offline-queue-updated"));
-                form.reset();
-                previews.forEach((preview) => URL.revokeObjectURL(preview));
-                setImages([]);
-                setPreviews([]);
-                clientRequestId.current = crypto.randomUUID();
-                setLoading(false);
-                return;
-            } catch (offlineErr) {
-                console.error("Offline save failed", offlineErr);
-                setError("فشل الحفظ المحلي أيضاً");
-                setLoading(false);
-                return;
-            }
+        if (!isOnline || !navigator.onLine) {
+            setError('يلزم الاتصال بالإنترنت لإنشاء الطلب.');
+            setLoading(false);
+            return;
         }
-
         try {
             const res = await fetch("/api/orders", {
                 method: "POST",
@@ -194,7 +132,7 @@ export default function NewOrderPage() {
             router.push("/");
             router.refresh();
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "حدث خطأ ما");
+            setError(err instanceof TypeError ? "تعذر تأكيد الحفظ من الخادم. أعد المحاولة عند عودة الاتصال." : err instanceof Error ? err.message : "حدث خطأ ما");
         } finally {
             setLoading(false);
         }
@@ -214,18 +152,10 @@ export default function NewOrderPage() {
                 </div>
 
                 {error && (
-                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-600 rounded-lg text-sm flex items-center gap-2">
-                        <span>⚠️</span> {error}
+                    <div role="alert" className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-600 rounded-lg text-sm flex items-center gap-2">
+                        <span>{error}</span>
                     </div>
                 )}
-
-                {success && (
-                    <div role="status" className="mb-6 p-4 bg-green-500/10 border border-green-500/20 text-green-700 rounded-lg text-sm">
-                        {success}
-                    </div>
-                )}
-
-                {usingCachedFacilities && <p className="mb-4 text-sm text-amber-700">تُعرض آخر قائمة منشآت محفوظة لهذا الحساب. ستُراجع الصلاحيات عند الإرسال.</p>}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Customer Info */}
@@ -326,7 +256,7 @@ export default function NewOrderPage() {
                     {/* Actions */}
                     <div className="flex justify-end gap-3 pt-6 border-t border-border">
                         <button type="button" onClick={() => router.back()} className="px-6 py-2.5 text-sm font-medium bg-muted text-foreground hover:bg-muted/80 rounded-lg transition-all">إلغاء</button>
-                        <button type="submit" disabled={loading || !canCreateForFacility} className="px-6 py-2.5 text-sm font-medium text-white bg-amber-700 hover:bg-amber-600 hover:scale-105 rounded-lg shadow-sm transition-all disabled:opacity-50">
+                        <button type="submit" disabled={loading || !isOnline || facilities.length === 0 || !canCreateForFacility} className="px-6 py-2.5 text-sm font-medium text-white bg-amber-700 hover:bg-amber-600 hover:scale-105 rounded-lg shadow-sm transition-all disabled:opacity-50">
                             {loading ? "جاري الإنشاء..." : "إنشاء الطلب"}
                         </button>
                     </div>
