@@ -140,29 +140,17 @@ export async function updateOrderStatus(id: string, newStatus: string, rejection
         const permissions = user.permissions;
 
         if (newStatus === ORDER_STATUS.COMPLETED) return { success: false, error: 'استخدم إجراء إتمام التسليم لتسجيل التحصيل وملاحظة الرصيد.' };
+        if (![ORDER_STATUS.PROCESSING, ORDER_STATUS.SHOP_READY, ORDER_STATUS.REVIEW].includes(newStatus as typeof ORDER_STATUS.PROCESSING)) return { success: false, error: 'اختر إجراء من المراحل الأربع أو طلب تصحيح البيانات' };
 
         // Permission Checks
         if (newStatus === ORDER_STATUS.PROCESSING && !permissions.includes(PERMISSIONS.STATUS_CHANGE_PROCESSING)) {
             return { success: false, error: 'ليس لديك صلاحية نقل الطلب إلى "قيد التجهيز"' };
         }
-        if (newStatus === ORDER_STATUS.DELIVERING_TO_FACTORY && !permissions.includes(PERMISSIONS.STATUS_CHANGE_DELIVERING_TO_FACTORY)) {
-            return { success: false, error: 'ليس لديك صلاحية بدء توصيل الطلب للمصنع' };
-        }
         if (newStatus === ORDER_STATUS.SHOP_READY && !permissions.includes(PERMISSIONS.STATUS_CHANGE_SHOP_READY)) {
-            return { success: false, error: 'ليس لديك صلاحية نقل الطلب إلى "جاهز للمحل"' };
-        }
-        if (newStatus === ORDER_STATUS.DELIVERING && !permissions.includes(PERMISSIONS.STATUS_CHANGE_DELIVERING)) {
-            return { success: false, error: 'ليس لديك صلاحية نقل الطلب إلى "قيد التوصيل"' };
+            return { success: false, error: 'ليس لديك صلاحية إنهاء التجهيز وإشعار المحل' };
         }
         if (newStatus === ORDER_STATUS.REVIEW && !permissions.includes(PERMISSIONS.STATUS_CHANGE_REVIEW)) {
-            return { success: false, error: 'ليس لديك صلاحية إعادة الطلب للمراجعة' };
-        }
-        if (newStatus === ORDER_STATUS.REGISTERED && !permissions.includes(PERMISSIONS.STATUS_CHANGE_REGISTERED)) {
-            return { success: false, error: 'ليس لديك صلاحية إعادة الطلب إلى "قيد التسجيل"' };
-        }
-        if (newStatus === ORDER_STATUS.COMPLETED && !permissions.includes(PERMISSIONS.STATUS_CHANGE_COMPLETED)) {
-            // Although completeOrder should be used, we guard this path too
-            return { success: false, error: 'ليس لديك صلاحية إتمام الطلب' };
+            return { success: false, error: 'ليس لديك صلاحية طلب تصحيح البيانات' };
         }
 
         // Check if transition is allowed

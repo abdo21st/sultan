@@ -263,7 +263,7 @@ export default function SettingsPage() {
                                 <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
                                     <div>
                                         <h3 className="font-bold text-green-800">إرسال المستندات تلقائياً عبر الواتساب</h3>
-                                        <p className="text-sm text-gray-600 mt-1">عند نقل الطلب إلى قيد التجهيز أو جاهز للمحل، يُرسل المستند لرقم العميل. يجب أن يمتلك منفذ النقل صلاحية إرسال WhatsApp.</p>
+                                        <p className="text-sm text-gray-600 mt-1">عند بدء التجهيز أو إعلان الجاهزية، يُرسل المستند لرقم العميل. يجب أن يمتلك منفذ الإجراء صلاحية إرسال WhatsApp.</p>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input

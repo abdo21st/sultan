@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
-import { ORDER_STATUS, ORDER_STATUS_LABELS } from '@/lib/constants';
+import { ORDER_STATUS_LABELS } from '@/lib/constants';
 import { usePermission } from '@/lib/usePermission';
 import { PERMISSIONS } from '@/lib/permissions';
 
@@ -119,12 +119,6 @@ export default function EditOrderPage() {
             submitData.append("customerName", formData.customerName);
             submitData.append("customerPhone", formData.customerPhone);
             submitData.append("description", formData.description);
-            let statusToSubmit = formData.status;
-            if (statusToSubmit === ORDER_STATUS.REVIEW) {
-                statusToSubmit = ORDER_STATUS.REGISTERED;
-            }
-
-            submitData.append("status", statusToSubmit);
             if (canViewFinancials) {
                 submitData.append("totalAmount", formData.totalAmount);
                 submitData.append("paidAmount", formData.paidAmount);
@@ -248,19 +242,9 @@ export default function EditOrderPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">حالة الطلب</label>
-                            <select
-                                value={formData.status}
-                                aria-label="حالة الطلب"
-                                onChange={e => setFormData({ ...formData, status: e.target.value })}
-                                className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none font-bold text-primary"
-                            >
-                                {Object.entries(ORDER_STATUS).map(([key, value]) => (
-                                    <option key={key} value={value}>
-                                        {ORDER_STATUS_LABELS[value]}
-                                    </option>
-                                ))}
-                            </select>
+                            <p className="text-sm font-medium text-muted-foreground">المرحلة الحالية</p>
+                            <p className="ui-field bg-muted font-bold">{ORDER_STATUS_LABELS[formData.status] || formData.status}</p>
+                            <p className="text-xs text-muted-foreground">تتغير المرحلة من إجراءات الطلب. حفظ البيانات أو التصحيح يبقيها كما هي.</p>
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">تاريخ الاستحقاق</label>
