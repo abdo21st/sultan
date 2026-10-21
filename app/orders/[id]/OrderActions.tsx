@@ -59,7 +59,7 @@ export default function OrderActions({ order, currentUser }: { order: Order; cur
     if (closed && !canPrint) return null;
     return <section className="ui-card space-y-4" aria-label="إجراءات الطلب">
         <h2 className="font-bold">{closed ? 'إجراءات الطلب' : 'الخطوة التالية'}</h2>
-        {!closed && !order.reviewRequired && <p className="text-sm text-muted-foreground">{phase === ORDER_STATUS.REGISTERED ? 'الطلب مسجّل، وينتظر بدء التجهيز في المصنع.' : phase === ORDER_STATUS.PROCESSING ? 'بعد اكتمال التجهيز، يُشعر المصنع المحل بأن الطلب جاهز.' : 'الطلب جاهز. يؤكد المحل التسليم بعد تسليمه فعلياً للعميل.'}</p>}
+        {!closed && !order.reviewRequired && <p className="hidden sm:block text-sm text-muted-foreground">{phase === ORDER_STATUS.REGISTERED ? 'الطلب مسجّل، وينتظر بدء التجهيز في المصنع.' : phase === ORDER_STATUS.PROCESSING ? 'بعد اكتمال التجهيز، يُشعر المصنع المحل بأن الطلب جاهز.' : 'الطلب جاهز. يؤكد المحل التسليم بعد تسليمه فعلياً للعميل.'}</p>}
         <div className="flex flex-col sm:flex-row flex-wrap gap-3">
             {order.reviewRequired && !closed ? <>
                 <p className="text-sm text-primary">يحتاج الطلب تصحيحاً قبل متابعة التجهيز أو التسليم.</p>
