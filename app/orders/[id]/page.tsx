@@ -165,7 +165,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                     {/* Sidebar: Financials & Actions */}
                     <div className="space-y-8">
                         {canViewFinancials && (
-                            <div className="bg-card rounded-xl p-8 border border-border  sticky top-28">
+                            <div className="bg-card rounded-xl p-8 border border-border">
                                 <h3 className="text-sm font-semibold text-gradient-gold uppercase  mb-6 flex items-center gap-2">
                                     <div className="w-1 h-4 bg-primary rounded-full" />
                                     الملخص المالي
@@ -211,7 +211,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                             </div>
                         )}
 
-                        <div className="sticky top-28">
+                        <div>
                             <OrderActions order={currentOrder} currentUser={user} />
                         </div>
                         {(user.permissions.includes(PERMISSIONS.ORDERS_REVOKE_SHARES) || (canViewFinancials && user.permissions.includes(PERMISSIONS.ORDERS_SHARE))) && (
