@@ -19,7 +19,7 @@ services:
       retries: 20
 
   sultan-migrate:
-    image: sultan-release-migrator:102a78b
+    image: sultan-release-migrator:f6e632f
     mem_limit: 512m
     cpus: 0.5
     environment:
@@ -33,7 +33,7 @@ services:
     restart: "no"
 
   sultan-app:
-    image: sultan-release:102a78b
+    image: sultan-release:f6e632f
     restart: unless-stopped
     mem_limit: 512m
     cpus: 0.75
