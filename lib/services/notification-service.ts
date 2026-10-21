@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ORDER_STATUS } from "@/lib/constants";
-import { PERMISSIONS } from "@/lib/permissions";
+import { DEFAULT_ROLES, PERMISSIONS } from "@/lib/permissions";
 // Removed Role import as it is no longer used
 
 interface OrderForNotification {
@@ -20,6 +20,7 @@ export async function createStatusChangeNotification(order: OrderForNotification
             where: {
                 facilityId,
                 OR: [
+                    { role: { in: (Object.keys(DEFAULT_ROLES) as (keyof typeof DEFAULT_ROLES)[]).filter(role => (DEFAULT_ROLES[role] as readonly string[]).includes(permission)) } },
                     { permissions: { has: permission } },
                     { roles: { some: { permissions: { has: permission } } } }
                 ]

@@ -157,6 +157,26 @@ async function cleanupDatabase() {
   }
 }
 
+async function notificationFixtures(fixtures: Awaited<ReturnType<typeof createFixtures>>, testEnv: NodeJS.ProcessEnv) {
+  const otherOrder = await prisma!.order.findUniqueOrThrow({ where: { id: fixtures.foreignOrderId }, select: { shopId: true } });
+  for (const [key, facilityId] of [['E2E_STREAM_', fixtures.factoryId], ['E2E_STREAM_OUTSIDE_', otherOrder.shopId]] as const) {
+    const username = `stream_${key.toLowerCase()}${suffix}`;
+    const password = randomBytes(24).toString('base64url');
+    const user = await prisma!.user.create({ data: { username, password: await bcrypt.hash(password, 12), displayName: 'Synthetic stream actor', role: 'MANAGER', facilityId, permissions: [] }, select: { id: true } });
+    testEnv[`${key}USERNAME`] = username; testEnv[`${key}PASSWORD`] = password; testEnv[`${key}USER_ID`] = user.id;
+  }
+}
+
+function runNotificationBrowser(testEnv: NodeJS.ProcessEnv) {
+  const result = spawnSync(process.execPath, [path.resolve('node_modules/@playwright/test/cli.js'), 'test', '--config', 'config/playwright/playwright.config.ts', '--grep', '@notification_stream'], { cwd: process.cwd(), env: testEnv, stdio: 'inherit', timeout: 6 * 60 * 1000 });
+  if (result.status !== 0 || result.error) throw new Error('Shared notification browser acceptance failed.');
+}
+
+function runPerformanceAcceptance(testEnv: NodeJS.ProcessEnv) {
+  const result = spawnSync(process.execPath, [path.resolve('node_modules/tsx/dist/cli.mjs'), 'scripts/performance-acceptance.ts'], { cwd: process.cwd(), env: testEnv, stdio: 'inherit', timeout: 8 * 60 * 1000 });
+  if (result.status !== 0 || result.error) throw new Error('Shared notification and paged API performance acceptance failed.');
+}
+
 async function main() {
   try {
     await createIsolatedDatabase();
@@ -210,7 +230,16 @@ async function main() {
     await cp(path.resolve(process.cwd(), "public"), path.resolve(process.cwd(), ".next/standalone/public"), { recursive: true });
 
     const playwrightCli = path.resolve(process.cwd(), "node_modules/@playwright/test/cli.js");
-    const tests = spawnSync(process.execPath, [playwrightCli, "test", "--config", "config/playwright/playwright.config.ts", "--grep-invert", "@reversal|@offline_images"], {
+    if (process.argv.includes('--focus-performance')) {
+      await notificationFixtures(fixtures, testEnv); runPerformanceAcceptance(testEnv);
+      console.log(JSON.stringify({ focusedPerformanceAcceptanceOnly: true, fullSuiteExecuted: false })); return;
+    }
+    if (process.argv.includes('--focus-notifications')) {
+      await notificationFixtures(fixtures, testEnv); runNotificationBrowser(testEnv);
+      console.log(JSON.stringify({ focusedNotificationAcceptanceOnly: true, fullSuiteExecuted: false }));
+      return;
+    }
+    const tests = spawnSync(process.execPath, [playwrightCli, "test", "--config", "config/playwright/playwright.config.ts", "--grep-invert", "@reversal|@offline_images|@notification_stream"], {
       cwd: process.cwd(),
       env: testEnv,
       stdio: "inherit",
@@ -402,6 +431,8 @@ async function main() {
     const offlineCreatedAudits = await prisma!.auditLog.count({ where: { entityType: 'ORDER', action: 'CREATED', entityId: { in: offlineOrders.map(order => order.id) } } });
     if (offlineOrders.length !== 5 || new Set(offlineOrders.map(order => order.clientRequestId)).size !== 5 || offlineOrders.some(order => !order.clientRequestId || order.images.length !== 1 || !order.paidAmount.eq(0)) || imagesAdded.length !== 5 || offlineCreatedAudits !== 5) throw new Error('Offline image acceptance created duplicate records, missing images, or orphaned files.');
     console.log(JSON.stringify({ offlineImageAcceptance: { orders: offlineOrders.length, uniqueClientKeys: 5, imageFilesAdded: imagesAdded.length, creationAudits: offlineCreatedAudits, disposableProfileRestart: true, previousClientQueueCompatible: true } }));
+    await notificationFixtures(fixtures, testEnv); runNotificationBrowser(testEnv);
+    runPerformanceAcceptance(testEnv);
   } finally {
     try {
       await cleanupDatabase();

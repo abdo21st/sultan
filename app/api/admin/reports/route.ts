@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getRequestUser } from "@/lib/request-user";
 import { fromCents, toCents, toMoneyNumber } from "@/lib/money";
 import { decodeDateIdCursor, encodeDateIdCursor, parsePageSize } from "@/lib/keyset-pagination";
+import { decodeReportGroupCursor } from '@/lib/report-group-pagination';
+import { groupedReport } from '@/lib/report-group-query';
 
 interface DateFilter {
     gte?: Date;
@@ -54,8 +56,10 @@ export async function GET(request: Request) {
         const dateFilter = parseDateFilter(searchParams);
         const facilityId = searchParams.get("facilityId");
         const limit = parsePageSize(searchParams.get("limit"));
-        const cursor = decodeDateIdCursor(searchParams.get("cursor"));
-        if (!dateFilter || !limit || cursor === false) {
+        const isGrouped = reportType === 'production' || reportType === 'users';
+        const cursor = isGrouped ? null : decodeDateIdCursor(searchParams.get("cursor"));
+        const groupCursor = reportType === 'production' || reportType === 'users' ? decodeReportGroupCursor(searchParams.get('cursor'), reportType) : null;
+        if (!dateFilter || !limit || cursor === false || groupCursor === false) {
             return NextResponse.json({ error: "Invalid report filters or pagination parameters." }, { status: 400 });
         }
 
@@ -68,10 +72,10 @@ export async function GET(request: Request) {
                 response = await handleOperationalReport(dateFilter, facilityId, cursor, limit);
                 break;
             case "production":
-                response = await handleProductionReport(dateFilter, facilityId);
+                response = NextResponse.json(await groupedReport(prisma, 'production', dateFilter, facilityId, groupCursor, limit));
                 break;
             case "users":
-                response = await handleUserActivityReport(dateFilter, facilityId);
+                response = NextResponse.json(await groupedReport(prisma, 'users', dateFilter, facilityId, groupCursor, limit));
                 break;
             default:
                 return NextResponse.json({ error: "Invalid report type" }, { status: 400 });
@@ -173,61 +177,4 @@ async function handleOperationalReport(
         details,
         nextCursor: hasMore && last ? encodeDateIdCursor(new Date(last.createdAt), last.id) : null,
     });
-}
-
-async function handleProductionReport(dateFilter: DateFilter, facilityId: string | null) {
-    const where: Prisma.OrderWhereInput = {};
-    if (Object.keys(dateFilter).length > 0) where.createdAt = dateFilter;
-    if (facilityId) where.factoryId = facilityId;
-
-    const groups = await prisma.order.groupBy({
-        by: ["factoryId"],
-        where,
-        _count: { _all: true },
-        _sum: { totalAmount: true },
-    });
-    const facilities = await prisma.facility.findMany({
-        where: { id: { in: groups.map((group) => group.factoryId) } },
-        select: { id: true, name: true },
-    });
-    const names = new Map(facilities.map((facility) => [facility.id, facility.name]));
-    const details = groups.map((group) => ({
-        name: names.get(group.factoryId) ?? "منشأة غير متاحة",
-        count: group._count._all,
-        value: toMoneyNumber(group._sum.totalAmount),
-    })).sort((left, right) => right.value - left.value || left.name.localeCompare(right.name));
-
-    return NextResponse.json({
-        type: "production",
-        summary: { topFactory: details[0]?.name ?? "N/A" },
-        details,
-        nextCursor: null,
-    });
-}
-
-async function handleUserActivityReport(dateFilter: DateFilter, facilityId: string | null) {
-    const where = transactionWhere(dateFilter, facilityId);
-    const groups = await prisma.transaction.groupBy({
-        by: ["createdBy"],
-        where,
-        _count: { _all: true },
-        _sum: { amount: true },
-    });
-    const userIds = groups.flatMap((group) => group.createdBy ? [group.createdBy] : []);
-    const users = await prisma.user.findMany({
-        where: { id: { in: userIds } },
-        select: { id: true, displayName: true },
-    });
-    const names = new Map(users.map((user) => [user.id, user.displayName]));
-    const details = groups.map((group) => {
-        const id = group.createdBy ?? "System";
-        return {
-            id,
-            name: id === "System" ? "النظام" : names.get(id) ?? id,
-            transactionCount: group._count._all,
-            volume: toMoneyNumber(group._sum.amount),
-        };
-    }).sort((left, right) => right.volume - left.volume || left.name.localeCompare(right.name));
-
-    return NextResponse.json({ type: "users", details, nextCursor: null });
 }

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getRequestUser } from "@/lib/request-user";
+import { Prisma } from '@prisma/client';
+import { toMoneyNumber } from '@/lib/money';
 
 export async function GET() {
     try {
@@ -9,26 +11,22 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        // Parallelize requests for maximum performance
+        const since = new Date();
+        since.setMonth(since.getMonth() - 6);
         const [
-            monthlyOrders,
+            monthlyTotals,
             factoryGroups,
             statusGroups,
             totalAggregates,
             factories
         ] = await Promise.all([
-            // 1. Sales over time (last 6 months only) - Optimized Select
-            prisma.order.findMany({
-                where: {
-                    createdAt: { gte: new Date(new Date().setMonth(new Date().getMonth() - 6)) }
-                },
-                select: {
-                    createdAt: true,
-                    totalAmount: true,
-                    paidAmount: true
-                },
-                orderBy: { createdAt: 'asc' }
-            }),
+            // Aggregate in PostgreSQL: the response has at most seven partial/full months.
+            prisma.$queryRaw<{ month: Date; total: Prisma.Decimal; paid: Prisma.Decimal }[]>`
+                SELECT date_trunc('month', "createdAt") AS month,
+                    SUM("totalAmount") AS total, SUM("paidAmount") AS paid
+                FROM "Order" WHERE "createdAt" >= ${since}
+                GROUP BY date_trunc('month', "createdAt") ORDER BY month
+            `,
 
             // 2. Factory Performance (All Time) - DB GroupBy
             prisma.order.groupBy({
@@ -60,26 +58,13 @@ export async function GET() {
         ]);
 
         // --- Process Monthly Sales ---
-        const monthlySales: Record<string, { month: string, total: number, paid: number }> = {};
         const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-
-        monthlyOrders.forEach(order => {
-            const date = new Date(order.createdAt);
-            const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
-            if (!monthlySales[monthKey]) {
-                monthlySales[monthKey] = {
-                    month: monthNames[date.getMonth()],
-                    total: 0,
-                    paid: 0
-                };
-            }
-            monthlySales[monthKey].total += Number(order.totalAmount);
-            monthlySales[monthKey].paid += Number(order.paidAmount);
-        });
+        const monthlySales = monthlyTotals.map(row => ({ month: monthNames[row.month.getUTCMonth()], total: toMoneyNumber(row.total), paid: toMoneyNumber(row.paid) }));
 
         // --- Process Factory Stats ---
+        const factoryLookup = new Map(factoryGroups.map(group => [group.factoryId, group]));
         const factoryStats = factories.map(f => {
-            const stats = factoryGroups.find(g => g.factoryId === f.id);
+            const stats = factoryLookup.get(f.id);
             return {
                 name: f.name,
                 count: stats?._count.id || 0,
@@ -94,7 +79,7 @@ export async function GET() {
         });
 
         return NextResponse.json({
-            monthlySales: Object.values(monthlySales),
+            monthlySales,
             factoryStats,
             statusCounts,
             summary: {

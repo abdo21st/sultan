@@ -74,6 +74,9 @@ async function main() {
   const image = process.argv[2] || 'sultan-private-candidate:20261020';
   const migrator = process.argv[3] || 'sultan-production-sultan-migrate';
   const offsiteTest = process.argv.includes('--offsite-test');
+  const rollbackIndex = process.argv.indexOf('--rollback-image');
+  const rollbackImage = rollbackIndex >= 0 ? process.argv[rollbackIndex + 1] : null;
+  if (rollbackIndex >= 0 && (!rollbackImage || !/^sultan-release:[a-f0-9]{7,40}$/.test(rollbackImage) || rollbackImage === image)) throw new Error('Pass a different verified previous Sultan image.');
   const suffix = randomBytes(6).toString('hex');
   const project = `sultan-storage-acceptance-${suffix}`;
   const temporary = await mkdtemp(join(tmpdir(), 'sultan-storage-acceptance-'));
@@ -214,6 +217,17 @@ async function main() {
     await healthy(base);
     await readAuthenticatedImage(base, credentials, png);
     console.log(JSON.stringify({ mode: 'cloud-storage-backup-acceptance', anonymousImageAccess: 404, authenticatedImageAccess: 200, encrypted: true, interruptedBackupRecovery: 'unpaused', verifiedRetentionScoped: true, tamperedCiphertextRejected: true, restoredOrders: 1, restoredTransactions: 1, ledgerMismatches: 0, restoredImages: 1, restoredImageBytesMatch: true, recreatedApplication: 'healthy', productionDataUsed: false }));
+    if (rollbackImage) {
+      const previousRevision = run('docker', ['image', 'inspect', '--format', '{{index .Config.Labels "org.opencontainers.image.revision"}}', rollbackImage]);
+      const candidateRevision = run('docker', ['image', 'inspect', '--format', '{{index .Config.Labels "org.opencontainers.image.revision"}}', image]);
+      if (!/^[a-f0-9]{40}$/.test(previousRevision) || previousRevision === candidateRevision) throw new Error('The rollback image is not a different labeled release.');
+      compose.services['sultan-app'].image = rollbackImage;
+      await writeFile(composeFile, JSON.stringify(compose), { mode: 0o600 });
+      run('docker', [...composeArgs, 'up', '-d', '--force-recreate', '--no-deps', 'sultan-app']);
+      await healthy(base);
+      await readAuthenticatedImage(base, credentials, png);
+      console.log(JSON.stringify({ previousRuntimeRollback: true, previousRevision, candidateStopped: true, restoredAccountAuthenticated: true, restoredPrivateImageBytesMatch: true, schemaChanged: false, productionDataUsed: false }));
+    }
   } finally {
     if (mockStarted) {
       if (run('docker', ['inspect', '--format', '{{index .Config.Labels "sultan.offsite-test"}}', mockName]) !== suffix) throw new Error('Offsite test container ownership changed.');

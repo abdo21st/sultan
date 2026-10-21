@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Bell, X } from "lucide-react";
+import { activateNotificationOwner, clearNotificationOwner, mergeLegacyNotifications, NOTIFICATION_REFRESH, parseNotificationItems, parseNotificationSnapshot, publishNotificationState } from '@/lib/notification-client-state';
 
 export default function NotificationListener() {
     const { data: session } = useSession();
-    const [toasts, setToasts] = useState<{ id: string; title: string; message: string }[]>([]);
+    const owner = session?.user && !session.user.mustChangePassword ? `${session.user.id}:${session.user.sessionVersion}` : '';
+    const [toastState, setToastState] = useState<{ owner: string; items: { id: string; title: string; message: string }[] }>({ owner: '', items: [] });
 
     const [enabled, setEnabled] = useState(true);
 
@@ -15,6 +17,7 @@ export default function NotificationListener() {
         const checkState = () => {
             const saved = localStorage.getItem('notifications_enabled');
             setEnabled(saved !== 'false'); // Default true
+            if (saved === 'false') setToastState({ owner: '', items: [] });
         };
 
         checkState();
@@ -23,37 +26,59 @@ export default function NotificationListener() {
     }, []);
 
     useEffect(() => {
-        if (!session?.user || session.user.mustChangePassword || !enabled) return;
+        activateNotificationOwner(owner);
+        return () => clearNotificationOwner(owner);
+    }, [owner]);
+
+    useEffect(() => {
+        if (!owner || !enabled) return;
 
         const eventSource = new EventSource("/api/notifications/stream");
+        let closed = false;
+        let hasStateProtocol = false;
+        eventSource.onopen = () => window.dispatchEvent(new Event(NOTIFICATION_REFRESH));
+        eventSource.addEventListener('state', (event) => {
+            if (closed) return;
+            try {
+                const snapshot = parseNotificationSnapshot(JSON.parse(event.data));
+                if (snapshot) { hasStateProtocol = true; publishNotificationState(owner, snapshot); }
+            } catch { /* Discard malformed transport data. */ }
+        });
 
         eventSource.onmessage = (event) => {
-            const notifications = JSON.parse(event.data);
-            if (Array.isArray(notifications)) {
+            if (closed) return;
+            let notifications;
+            try { notifications = parseNotificationItems(JSON.parse(event.data)); } catch { return; }
+            if (notifications) {
+                // Keep existing pages compatible if the server is rolled back.
+                if (!hasStateProtocol) mergeLegacyNotifications(owner, notifications);
                 // Add new unique notifications to toasts
-                setToasts(prev => {
+                setToastState(previous => {
+                    const prev = previous.owner === owner ? previous.items : [];
                     const existingIds = new Set(prev.map(t => t.id));
                     const newToasts = notifications.filter(n => !existingIds.has(n.id));
-                    if (newToasts.length === 0) return prev;
+                    if (newToasts.length === 0) return previous;
 
                     // Trigger sound for new ones
                     const audio = new Audio('/notification.mp3'); // Optional
                     audio.play().catch(() => { });
 
-                    return [...newToasts, ...prev].slice(0, 3); // Max 3 toasts
+                    return { owner, items: [...newToasts, ...prev].slice(0, 3) }; // Max 3 toasts
                 });
             }
         };
 
         return () => {
+            closed = true;
             eventSource.close();
         };
-    }, [session, enabled]);
+    }, [owner, enabled]);
 
     const removeToast = (id: string) => {
-        setToasts(prev => prev.filter(t => t.id !== id));
+        setToastState(prev => ({ ...prev, items: prev.items.filter(t => t.id !== id) }));
     };
 
+    const toasts = enabled && toastState.owner === owner ? toastState.items : [];
     if (toasts.length === 0) return null;
 
     return (

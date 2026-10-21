@@ -1,21 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 import { Bell, BellOff, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
-
-interface Notification {
-    id: string;
-    title: string;
-    message: string;
-    read: boolean;
-    link?: string;
-    createdAt: string;
-}
+import { useSession } from 'next-auth/react';
+import { activateNotificationOwner, EMPTY_NOTIFICATION_STATE, notificationRevision, notificationState, NOTIFICATION_REFRESH, parseNotificationSnapshot, publishNotificationState, subscribeNotificationState } from '@/lib/notification-client-state';
 
 export default function Notifications() {
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+    const { data: session } = useSession();
+    const owner = session?.user && !session.user.mustChangePassword ? `${session.user.id}:${session.user.sessionVersion}` : '';
+    const { notifications, unreadCount } = useSyncExternalStore(subscribeNotificationState, () => notificationState(owner), () => EMPTY_NOTIFICATION_STATE);
     const [isOpen, setIsOpen] = useState(false);
     const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -32,25 +26,32 @@ export default function Notifications() {
     }, []);
 
     useEffect(() => {
-        if (!mounted) return;
+        if (!mounted || !owner) return;
+        activateNotificationOwner(owner);
+        let active = true;
 
         const loadNotifications = async () => {
+            const revision = notificationRevision(owner);
             try {
                 const res = await fetch('/api/notifications');
                 if (res.ok) {
-                    const data = await res.json();
-                    setNotifications(data.notifications);
-                    setUnreadCount(data.unreadCount);
+                    const snapshot = parseNotificationSnapshot(await res.json());
+                    if (active && snapshot && notificationRevision(owner) === revision) publishNotificationState(owner, snapshot);
                 }
-            } catch (error) {
-                console.error(error);
-            }
+            } catch { /* A later stream update or user refresh can recover. */ }
         };
 
         loadNotifications();
-        const interval = setInterval(loadNotifications, 30000);
-        return () => clearInterval(interval);
-    }, [mounted]);
+        window.addEventListener('focus', loadNotifications);
+        window.addEventListener('online', loadNotifications);
+        window.addEventListener(NOTIFICATION_REFRESH, loadNotifications);
+        return () => {
+            active = false;
+            window.removeEventListener('focus', loadNotifications);
+            window.removeEventListener('online', loadNotifications);
+            window.removeEventListener(NOTIFICATION_REFRESH, loadNotifications);
+        };
+    }, [mounted, owner]);
 
     const toggleNotifications = () => {
         const newState = !isNotificationsEnabled;
@@ -61,20 +62,18 @@ export default function Notifications() {
 
     const markAsRead = async (id: string) => {
         try {
-            await fetch(`/api/notifications/${id}`, { method: 'PATCH' });
-            setNotifications(notifications.map(n =>
-                n.id === id ? { ...n, read: true } : n
-            ));
-            setUnreadCount(prev => Math.max(0, prev - 1));
-        } catch (error) {
-            console.error(error);
-        }
+            const response = await fetch(`/api/notifications/${id}`, { method: 'PATCH' });
+            if (!response.ok) return;
+            const current = notificationState(owner);
+            const changed = current.notifications.some(item => item.id === id && !item.read);
+            publishNotificationState(owner, { notifications: current.notifications.map(item => item.id === id ? { ...item, read: true } : item), unreadCount: Math.max(0, current.unreadCount - (changed ? 1 : 0)) });
+        } catch { /* Keep the unread item if the server did not confirm. */ }
     };
 
     return (
         <div className="relative">
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => { if (!isOpen) window.dispatchEvent(new Event(NOTIFICATION_REFRESH)); setIsOpen(!isOpen); }}
                 className="relative w-12 h-12 rounded-2xl bg-muted/30 border border-border/50 flex items-center justify-center hover:bg-muted/80 hover:border-primary/30 transition-all duration-300 group"
                 aria-label="التنبيهات"
             >
