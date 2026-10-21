@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { PERMISSIONS } from "@/lib/permissions";
-import { ORDER_STATUS, LEGACY_STATUS_MAPPING } from "@/lib/constants";
+import { ORDER_STATUS, LEGACY_STATUS_MAPPING, CLOSED_ORDER_STATUSES } from "@/lib/constants";
 import { saveFile } from "@/lib/upload";
-import { canAccessOrderFacility, canViewOrderStatus, getRequestUser, orderFacilityFilter } from "@/lib/request-user";
+import { canAccessAllFacilities, canAccessOrderFacility, canViewOrderStatus, getRequestUser, orderFacilityFilter } from "@/lib/request-user";
 import { z } from "zod";
 import { toCents, toMoneyNumber } from "@/lib/money";
 import { writeAudit } from "@/lib/audit";
@@ -32,6 +32,7 @@ export async function GET(request: Request) {
         const search = searchParams.get('q')?.trim();
         if (search && search.length > 120) return NextResponse.json({ error: 'نص البحث أطول من الحد المسموح.' }, { status: 400 });
         const paymentStatus = searchParams.get('paymentStatus'); // 'unpaid'
+        const deliveryFollowUp = searchParams.get('deliveryFollowUp') === 'true';
 
         const where: Prisma.OrderWhereInput = {};
         const facilityScope = orderFacilityFilter(user);
@@ -50,10 +51,7 @@ export async function GET(request: Request) {
             Object.values(ORDER_STATUS).forEach(status => {
                 // status example: "orders:status:registered"
                 // view permission: "orders:status:view:registered"
-                const statusSuffix = status.replace('orders:status:', '');
-                const viewPermission = `orders:status:view:${statusSuffix}`;
-
-                if (userPermissions.includes(viewPermission)) {
+                if (canViewOrderStatus(user, status)) {
                     allowedStatuses.push(status);
                     // Add Legacy Status if exists
                     const legacy = LEGACY_STATUS_MAPPING[status];
@@ -116,6 +114,15 @@ export async function GET(request: Request) {
 
         if (paymentStatus === 'unpaid') {
             where.remainingAmount = { gt: 0 };
+            where.adjustments = { none: { status: 'REQUESTED' } };
+            const scoped = where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : [];
+            where.AND = [...scoped, { status: { notIn: CLOSED_ORDER_STATUSES } }];
+        }
+
+        if (deliveryFollowUp) {
+            const scoped = where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : [];
+            where.AND = [...scoped, { status: { notIn: [ORDER_STATUS.COMPLETED, 'COMPLETED', 'orders:status:cancelled', 'CANCELLED', 'orders:status:returned', 'RETURNED'] } }];
+            where.adjustments = { none: { status: 'REQUESTED' } };
         }
 
         if (startDate || endDate) {
@@ -268,7 +275,7 @@ export async function POST(request: Request) {
         if (factory?.type !== "FACTORY" || shop?.type !== "SHOP") {
             return NextResponse.json({ error: "Select a valid factory and shop." }, { status: 400 });
         }
-        if (user.role !== "ADMIN" && (!user.facilityId || ![body.factoryId, body.shopId].includes(user.facilityId))) {
+        if (!canAccessAllFacilities(user) && (!user.facilityId || ![body.factoryId, body.shopId].includes(user.facilityId))) {
             return NextResponse.json({ error: "You can only create orders for your assigned facility." }, { status: 403 });
         }
         const existingOrder = await prisma.order.findUnique({ where: { clientRequestId } });
@@ -306,7 +313,8 @@ export async function POST(request: Request) {
             const currentOrdersCount = await prisma.order.count({
                 where: {
                     factoryId: body.factoryId,
-                    dueDate: dueDateObj
+                    dueDate: dueDateObj,
+                    status: { notIn: [ORDER_STATUS.CANCELLED, 'CANCELLED'] },
                 }
             });
 

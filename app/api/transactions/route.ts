@@ -3,7 +3,8 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { PERMISSIONS } from "@/lib/permissions";
-import { canAccessOrderFacility, getRequestUser, type RequestUser } from "@/lib/request-user";
+import { canAccessOrderFacility, getRequestUser, transactionFacilityFilter, type RequestUser } from "@/lib/request-user";
+import { CLOSED_ORDER_STATUSES } from '@/lib/constants';
 import { fromCents, toCents, toMoneyNumber } from "@/lib/money";
 import { writeAudit } from "@/lib/audit";
 import { decodeDateIdCursor, encodeDateIdCursor, parsePageSize } from "@/lib/keyset-pagination";
@@ -17,16 +18,7 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
-        const where: Prisma.TransactionWhereInput = user.role === "ADMIN"
-            ? {}
-            : user.facilityId
-                ? {
-                    OR: [
-                        { facilityId: user.facilityId },
-                        { order: { is: { OR: [{ factoryId: user.facilityId }, { shopId: user.facilityId }] } } },
-                    ],
-                }
-                : { id: "__no_assigned_facility__" };
+        const where = transactionFacilityFilter(user);
 
         const searchParams = new URL(request.url).searchParams;
         const limit = parsePageSize(searchParams.get('limit'));
@@ -46,7 +38,7 @@ export async function GET(request: Request) {
             where,
             orderBy: [{ date: "desc" }, { id: "desc" }],
             take: limit + 1,
-            include: { reversedBy: { select: { id: true } } },
+            include: { reversedBy: { select: { id: true } }, adjustment: { select: { orderId: true, kind: true } } },
         });
         const hasMore = transactions.length > limit;
         const page = hasMore ? transactions.slice(0, limit) : transactions;
@@ -140,12 +132,14 @@ export async function POST(request: Request) {
 
             try {
                 const transaction = await prisma.$transaction(async (tx) => {
+                    await tx.$queryRaw`SELECT id FROM "Order" WHERE id=${body.orderId} FOR UPDATE`;
                     const order = await tx.order.findUnique({
                         where: { id: body.orderId },
                         select: { id: true, serialNumber: true, paidAmount: true, remainingAmount: true, factoryId: true, shopId: true, status: true },
                     });
                     if (!order) throw new Error("ORDER_NOT_FOUND");
                     if (!canAccessOrderFacility(user, order)) throw new Error("ORDER_FORBIDDEN");
+                    if (CLOSED_ORDER_STATUSES.includes(order.status) || await tx.orderAdjustment.findFirst({ where: { orderId: order.id, status: { in: ['REQUESTED', 'APPROVED'] } } })) throw new Error('ORDER_ADJUSTMENT_OPEN');
 
                     const updated = await tx.order.updateMany({
                         where: { id: order.id, remainingAmount: { gte: amount } },
@@ -211,6 +205,7 @@ export async function POST(request: Request) {
                     if (replay) return replay;
                     return NextResponse.json({ error: "مبلغ التحصيل أكبر من المبلغ المتبقي أو تغيرت بيانات الطلب." }, { status: 409 });
                 }
+                if (error instanceof Error && error.message === 'ORDER_ADJUSTMENT_OPEN') return NextResponse.json({ error: 'توقف التحصيل بسبب طلب إلغاء أو مرتجع. راجع قرار المدير والتسوية.' }, { status: 409 });
                 if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
                     const replay = await existingPaymentResponse(user, body.idempotencyKey, expectedPayment);
                     if (replay) return replay;

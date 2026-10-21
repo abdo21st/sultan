@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PERMISSIONS } from "@/lib/permissions";
-import { ORDER_STATUS } from "@/lib/constants";
+import { CLOSED_ORDER_STATUSES, ORDER_STATUS } from "@/lib/constants";
+import OrderAdjustments from './OrderAdjustments';
+import { adjustmentResponse } from '@/lib/order-adjustments';
 import OrderActions from "./OrderActions";
 import RevokeShares from "./RevokeShares";
 import { ArrowLeft, Edit } from "lucide-react";
@@ -31,6 +33,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             shopId: true,
             images: true,
             rejectionReason: true,
+            adjustments: { orderBy: { requestedAt: 'desc' }, take: 50 },
             totalAmount: canViewFinancials,
             paidAmount: canViewFinancials,
             remainingAmount: canViewFinancials,
@@ -39,14 +42,17 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
 
     if (!order || !canAccessOrderFacility(user, order) || !canViewOrderStatus(user, order.status)) return notFound();
 
+    const { adjustments, ...orderFields } = order;
     const currentOrder = {
-        ...order,
+        ...orderFields,
         totalAmount: Number(order.totalAmount ?? 0),
         paidAmount: Number(order.paidAmount ?? 0),
         remainingAmount: Number(order.remainingAmount ?? 0),
     };
 
     const statusInfo = getStatusInfo(currentOrder.status);
+    const adjustmentOpen = order.adjustments.some(item => item.status === 'REQUESTED' || item.status === 'APPROVED');
+    const closed = CLOSED_ORDER_STATUSES.includes(order.status);
 
     // Fetch facility names
     const factory = currentOrder.factoryId ? await prisma.facility.findUnique({ where: { id: currentOrder.factoryId } }) : null;
@@ -73,12 +79,13 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                             </div>
                         </div>
                     </div>
-                    {user.permissions.includes(PERMISSIONS.ORDERS_EDIT) && (
+                    {user.permissions.includes(PERMISSIONS.ORDERS_EDIT) && !adjustmentOpen && (
                         <Link href={`/orders/${id}/edit`} aria-label="تعديل الطلب" className="p-3 bg-card hover:bg-primary rounded-xl transition-all duration-300 border border-border group">
                             <Edit className="w-5 h-5 text-primary group-hover:text-white transition-colors" />
                         </Link>
                     )}
                 </div>
+
             </header>
 
             <main className="max-w-5xl mx-auto p-4 md:p-8 space-y-8">
@@ -96,6 +103,8 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         </div>
                     </div>
                 </div>
+
+                <OrderAdjustments orderId={id} orderStatus={order.status} permissions={user.permissions} items={adjustments.map(item => ({ ...adjustmentResponse(item, canViewFinancials), requestedAt: item.requestedAt.toISOString() }))} />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Details */}
@@ -172,15 +181,15 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                 </h3>
                                 <div className="space-y-6">
                                     <div className="flex justify-between items-center group">
-                                        <span className="text-xs font-bold text-muted-foreground uppercase ">القيمة الإجمالية</span>
+                                        <span className="text-xs font-bold text-muted-foreground uppercase ">{closed ? 'القيمة الأصلية قبل الإغلاق' : 'القيمة الإجمالية'}</span>
                                         <span className="text-xl font-semibold font-mono text-foreground" dir="ltr">{formatCurrency(currentOrder.totalAmount)}</span>
                                     </div>
                                     <div className="flex justify-between items-center bg-green-500/5 p-4 rounded-xl border border-green-500/10">
-                                        <span className="text-xs font-semibold text-green-500 uppercase ">المبلغ المحصل</span>
+                                        <span className="text-xs font-semibold text-green-500 uppercase ">{closed ? 'الدفعات الأصلية قبل الرد' : 'المبلغ المحصل'}</span>
                                         <span className="text-xl font-semibold font-mono text-green-500" dir="ltr">{formatCurrency(currentOrder.paidAmount)}</span>
                                     </div>
                                     <div className="flex justify-between items-center pt-2">
-                                        <span className="text-xs font-bold text-muted-foreground uppercase ">الرصيد المتبقي</span>
+                                        <span className="text-xs font-bold text-muted-foreground uppercase ">{closed ? 'الرصيد الأصلي الملغى تحصيله' : 'الرصيد المتبقي'}</span>
                                         <span className={`text-2xl font-semibold font-mono ${currentOrder.remainingAmount > 0 ? 'text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'text-zinc-500'}`} dir="ltr">
                                             {formatCurrency(currentOrder.remainingAmount)}
                                         </span>
@@ -198,11 +207,11 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                                                 <div key={t.id} className="flex justify-between items-center p-4 bg-background border border-border rounded-xl">
                                                     <div>
                                                         <p className="text-xs font-bold text-muted-foreground uppercase">{formatDate(t.date)}</p>
-                                                        <p className="text-sm font-bold text-foreground">{t.category}</p>
+                                                        <p className="text-sm font-bold text-foreground">{t.category === 'ORDER_REFUND' ? 'رد مبلغ للعميل' : t.category}</p>
                                                         {t.reversalOfId && <p className="text-xs text-muted-foreground">قيد عكسي — {t.reversalReason}</p>}
                                                         {t.reversedBy && <p className="text-xs text-muted-foreground">حركة معكوسة مع حفظ الأصل</p>}
                                                     </div>
-                                                    <span className={`text-sm font-semibold ${Number(t.amount) < 0 ? 'text-red-600' : 'text-green-600'}`} dir="ltr">{Number(t.amount) > 0 ? '+' : ''}{formatCurrency(t.amount)}</span>
+                                                    <span className={`text-sm font-semibold ${(t.type === 'EXPENSE' ? -Number(t.amount) : Number(t.amount)) < 0 ? 'text-red-600' : 'text-green-600'}`} dir="ltr">{formatCurrency(t.type === 'EXPENSE' ? -Number(t.amount) : Number(t.amount))}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -212,7 +221,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                         )}
 
                         <div>
-                            <OrderActions order={currentOrder} currentUser={user} />
+                            {!adjustmentOpen && <OrderActions order={currentOrder} currentUser={user} />}
                         </div>
                         {(user.permissions.includes(PERMISSIONS.ORDERS_REVOKE_SHARES) || (canViewFinancials && user.permissions.includes(PERMISSIONS.ORDERS_SHARE))) && (
                             <RevokeShares orderId={id} canIssue={canViewFinancials && user.permissions.includes(PERMISSIONS.ORDERS_SHARE)} canRevoke={user.permissions.includes(PERMISSIONS.ORDERS_REVOKE_SHARES)} />

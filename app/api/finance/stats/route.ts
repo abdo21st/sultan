@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { PERMISSIONS } from "@/lib/permissions";
-import { getRequestUser, orderFacilityFilter } from "@/lib/request-user";
+import { getRequestUser, orderFacilityFilter, transactionFacilityFilter } from "@/lib/request-user";
+import { CLOSED_ORDER_STATUSES } from '@/lib/constants';
 import { Prisma } from "@prisma/client";
+import { fromCents, toCents } from '@/lib/money';
 
 export async function GET() {
     try {
@@ -15,19 +17,11 @@ export async function GET() {
         const orderWhere: Prisma.OrderWhereInput = {
             ...orderFacilityFilter(user),
             remainingAmount: { gt: 0 },
+            status: { notIn: CLOSED_ORDER_STATUSES },
         };
-        const transactionWhere: Prisma.TransactionWhereInput = user.role === "ADMIN"
-            ? {}
-            : user.facilityId
-                ? {
-                    OR: [
-                        { facilityId: user.facilityId },
-                        { order: { is: { OR: [{ factoryId: user.facilityId }, { shopId: user.facilityId }] } } },
-                    ],
-                }
-                : { id: "__no_assigned_facility__" };
+        const transactionWhere = transactionFacilityFilter(user);
 
-        const [ordersAgg, transactionAgg] = await Promise.all([
+        const [ordersAgg, transactionAgg, refundsAgg] = await Promise.all([
             // Calculate Total Debt (Sum of remainingAmount on Orders)
             prisma.order.aggregate({
                 _sum: {
@@ -44,7 +38,8 @@ export async function GET() {
                 _sum: {
                     amount: true
                 }
-            })
+            }),
+            prisma.orderAdjustment.aggregate({ where: { status: 'APPROVED', order: { is: orderFacilityFilter(user) } }, _sum: { refundAmount: true, refundedAmount: true } }),
         ]);
 
         const totalDebt = Number(ordersAgg._sum.remainingAmount || 0);
@@ -63,7 +58,8 @@ export async function GET() {
             totalDebt,
             treasuryBalance,
             totalIncome,
-            totalExpense
+            totalExpense,
+            pendingRefunds: fromCents(toCents(refundsAgg._sum.refundAmount) - toCents(refundsAgg._sum.refundedAmount)),
         });
 
     } catch (error) {

@@ -9,6 +9,7 @@ export interface PDFExportOptions {
     columns: { header: string; dataKey: string }[];
     rows: Record<string, unknown>[];
     fileName?: string;
+    qrDataUrl?: string;
 }
 
 // Handle Arabic Text Reshaping and RTL correction
@@ -27,7 +28,7 @@ export const reshapeArabic = (text: string) => {
 };
 
 export const exportToPDF = (options: PDFExportOptions) => {
-    const { title, subtitle, columns, rows, fileName } = options;
+    const { title, subtitle, columns, rows, fileName, qrDataUrl } = options;
 
     const doc = new jsPDF({
         orientation: 'p',
@@ -72,12 +73,14 @@ export const exportToPDF = (options: PDFExportOptions) => {
         doc.text(reshapedSubtitle, 105, 22, { align: 'center' });
     }
 
+    if (qrDataUrl) doc.addImage(qrDataUrl, 'PNG', 165, 28, 30, 30);
+
     // Generate Table
     autoTable(doc, {
         columns: reshapedColumns,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         body: reshapedRows as any[],
-        startY: 30,
+        startY: qrDataUrl ? 65 : 30,
         styles: {
             font: 'Amiri',
             fontSize: 9,
@@ -85,7 +88,7 @@ export const exportToPDF = (options: PDFExportOptions) => {
             cellPadding: 3,
         },
         headStyles: {
-            fillColor: [180, 83, 9], // sultan amber-700
+            fillColor: [121, 100, 83],
             textColor: [255, 255, 255],
             fontStyle: 'normal',
             halign: 'center'

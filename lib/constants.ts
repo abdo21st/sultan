@@ -6,6 +6,8 @@ export const ORDER_STATUS = {
     DELIVERING: 'orders:status:delivering',
     COMPLETED: 'orders:status:completed',
     REVIEW: 'orders:status:review',
+    CANCELLED: 'orders:status:cancelled',
+    RETURNED: 'orders:status:returned',
 } as const;
 
 export const ORDER_WORKFLOW: Record<string, string[]> = {
@@ -38,6 +40,8 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
     [ORDER_STATUS.DELIVERING]: 'قيد التوصيل',
     [ORDER_STATUS.COMPLETED]: 'مكتمل',
     [ORDER_STATUS.REVIEW]: 'قيد المراجعة',
+    [ORDER_STATUS.CANCELLED]: 'ملغي بموافقة المدير',
+    [ORDER_STATUS.RETURNED]: 'مرتجع بموافقة المدير',
 
     // Compatibility
     'REGISTERED': 'قيد التسجيل',
@@ -57,6 +61,8 @@ export const ORDER_STATUS_COLORS: Record<string, string> = {
     [ORDER_STATUS.DELIVERING]: 'bg-purple-100 text-purple-600',
     [ORDER_STATUS.COMPLETED]: 'bg-green-100 text-green-600',
     [ORDER_STATUS.REVIEW]: 'bg-red-100 text-red-600',
+    [ORDER_STATUS.CANCELLED]: 'bg-zinc-100 text-zinc-700',
+    [ORDER_STATUS.RETURNED]: 'bg-rose-100 text-rose-700',
 
     // Compatibility
     'REGISTERED': 'bg-zinc-100 text-zinc-600',
@@ -108,4 +114,8 @@ export const LEGACY_STATUS_MAPPING: Record<string, string> = {
     [ORDER_STATUS.DELIVERING]: 'DELIVERING',
     [ORDER_STATUS.COMPLETED]: 'COMPLETED',
     [ORDER_STATUS.REVIEW]: 'REVIEW_NEEDED',
+    [ORDER_STATUS.CANCELLED]: 'CANCELLED',
+    [ORDER_STATUS.RETURNED]: 'RETURNED',
 };
+
+export const CLOSED_ORDER_STATUSES: string[] = [ORDER_STATUS.CANCELLED, 'CANCELLED', ORDER_STATUS.RETURNED, 'RETURNED'];

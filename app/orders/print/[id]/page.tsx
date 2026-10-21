@@ -7,6 +7,7 @@ import { formatCurrency } from "../../../../lib/utils";
 import { PERMISSIONS } from "@/lib/permissions";
 import { canAccessOrderFacility, canViewOrderStatus, getRequestUser } from "@/lib/request-user";
 import { issueOrderShareToken } from "@/lib/order-sharing";
+import { CLOSED_ORDER_STATUSES, ORDER_STATUS_LABELS } from '@/lib/constants';
 
 export default async function PrintOrderPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -16,7 +17,8 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
             where: { id },
             include: {
                 factory: true,
-                shop: true
+                shop: true,
+                adjustments: { where: { status: 'APPROVED' }, take: 1 },
             }
         }),
         prisma.systemSettings.findFirst(),
@@ -31,6 +33,9 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
         !canViewOrderStatus(user, order.status)
     ) return notFound();
     const currentOrder = order!;
+    const closed = CLOSED_ORDER_STATUSES.includes(currentOrder.status);
+    const adjustment = currentOrder.adjustments[0];
+    const refundRemaining = adjustment ? Number(adjustment.refundAmount.minus(adjustment.refundedAmount)) : 0;
 
     const canViewFinancials = true;
 
@@ -59,23 +64,23 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
     return (
         <div className="p-8 max-w-4xl mx-auto bg-white text-black min-h-screen relative" id="print-area">
             {/* Decorative Gold Header Bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-700 via-amber-400 to-amber-700 no-print" />
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-stone-700 via-stone-400 to-stone-700 no-print" />
 
             {/* Header */}
-            <div className="flex justify-between items-center border-b-4 border-amber-600/20 pb-8 mb-10 mt-4">
+            <div className="flex justify-between items-center border-b-4 border-stone-600/20 pb-8 mb-10 mt-4">
                 <div className="flex items-center gap-6">
                     {settings?.logoUrl ? (
-                        <div className="relative w-24 h-24 border-2 border-amber-600/10 rounded-2xl p-2 shadow-sm">
+                        <div className="relative w-24 h-24 border-2 border-stone-600/10 rounded-2xl p-2 shadow-sm">
                             <Image src={settings.logoUrl} alt="Logo" fill className="object-contain" />
                         </div>
                     ) : (
-                        <div className="w-20 h-20 bg-gradient-to-br from-amber-600 to-amber-900 rounded-2xl flex items-center justify-center text-white font-black text-4xl shadow-gold">
+                        <div className="w-20 h-20 bg-gradient-to-br from-stone-600 to-stone-900 rounded-2xl flex items-center justify-center text-white font-black text-4xl shadow-sm">
                             {settings?.appName?.[0] || 'س'}
                         </div>
                     )}
                     <div className="space-y-1">
                         <h1 className="text-3xl font-black text-zinc-900 tracking-tighter">{settings?.appName || "سلطان"}</h1>
-                        <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] leading-tight">للأثاث والمفروشات الفاخرة</p>
+                        <p className="text-sm font-semibold text-zinc-600">مستند طلب · المحلات والمصانع</p>
                         {settings?.printHeader && (
                             <p className="text-sm text-zinc-500 font-medium max-w-sm leading-relaxed mt-2">{settings.printHeader}</p>
                         )}
@@ -99,9 +104,9 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                 <div className="col-span-12 md:col-span-8 space-y-8">
                     <div className="grid grid-cols-2 gap-8">
                         <section className="space-y-3">
-                            <h2 className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-amber-600" />
-                                بيانات العميل المعتمد
+                            <h2 className="text-[10px] font-black text-stone-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-stone-600" />
+                                بيانات العميل
                             </h2>
                             <div className="p-5 bg-zinc-50 rounded-2xl border border-zinc-200/60 shadow-inner">
                                 <p className="font-black text-xl text-zinc-900 mb-1">{currentOrder.customerName}</p>
@@ -110,8 +115,8 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                         </section>
 
                         <section className="space-y-3">
-                            <h2 className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                            <h2 className="text-[10px] font-black text-stone-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 rounded-full bg-stone-600" />
                                 تفاصيل التوقيت والمقر
                             </h2>
                             <div className="p-5 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex flex-col justify-center gap-2">
@@ -120,17 +125,18 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                                     <span className="font-black text-zinc-900 text-sm whitespace-nowrap">{new Date(currentOrder.dueDate).toLocaleDateString("ar-LY", { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">المقر:</span>
-                                    <span className="font-black text-amber-700 text-sm">{currentOrder.factory?.name || 'مقر عام'}</span>
+                                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">المصنع:</span>
+                                    <span className="font-black text-stone-700 text-sm">{currentOrder.factory?.name || 'مقر عام'}</span>
                                 </div>
+                                <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">المحل:</span><span className="font-bold text-sm">{currentOrder.shop.name}</span></div>
                             </div>
                         </section>
                     </div>
 
                     <section className="space-y-3">
-                        <h2 className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-amber-600" />
-                            الوصف التقني والطلبات الخاصة
+                        <h2 className="text-[10px] font-black text-stone-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-stone-600" />
+                            تفاصيل الطلب والملاحظات
                         </h2>
                         <div className="p-6 bg-zinc-50 rounded-2xl border border-zinc-200/60 min-h-[160px] shadow-inner">
                             <p className="text-sm font-medium text-zinc-800 leading-loose whitespace-pre-wrap">{currentOrder.description}</p>
@@ -138,22 +144,24 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                     </section>
                 </div>
 
-                <div className="col-span-12 md:col-span-4 flex flex-col items-center justify-center p-6 bg-amber-50/50 rounded-[2.5rem] border border-amber-200/40">
-                    <div className="relative w-36 h-36 bg-white p-3 rounded-3xl shadow-gold mb-4">
+                <div className="col-span-12 md:col-span-4 flex flex-col items-center justify-center p-6 bg-stone-50/50 rounded-[2.5rem] border border-stone-200/40">
+                    <div className="relative w-36 h-36 bg-white p-3 rounded-3xl shadow-sm mb-4">
                         <Image src={qrCodeDataUrl} alt="Order QR Code" fill className="p-2" />
                     </div>
                     <div className="text-center space-y-1">
-                        <p className="text-[11px] font-black text-amber-800 uppercase tracking-widest">امسح الكود للتتبع</p>
-                        <p className="text-[9px] font-bold text-amber-600/60 uppercase tracking-tighter">رابط الطلب الرقمي المعتمد</p>
+                        <p className="text-[11px] font-black text-stone-800 uppercase tracking-widest">امسح الكود للتتبع</p>
+                        <p className="text-[9px] font-bold text-stone-600/60 uppercase tracking-tighter">رابط الطلب الرقمي المعتمد</p>
                     </div>
                 </div>
             </div>
 
+            <p className="mb-5 font-bold">الحالة: {ORDER_STATUS_LABELS[currentOrder.status] || currentOrder.status}</p>
+            {closed && <p className="mb-6 p-4 border rounded-xl text-sm">أُغلق الطلب بإلغاء أو مرتجع. الأرقام أدناه هي السجل الأصلي قبل الإغلاق، ولا يُحصّل الرصيد الأصلي. المتبقي لإعادته للعميل: {formatCurrency(refundRemaining)}.</p>}
             {/* Financial Summary */}
             {canViewFinancials && (
                 <div className="bg-zinc-900 text-white rounded-[2rem] p-10 flex flex-wrap justify-between items-center mb-12 shadow-2xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-600/10 rounded-full blur-2xl -mr-10 -mt-10" />
-                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-600/10 rounded-full blur-2xl -ml-10 -mb-10" />
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-stone-600/10 rounded-full blur-2xl -mr-10 -mt-10" />
+                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-stone-600/10 rounded-full blur-2xl -ml-10 -mb-10" />
 
                     <div className="relative">
                         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-2">إجمالي الالتزام المالي</p>
@@ -164,7 +172,7 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                         <p className="text-4xl font-black font-mono text-green-500 tracking-tighter" dir="ltr">{formatCurrency(currentOrder.paidAmount)}</p>
                     </div>
                     <div className="relative text-left">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 text-right mb-2">الرصيد المتبقي</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 text-right mb-2">{closed ? 'الرصيد الأصلي الملغى تحصيله' : 'الرصيد المتبقي'}</p>
                         <p className="text-4xl font-black font-mono text-red-500 tracking-tighter" dir="ltr">{formatCurrency(currentOrder.remainingAmount)}</p>
                     </div>
                 </div>
@@ -173,15 +181,7 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
             {/* Terms and Signatures */}
             <div className="mt-auto pt-10 grid grid-cols-2 gap-10 items-end">
                 <div className="space-y-6">
-                    <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200 border-dashed">
-                        <h4 className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-2 text-center">الشروط والأحكام</h4>
-                        <ol className="text-[8px] text-zinc-500 space-y-1 pr-4 list-decimal leading-relaxed">
-                            <li>يعتبر استلام العميل للمستند بمثابة موافقة على المواصفات المذكورة أعلاه.</li>
-                            <li>لا يتم البدء في التنفيذ إلا بعد سداد المبلغ المتفق عليه كدفعة أولى.</li>
-                            <li>تاريخ الاستلام تقريبي ويخضع لظروف التوريد والعمالة.</li>
-                            <li>لا يحق للعميل المطالبة باسترداد العربون بعد مرور 48 ساعة من تاريخ الطلب.</li>
-                        </ol>
-                    </div>
+                    {settings?.printTerms && <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200"><h4 className="text-sm font-bold mb-2">الملاحظات والشروط</h4><p className="text-xs text-zinc-600 whitespace-pre-wrap leading-relaxed">{settings.printTerms}</p></div>}
                 </div>
 
                 <div className="flex flex-col gap-10 items-end">
@@ -201,12 +201,12 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
 
             {/* Footer Credits */}
             <div className="mt-12 pt-6 border-t border-zinc-100 flex justify-between items-center">
-                <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-[0.3em]">SULTAN ERP SYSTEM • PRECISE INTERIORS</p>
+                <p className="text-xs text-zinc-500">{settings?.appName || 'سلطان'} · إدارة الطلبات</p>
                 <div className="text-left">
                     {settings?.printFooter ? (
                         <p className="text-[10px] font-bold text-zinc-500 whitespace-pre-line leading-relaxed">{settings.printFooter}</p>
                     ) : (
-                        <p className="text-[10px] font-bold text-zinc-500">شكراً لاختياركم فخامة سلطان • {new Date().getFullYear()}</p>
+                        <p className="text-xs text-zinc-500">شكراً لثقتكم · {new Date().getFullYear()}</p>
                     )}
                 </div>
             </div>
@@ -217,11 +217,11 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                     .no-print { display: none !important; }
                     body { background: white !important; margin: 0 !important; }
                     #print-area { padding: 40px !important; width: 100% !important; max-width: none !important; margin: 0 !important; box-shadow: none !important; }
-                    .shadow-gold, .shadow-2xl, .shadow-lg { box-shadow: none !important; }
+                    .shadow-sm, .shadow-2xl, .shadow-lg { box-shadow: none !important; }
                     .bg-zinc-900 { background-color: #18181b !important; -webkit-print-color-adjust: exact; }
                     .text-green-500 { color: #22c55e !important; -webkit-print-color-adjust: exact; }
                     .text-red-500 { color: #ef4444 !important; -webkit-print-color-adjust: exact; }
-                    .bg-amber-50\\/50 { background-color: #fffbeb !important; -webkit-print-color-adjust: exact; }
+                    .bg-stone-50\\/50 { background-color: #fffbeb !important; -webkit-print-color-adjust: exact; }
                     .bg-zinc-50 { background-color: #fafafa !important; -webkit-print-color-adjust: exact; }
                 }
             `}} />
@@ -240,6 +240,16 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                         dueDate: currentOrder.dueDate,
                         orderId: currentOrder.id,
                         shareUrl: orderUrl,
+                        appName: settings?.appName || 'سلطان',
+                        printHeader: settings?.printHeader || '',
+                        printFooter: settings?.printFooter || '',
+                        printTerms: settings?.printTerms || '',
+                        factoryName: currentOrder.factory.name,
+                        shopName: currentOrder.shop.name,
+                        qrDataUrl: qrCodeDataUrl,
+                        closed,
+                        statusLabel: ORDER_STATUS_LABELS[currentOrder.status] || currentOrder.status,
+                        refundRemaining,
                     }}
                 />
             </div>

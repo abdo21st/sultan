@@ -1,16 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../../lib/prisma";
-import { getRequestUser } from "@/lib/request-user";
-import { z } from "zod";
+import { canAccessAllFacilities, getRequestUser } from "@/lib/request-user";
+import { PERMISSIONS } from '@/lib/permissions';
+import { alertSchema } from '@/lib/alert-settings';
 import { writeAudit } from "@/lib/audit";
-
-const alertSchema = z.object({
-    name: z.string().trim().min(2).max(100),
-    triggerStatus: z.string().trim().min(2).max(100),
-    timingDays: z.number().int().min(0).max(365),
-    whatsappEnabled: z.boolean(),
-    recipientPhones: z.array(z.string().regex(/^\d{10,15}$/)).max(100),
-});
 
 export async function PUT(
     req: Request,
@@ -21,7 +14,7 @@ export async function PUT(
         if (!user) {
             return NextResponse.json({ error: 'الرجاء تسجيل الدخول' }, { status: 401 });
         }
-        if (user.role !== 'ADMIN') {
+        if (!user.permissions.includes(PERMISSIONS.ALERTS_MANAGE) || !canAccessAllFacilities(user)) {
             return NextResponse.json({ error: 'غير مصرح بالتعديل.' }, { status: 403 });
         }
 
@@ -52,7 +45,7 @@ export async function DELETE(
         if (!user) {
             return NextResponse.json({ error: 'الرجاء تسجيل الدخول' }, { status: 401 });
         }
-        if (user.role !== 'ADMIN') {
+        if (!user.permissions.includes(PERMISSIONS.ALERTS_MANAGE) || !canAccessAllFacilities(user)) {
             return NextResponse.json({ error: 'غير مصرح بالحذف.' }, { status: 403 });
         }
 

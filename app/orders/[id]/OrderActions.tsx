@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { updateOrderStatus, completeOrder } from '@/lib/actions/orders';
 import { Printer, XCircle, CheckCircle, Truck, Package, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
-import { ORDER_STATUS, ORDER_WORKFLOW, ORDER_STATUS_LABELS } from '@/lib/constants';
+import { CLOSED_ORDER_STATUSES, ORDER_STATUS, ORDER_WORKFLOW, ORDER_STATUS_LABELS } from '@/lib/constants';
 import { useToast } from '@/app/components/ToastProvider';
 import { formatCurrency } from '@/lib/utils';
 /* formatCurrency and formatDate are not used in this component */
@@ -80,7 +80,7 @@ export default function OrderActions({ order, currentUser }: { order: Order, cur
     };
 
 
-    if (order.status === ORDER_STATUS.COMPLETED) return null;
+    if ([ORDER_STATUS.COMPLETED, 'COMPLETED', ...CLOSED_ORDER_STATUSES].includes(order.status)) return null;
 
     return (
         <div className="bg-[#0f172a] rounded-xl p-8 border border-slate-800 ">

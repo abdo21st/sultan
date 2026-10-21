@@ -52,6 +52,7 @@ model SystemSettings {
   logoUrl          String?
   printHeader      String?
   printFooter      String?
+  printTerms       String?
   themeColor       String   @default("#d97706") // Default amber
   whatsappAutoSend Boolean  @default(false) // تفعيل/تعطيل الإرسال التلقائي
   whatsappApiUrl   String? // رابط WhatsApp API
@@ -91,6 +92,8 @@ model Order {
   rejectionReason String?
   paymentNote     String?
   transactions    Transaction[]
+  alertDeliveries AlertDelivery[]
+  adjustments     OrderAdjustment[]
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -112,6 +115,8 @@ model Transaction {
   description    String?
   orderId        String? // Link to specific Order
   order          Order?    @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  adjustmentId   String?
+  adjustment     OrderAdjustment? @relation(fields: [adjustmentId], references: [id], onDelete: Restrict)
   facilityId     String?
   facility       Facility? @relation(fields: [facilityId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   idempotencyKey String?   @unique
@@ -130,6 +135,29 @@ model Transaction {
   @@index([facilityId, date, id])
   @@index([orderId])
   @@index([facilityId])
+  @@index([adjustmentId])
+}
+
+model OrderAdjustment {
+  id              String   @id @default(cuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  requestKey      String   @unique
+  kind            String
+  status          String   @default("REQUESTED")
+  reason          String
+  requestedBy     String
+  requestedAt     DateTime @default(now())
+  originalStatus  String
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  reviewNote      String?
+  refundAmount    Decimal  @default(0) @db.Decimal(14, 2)
+  refundedAmount  Decimal  @default(0) @db.Decimal(14, 2)
+  transactions    Transaction[]
+
+  @@index([status, requestedAt])
+  @@index([orderId])
 }
 
 model Notification {
@@ -170,6 +198,34 @@ model AlertSetting {
   recipientPhones String[] @default([])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  deliveries      AlertDelivery[]
+}
+
+// One delivery per rule, order, business day and recipient. External sends are
+// claimed before contacting the provider so an uncertain result is never retried blindly.
+model AlertDelivery {
+  id             String       @id @default(cuid())
+  alertSettingId String
+  alertSetting   AlertSetting @relation(fields: [alertSettingId], references: [id], onDelete: Cascade)
+  orderId        String
+  order          Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  scheduledDay   DateTime     @db.Date
+  channel        String
+  recipient      String
+  status         String
+  errorCode      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([alertSettingId, orderId, scheduledDay, channel, recipient])
+  @@index([status, createdAt])
+}
+
+model ScheduledJobState {
+  id            String   @id
+  lastStartedAt DateTime?
+  lastSuccessAt DateTime?
+  lastError     String?
 }
 
 model AuditLog {

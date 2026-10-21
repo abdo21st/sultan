@@ -3,7 +3,7 @@ import { prisma } from "../../../../lib/prisma";
 import { PERMISSIONS } from "../../../../lib/permissions";
 import { saveFile } from "../../../../lib/upload";
 import { orderSchema } from "@/lib/schemas";
-import { canAccessOrderFacility, canViewOrderStatus, getRequestUser } from "@/lib/request-user";
+import { canAccessAllFacilities, canAccessOrderFacility, canViewOrderStatus, getRequestUser } from "@/lib/request-user";
 import { fromCents, toCents, toMoneyNumber } from "@/lib/money";
 import { writeAudit } from "@/lib/audit";
 import { cleanupUncommittedBlobUploads, enqueueBlobDeletions, processBlobDeletionQueue } from "@/lib/blob-cleanup";
@@ -106,6 +106,7 @@ export async function PATCH(
         if (!currentOrder) return NextResponse.json({ error: "Order not found" }, { status: 404 });
         if (!canAccessOrderFacility(user, currentOrder)) return NextResponse.json({ error: "Order not found" }, { status: 404 });
         if (!canViewOrderStatus(user, currentOrder.status)) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+        if (await prisma.orderAdjustment.findFirst({ where: { orderId: id, status: { in: ['REQUESTED', 'APPROVED'] } } })) return NextResponse.json({ error: 'توقف التعديل بسبب طلب إلغاء أو مرتجع.' }, { status: 409 });
         const canEditFinancials = user.role === "ADMIN" || user.permissions.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
 
         // Prepare data for validation (Status is ignored as per design)
@@ -143,7 +144,7 @@ export async function PATCH(
         ) {
             return NextResponse.json({ error: "Select a valid factory and shop." }, { status: 400 });
         }
-        if (user.role !== "ADMIN" && (!user.facilityId || ![body.factoryId, body.shopId].includes(user.facilityId))) {
+        if (!canAccessAllFacilities(user) && (!user.facilityId || ![body.factoryId, body.shopId].includes(user.facilityId))) {
             return NextResponse.json({ error: "You can only edit orders for your assigned facility." }, { status: 403 });
         }
 
@@ -199,6 +200,8 @@ export async function PATCH(
         const removedImageUrls = currentOrder.images.filter((url) => !images.includes(url));
 
         const updateResult = await prisma.$transaction(async (tx) => {
+            await tx.$queryRaw`SELECT id FROM "Order" WHERE id=${id} FOR UPDATE`;
+            if (await tx.orderAdjustment.findFirst({ where: { orderId: id, status: { in: ['REQUESTED', 'APPROVED'] } } })) throw new Error('ORDER_UPDATE_CONFLICT');
             const updated = await tx.order.updateMany({
                 where: { id, updatedAt: currentOrder.updatedAt },
                 data: {
@@ -321,10 +324,12 @@ export async function DELETE(
         if (!canAccessOrderFacility(user, order)) return NextResponse.json({ error: "Order not found" }, { status: 404 });
         if (!canViewOrderStatus(user, order.status)) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         const linkedTransactions = await prisma.transaction.count({ where: { orderId: id } });
-        if (linkedTransactions > 0) {
-            return NextResponse.json({ error: "Orders with financial history cannot be deleted." }, { status: 409 });
+        if (linkedTransactions > 0 || await prisma.orderAdjustment.count({ where: { orderId: id } })) {
+            return NextResponse.json({ error: 'لا يمكن حذف طلب له سجل مالي أو طلب إلغاء أو مرتجع. يُحفظ السجل للتدقيق.' }, { status: 409 });
         }
         const cleanupQueue = await prisma.$transaction(async (tx) => {
+            await tx.$queryRaw`SELECT id FROM "Order" WHERE id=${id} FOR UPDATE`;
+            if (await tx.orderAdjustment.count({ where: { orderId: id } }) || await tx.transaction.count({ where: { orderId: id } })) throw new Error('ORDER_HAS_HISTORY');
             const queued = await enqueueBlobDeletions(tx, order.images, id);
             await writeAudit(tx, {
                 actorId: user.id,
@@ -346,7 +351,8 @@ export async function DELETE(
         }
 
         return NextResponse.json({ message: "Order deleted successfully" });
-    } catch {
+    } catch (error) {
+        if (error instanceof Error && error.message === 'ORDER_HAS_HISTORY') return NextResponse.json({ error: 'تغير سجل الطلب؛ لا يمكن حذفه.' }, { status: 409 });
         return NextResponse.json(
             { error: "Failed to delete order" },
             { status: 500 }

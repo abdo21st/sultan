@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { DEFAULT_ROLES } from "@/lib/permissions";
-import { LEGACY_STATUS_MAPPING } from "@/lib/constants";
+import { DEFAULT_ROLES, PERMISSIONS } from "@/lib/permissions";
+import { CLOSED_ORDER_STATUSES, LEGACY_STATUS_MAPPING } from "@/lib/constants";
+import type { Prisma } from '@prisma/client';
 
 export type RequestUser = {
     id: string;
@@ -43,19 +44,36 @@ export async function getRequestUser(options: { allowPasswordChange?: boolean } 
     return { ...user, permissions: [...permissions] };
 }
 
+type FacilityScopeUser = Pick<RequestUser, "role" | "facilityId"> & { permissions?: readonly string[] };
+
+export function canAccessAllFacilities(user: { role: string; permissions?: readonly string[] }): boolean {
+    return user.role === "ADMIN" || Boolean(user.permissions?.includes(PERMISSIONS.FACILITIES_VIEW_ALL));
+}
+
 export function canAccessOrderFacility(
-    user: Pick<RequestUser, "role" | "facilityId">,
+    user: FacilityScopeUser,
     order: { factoryId: string; shopId: string },
 ): boolean {
-    return user.role === "ADMIN" || Boolean(
+    return canAccessAllFacilities(user) || Boolean(
         user.facilityId && (order.factoryId === user.facilityId || order.shopId === user.facilityId)
     );
 }
 
-export function orderFacilityFilter(user: Pick<RequestUser, "role" | "facilityId">) {
-    if (user.role === "ADMIN") return {};
+export function orderFacilityFilter(user: FacilityScopeUser) {
+    if (canAccessAllFacilities(user)) return {};
     if (!user.facilityId) return { id: "__no_assigned_facility__" };
     return { OR: [{ factoryId: user.facilityId }, { shopId: user.facilityId }] };
+}
+
+export function transactionFacilityWhere(facilityId: string | null): Prisma.TransactionWhereInput {
+    if (!facilityId) return {};
+    const scope = { OR: [{ factoryId: facilityId }, { shopId: facilityId }] };
+    return { OR: [{ facilityId }, { order: { is: scope } }, { adjustment: { is: { order: { is: scope } } } }] };
+}
+
+export function transactionFacilityFilter(user: FacilityScopeUser): Prisma.TransactionWhereInput {
+    if (canAccessAllFacilities(user)) return {};
+    return user.facilityId ? transactionFacilityWhere(user.facilityId) : { id: '__no_assigned_facility__' };
 }
 
 export function canViewOrderStatus(
@@ -63,6 +81,7 @@ export function canViewOrderStatus(
     status: string,
 ): boolean {
     if (user.role === "ADMIN") return true;
+    if (CLOSED_ORDER_STATUSES.includes(status) && [PERMISSIONS.ORDERS_ADJUSTMENT_REQUEST, PERMISSIONS.ORDERS_ADJUSTMENT_APPROVE, PERMISSIONS.ORDERS_REFUND].some(permission => user.permissions.includes(permission))) return true;
     const canonicalStatus = Object.entries(LEGACY_STATUS_MAPPING)
         .find(([, legacyStatus]) => legacyStatus === status)?.[0] ?? status;
     const prefix = "orders:status:";

@@ -1,437 +1,164 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import {
-    Bell,
-    Settings,
-    Trash2,
-    Plus,
-    MessageSquare,
-    Clock,
-    ExternalLink,
-    User,
-    Phone,
-    Calendar,
-    Loader2,
-    Minus
-} from "lucide-react";
-import Link from "next/link";
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Bell, Loader2, Settings, Trash2, ExternalLink } from 'lucide-react';
+import { ORDER_STATUS, ORDER_STATUS_LABELS } from '@/lib/constants';
+import { PERMISSIONS } from '@/lib/permissions';
+import { usePermission } from '@/lib/usePermission';
+import { businessDateKey, shiftDateKey } from '@/lib/business-date';
+import { formatCurrency } from '@/lib/utils';
+import toast from 'react-hot-toast';
 
-interface AlertSetting {
-    id: string;
-    name: string;
-    triggerStatus: string;
-    timingDays: number;
-    whatsappEnabled: boolean;
-    recipientPhones: string[];
+interface Rule { id: string; name: string; triggerStatus: string; timingDays: number; whatsappEnabled: boolean; recipientPhones: string[] }
+interface Order { id: string; serialNumber: number; customerName: string; dueDate: string; status: string; remainingAmount?: number }
+interface Account { id: string; displayName: string; phoneNumber?: string }
+interface Health {
+    stale: boolean;
+    job: { lastSuccessAt: string | null; lastError: string | null } | null;
+    whatsappConfigured: boolean;
+    failures: { id: string; status: string; alertSetting: { name: string }; order: { id: string; serialNumber: number } }[];
 }
-
-interface User {
-    id: string;
-    username: string;
-    displayName: string;
-    phoneNumber?: string;
-}
-
-interface Order {
-    id: string;
-    serialNumber: number;
-    customerName: string;
-    customerPhone: string;
-    dueDate: string;
-    status: string;
-}
-
-import { ORDER_STATUS_LABELS, ORDER_STATUS } from "@/lib/constants";
+const emptyRule = { name: '', triggerStatus: ORDER_STATUS.REGISTERED as string, timingDays: 0, whatsappEnabled: false, phones: '' };
 
 export default function AlertsPage() {
-    const [activeTab, setActiveTab] = useState<'current' | 'settings'>('current');
-    const [settings, setSettings] = useState<AlertSetting[]>([]);
-    const [matchingOrders, setMatchingOrders] = useState<Order[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [users, setUsers] = useState<User[]>([]);
-    const [selectedUserId, setSelectedUserId] = useState<string>("");
-
-    const [newSetting, setNewSetting] = useState({
-        name: "",
-        triggerStatus: "REGISTERED",
-        timingDays: 0,
-        whatsappEnabled: false,
-        phone: ""
-    });
-
+    const { user, hasPermission } = usePermission();
+    const canManage = hasPermission(PERMISSIONS.ALERTS_MANAGE) && (user?.role === 'ADMIN' || hasPermission(PERMISSIONS.FACILITIES_VIEW_ALL));
+    const canViewFinancials = hasPermission(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
+    const [tab, setTab] = useState<'delivery' | 'receivables' | 'settings'>('delivery');
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [rules, setRules] = useState<Rule[]>([]);
+    const [accounts, setAccounts] = useState<Account[]>([]);
+    const [health, setHealth] = useState<Health | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+    const [cursor, setCursor] = useState<string | null>(null);
+    const [form, setForm] = useState(emptyRule);
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [mounted, setMounted] = useState(false);
+    const today = businessDateKey();
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    const fetchData = useCallback(async () => {
+    const load = useCallback(async (next?: string) => {
+        if (!user) return;
         setLoading(true);
+        setError('');
         try {
-            const [alertsRes, usersRes] = await Promise.all([
-                fetch('/api/admin/alerts'),
-                fetch('/api/users')
-            ]);
-
-            const alertsData = await alertsRes.json();
-            const usersData = await usersRes.json();
-
-            setSettings(alertsData);
-            setUsers(Array.isArray(usersData) ? usersData : []);
-
-            if (activeTab === 'current') {
-                const today = new Date().toISOString().split('T')[0];
-                const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-                const ordersRes = await fetch(`/api/orders?startDate=${today}&endDate=${tomorrow}&limit=100`);
-                const ordersData: Order[] = await ordersRes.json();
-                setMatchingOrders(ordersData.filter(o => {
-                    const dueDate = new Date(o.dueDate).toISOString().split('T')[0];
-                    return dueDate === today || dueDate === tomorrow;
-                }));
-            }
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    }, [activeTab]);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
-
-    const handleUserSelect = (userId: string) => {
-        setSelectedUserId(userId);
-        const user = users.find(u => u.id === userId);
-        if (user && user.phoneNumber) {
-            setNewSetting(prev => ({ ...prev, phone: user.phoneNumber || "" }));
-        }
-    };
-
-    const handleAddSetting = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const url = editingId ? `/api/admin/alerts/${editingId}` : '/api/admin/alerts';
-            const method = editingId ? 'PUT' : 'POST';
-
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...newSetting,
-                    recipientPhones: newSetting.phone ? [newSetting.phone] : []
-                })
-            });
-
-            if (res.ok) {
-                setNewSetting({
-                    name: "",
-                    triggerStatus: "REGISTERED",
-                    timingDays: 0,
-                    whatsappEnabled: false,
-                    phone: ""
-                });
-                setSelectedUserId("");
-                setEditingId(null);
-                fetchData();
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // ... handleEdit logic needs update to clear user selection or match phone ...
-
-    const handleEdit = (setting: AlertSetting) => {
-        setNewSetting({
-            name: setting.name,
-            triggerStatus: setting.triggerStatus,
-            timingDays: setting.timingDays,
-            whatsappEnabled: setting.whatsappEnabled,
-            phone: setting.recipientPhones[0] || ""
-        });
-
-        // Try to find user by phone (optional optimization)
-        const foundUser = users.find(u => u.phoneNumber === setting.recipientPhones[0]);
-        setSelectedUserId(foundUser ? foundUser.id : "");
-
-        setEditingId(setting.id);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handleDelete = async (id: string) => {
-        if (!confirm('هل أنت متأكد من حذف هذا التنبيه؟')) return;
-        setLoading(true);
-        console.log(`Deleting alert: /api/admin/alerts/${id}`);
-        try {
-            const res = await fetch(`/api/admin/alerts/${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                alert("تم حذف التنبيه بنجاح");
-                fetchData();
-                if (editingId === id) handleCancelEdit();
+            if (tab === 'settings') {
+                if (!canManage) throw new Error('إدارة القواعد تحتاج صلاحية التنبيهات ومتابعة جميع المنشآت.');
+                const [rulesRes, healthRes] = await Promise.all([fetch('/api/admin/alerts'), fetch('/api/admin/alerts/health')]);
+                if (!rulesRes.ok || !healthRes.ok) throw new Error('تعذر تحميل إعدادات التنبيهات.');
+                setRules(await rulesRes.json());
+                setHealth(await healthRes.json());
             } else {
-                const error = await res.json().catch(() => ({}));
-                console.error('Delete failed:', res.status, error);
-                alert(error.error || `خطأ في الحذف (الحالة: ${res.status})`);
+                const query = new URLSearchParams({ limit: '50' });
+                if (tab === 'delivery') {
+                    query.set('endDate', shiftDateKey(businessDateKey(), 1));
+                    query.set('deliveryFollowUp', 'true');
+                } else {
+                    query.set('status', ORDER_STATUS.COMPLETED + ',COMPLETED');
+                    query.set('paymentStatus', 'unpaid');
+                }
+                if (next) query.set('cursor', next);
+                const response = await fetch('/api/orders?' + query, { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok || !Array.isArray(data)) throw new Error(data.error || 'تعذر تحميل الطلبات.');
+                setOrders(current => next ? [...current, ...data] : data);
+                setCursor(response.headers.get('X-Next-Cursor'));
             }
-        } catch (error) {
-            console.error('Delete error:', error);
-            alert("حدث خطأ في الاتصال بالخادم");
-        } finally {
-            setLoading(false);
-        }
-    };
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : 'تعذر الاتصال بالخادم.');
+        } finally { setLoading(false); }
+    }, [tab, canManage, user]);
 
-    const handleCancelEdit = () => {
-        setNewSetting({
-            name: "",
-            triggerStatus: "REGISTERED",
-            timingDays: 0,
-            whatsappEnabled: false,
-            phone: ""
-        });
-        setSelectedUserId("");
-        setEditingId(null);
-    };
+    useEffect(() => { setOrders([]); setCursor(null); void load(); }, [load]);
+    useEffect(() => {
+        if (!canManage || !user?.permissions?.includes(PERMISSIONS.USERS_VIEW)) return;
+        fetch('/api/users').then(async response => {
+            if (response.ok) { const data = await response.json(); if (Array.isArray(data)) setAccounts(data); }
+        }).catch(() => undefined);
+    }, [canManage, user]);
 
-    const openWhatsApp = (phone: string, message: string) => {
-        const cleanPhone = phone.replace(/\D/g, '');
-        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
-        window.open(url, '_blank');
-    };
+    async function save(event: React.FormEvent) {
+        event.preventDefault();
+        setSaving(true);
+        try {
+            const response = await fetch(editingId ? '/api/admin/alerts/' + editingId : '/api/admin/alerts', {
+                method: editingId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...form, recipientPhones: form.phones.split(/[\s,،;]+/).map(phone => phone.trim()).filter(Boolean) }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'تعذر حفظ التنبيه.');
+            setForm(emptyRule); setEditingId(null); toast.success('تم حفظ التنبيه.'); await load();
+        } catch (reason) { toast.error(reason instanceof Error ? reason.message : 'تعذر الاتصال بالخادم.'); }
+        finally { setSaving(false); }
+    }
+    async function remove(id: string) {
+        if (!confirm('حذف قاعدة التنبيه؟')) return;
+        setSaving(true);
+        try {
+            const response = await fetch('/api/admin/alerts/' + id, { method: 'DELETE' });
+            if (!response.ok) { const data = await response.json(); throw new Error(data.error || 'تعذر الحذف.'); }
+            if (editingId === id) { setEditingId(null); setForm(emptyRule); }
+            toast.success('تم حذف القاعدة.'); await load();
+        } catch (reason) { toast.error(reason instanceof Error ? reason.message : 'تعذر الاتصال بالخادم.'); }
+        finally { setSaving(false); }
+    }
 
-    return (
-        <div className="min-h-full pb-20 bg-background">
-
-            <main className="ui-page max-w-6xl">
-                <header className="mb-8 flex justify-between items-end">
-                    <div>
-                        <h1 className="text-2xl font-bold text-foreground">متابعة الاستحقاقات</h1>
-                        <p className="text-muted-foreground mt-2">إدارة إشعارات الواتساب ومتابعة الطلبات العاجلة.</p>
-                    </div>
-                    <div className="flex bg-muted rounded-xl p-1">
-                        <button
-                            onClick={() => setActiveTab('current')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'current' ? 'bg-card  text-foreground' : 'text-muted-foreground'}`}
-                        >
-                            <Bell className="w-4 h-4" /> تنبيهات اليوم
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('settings')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'settings' ? 'bg-card  text-foreground' : 'text-muted-foreground'}`}
-                        >
-                            <Settings className="w-4 h-4" /> الإعدادات
-                        </button>
-                    </div>
-                </header>
-
-                {activeTab === 'current' ? (
-                    <div className="space-y-4">
-                        {loading ? (
-                            <div className="flex justify-center py-20"><Loader2 className="animate-spin" /></div>
-                        ) : !mounted ? (
-                            <div className="space-y-3 animate-pulse">
-                                {[1, 2, 3].map(i => <div key={i} className="h-20 bg-muted rounded-xl" />)}
-                            </div>
-                        ) : matchingOrders.length === 0 ? (
-                            <div className="text-center py-20 bg-card border border-border border-dashed rounded-xl">
-                                <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-10" />
-                                <p className="text-muted-foreground">لا توجد طلبات تحتاج لتنبيه حالياً.</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {matchingOrders.map(order => (
-                                    <div key={order.id} className="bg-card border border-border rounded-xl p-5   transition-shadow relative group">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded-md mb-2 inline-block">#{order.serialNumber}</span>
-                                                <h4 className="text-lg font-bold flex items-center gap-2"><User className="w-4 h-4" /> {order.customerName}</h4>
-                                            </div>
-                                            <div className="text-left">
-                                                <span className="text-xs text-muted-foreground flex items-center gap-1 justify-end"><Calendar className="w-3 h-3" /> {order.dueDate}</span>
-                                                <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded-full mt-1 inline-block">موعد التسليم قريباً</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-4 py-3 border-y border-border/50 text-sm">
-                                            <div className="flex items-center gap-1 text-muted-foreground"><Phone className="w-4 h-4" /> {order.customerPhone}</div>
-                                            <div className="flex items-center gap-1 text-muted-foreground"><Clock className="w-4 h-4" /> {ORDER_STATUS_LABELS[order.status as keyof typeof ORDER_STATUS_LABELS] || order.status}</div>
-                                        </div>
-
-                                        <div className="mt-4 flex gap-2">
-                                            <button
-                                                onClick={() => openWhatsApp(order.customerPhone, `عزيزي ${order.customerName}، نود تذكيرك بموعد استلام طلبك رقم ${order.serialNumber} يوم ${order.dueDate}.`)}
-                                                className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors"
-                                            >
-                                                <MessageSquare className="w-4 h-4" /> إرسال واتساب
-                                            </button>
-                                            <Link href={`/orders/${order.id}`} className="bg-muted hover:bg-muted/80 text-foreground p-2 rounded-xl transition-colors">
-                                                <ExternalLink className="w-5 h-5" />
-                                            </Link>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="md:col-span-1">
-                            <div className="bg-card border border-border rounded-xl p-6  sticky top-24">
-                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                                    {editingId ? <Settings className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                                    {editingId ? 'تعديل التنبيه' : 'إضافة تنبيه آلي'}
-                                </h3>
-                                <form onSubmit={handleAddSetting} className="space-y-4">
-                                    {/* User Selection */}
-                                    <div>
-                                        <label className="text-xs font-bold mb-1 block">اختيار مستخدم (اختياري)</label>
-                                        <select
-                                            aria-label="اختيار مستخدم"
-                                            className="w-full bg-muted/50 border-none rounded-xl p-3 text-sm"
-                                            value={selectedUserId}
-                                            onChange={(e) => handleUserSelect(e.target.value)}
-                                        >
-                                            <option value="">-- اختر مستخدم --</option>
-                                            {users.map(user => (
-                                                <option key={user.id} value={user.id}>
-                                                    {user.displayName} ({user.username})
-                                                    {user.phoneNumber ? ' 📱' : ''}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-xs font-bold mb-1 block">اسم التنبيه</label>
-                                        <input
-                                            type="text"
-                                            className="w-full bg-muted/50 border-none rounded-xl p-3 text-sm"
-                                            placeholder="مثلاً: تذكير قبل الاستلام"
-                                            value={newSetting.name}
-                                            onChange={e => setNewSetting({ ...newSetting, name: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold mb-1 block">يفعل عند حالة</label>
-                                        <select
-                                            title="triggerStatus"
-                                            className="w-full bg-muted/50 border-none rounded-xl p-3 text-sm"
-                                            value={newSetting.triggerStatus}
-                                            onChange={e => setNewSetting({ ...newSetting, triggerStatus: e.target.value })}
-                                        >
-                                            {(Object.values(ORDER_STATUS) as string[]).map((status) => (
-                                                <option key={status} value={status}>{ORDER_STATUS_LABELS[status]}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold mb-1 block">التوقيت (بالأيام)</label>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                type="button"
-                                                title="زيادة"
-                                                onClick={() => setNewSetting(prev => ({ ...prev, timingDays: prev.timingDays + 1 }))}
-                                                className="p-3 bg-muted hover:bg-muted/80 rounded-xl transition-colors"
-                                            >
-                                                <Plus className="w-4 h-4" />
-                                            </button>
-                                            <input
-                                                type="number"
-                                                className="w-full bg-muted/50 border-none rounded-xl p-3 text-sm text-center font-bold"
-                                                placeholder="0"
-                                                value={newSetting.timingDays}
-                                                onChange={e => setNewSetting({ ...newSetting, timingDays: parseInt(e.target.value) || 0 })}
-                                            />
-                                            <button
-                                                type="button"
-                                                title="نقصان"
-                                                onClick={() => setNewSetting(prev => ({ ...prev, timingDays: prev.timingDays - 1 }))}
-                                                className="p-3 bg-muted hover:bg-muted/80 rounded-xl transition-colors"
-                                            >
-                                                <Minus className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mt-1 mr-1">0 = نفس اليوم، -1 = قبل يوم، 1 = بعد يوم</p>
-                                    </div>
-                                    <div className="bg-muted/30 p-3 rounded-xl">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={newSetting.whatsappEnabled}
-                                                onChange={e => setNewSetting({ ...newSetting, whatsappEnabled: e.target.checked })}
-                                            />
-                                            <span className="text-sm font-bold">تفعيل إرسال الواتساب</span>
-                                        </label>
-                                        {newSetting.whatsappEnabled && (
-                                            <input
-                                                type="text"
-                                                placeholder="رقم الواتساب (مثال: 218...)"
-                                                className="w-full mt-2 bg-card/50 border-border rounded-lg p-2 text-xs"
-                                                value={newSetting.phone}
-                                                onChange={e => setNewSetting({ ...newSetting, phone: e.target.value })}
-                                            />
-                                        )}
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            disabled={loading}
-                                            className="flex-1 bg-primary text-primary-foreground py-3 rounded-xl font-bold  transition-all disabled:opacity-50"
-                                        >
-                                            {editingId ? 'حفظ التعديلات' : 'إضافة'}
-                                        </button>
-                                        {editingId && (
-                                            <button
-                                                type="button"
-                                                onClick={handleCancelEdit}
-                                                className="px-4 bg-muted hover:bg-muted/80 text-foreground rounded-xl font-bold transition-all"
-                                            >
-                                                إلغاء
-                                            </button>
-                                        )}
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-
-                        <div className="md:col-span-2 space-y-4">
-                            <h3 className="text-lg font-bold flex items-center gap-2"><Bell className="w-5 h-5" /> القواعد المفعلة</h3>
-                            {settings.map(s => (
-                                <div key={s.id} className={`bg-card border rounded-xl p-4 flex justify-between items-center transition-all ${editingId === s.id ? 'border-primary ring-1 ring-primary' : 'border-border'}`}>
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-primary/10 rounded-xl text-primary"><Bell className="w-6 h-6" /></div>
-                                        <div>
-                                            <h4 className="font-bold">{s.name}</h4>
-                                            <p className="text-sm text-muted-foreground">عند حالة {ORDER_STATUS_LABELS[s.triggerStatus as keyof typeof ORDER_STATUS_LABELS]} | موعد {s.timingDays} يوم</p>
-                                            {s.whatsappEnabled && <p className="text-xs text-green-600 font-bold mt-1 inline-flex items-center gap-1"><MessageSquare className="w-3 h-3" /> واتساب مفعل لـ {s.recipientPhones.length} رقم</p>}
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handleEdit(s)}
-                                            title="تعديل"
-                                            className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                                        >
-                                            <Settings className="w-5 h-5" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(s.id)}
-                                            title="حذف"
-                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </main>
+    return <main className="ui-page max-w-6xl space-y-5 pb-16">
+        <header className="ui-page-header">
+            <div><h1 className="ui-page-title">متابعة الاستحقاقات</h1><p className="ui-page-description">التسليم المتأخر والقريب، والمبالغ المستحقة بعد التسليم.</p></div>
+            <button className="ui-button" onClick={() => void load()} disabled={loading}>تحديث</button>
+        </header>
+        <div className="ui-tabs">
+            <button className="ui-tab" aria-pressed={tab === 'delivery'} onClick={() => setTab('delivery')}>متابعة التسليم</button>
+            {canViewFinancials && <button className="ui-tab" aria-pressed={tab === 'receivables'} onClick={() => setTab('receivables')}>مستحقات الطلبات المكتملة</button>}
+            {canManage && <button className="ui-tab" aria-pressed={tab === 'settings'} onClick={() => setTab('settings')}>قواعد التنبيه</button>}
         </div>
-    );
+        {error && <div className="ui-card text-destructive" role="alert">{error}</div>}
+        {loading && <div className="flex justify-center p-6" role="status"><Loader2 className="animate-spin" /><span className="sr-only">جاري التحميل</span></div>}
+        {tab !== 'settings' ? <>
+            {!loading && !error && orders.length === 0 && <div className="ui-card text-center py-12"><Bell className="mx-auto mb-3 text-muted-foreground" />{tab === 'delivery' ? 'لا توجد طلبات متأخرة أو مستحقة اليوم أو غداً.' : 'لا توجد مبالغ متبقية على طلبات مكتملة.'}</div>}
+            <div className="grid md:grid-cols-2 gap-4">{orders.map(order => {
+                const dueDay = businessDateKey(new Date(order.dueDate));
+                const label = tab === 'receivables' ? 'تم التسليم — يتبقى تحصيل' : dueDay < today ? 'متأخر عن التسليم' : dueDay === today ? 'التسليم اليوم' : 'التسليم غداً';
+                return <article key={order.id} className="ui-card space-y-3">
+                    <div className="flex justify-between gap-3"><h2 className="font-bold">#{order.serialNumber} · {order.customerName}</h2><span className={dueDay < today && tab === 'delivery' ? 'text-destructive text-sm' : 'text-primary text-sm'}>{label}</span></div>
+                    <p className="text-sm text-muted-foreground">{ORDER_STATUS_LABELS[order.status] || order.status} · {new Date(order.dueDate).toLocaleDateString('ar-LY', { timeZone: 'Africa/Tripoli' })}</p>
+                    {tab === 'receivables' && <p>المتبقي: {formatCurrency(order.remainingAmount ?? 0)}</p>}
+                    <Link href={'/orders/' + order.id} className="ui-button inline-flex"><ExternalLink size={16} />فتح الطلب{tab === 'receivables' ? ' والتحصيل' : ''}</Link>
+                </article>;
+            })}</div>
+            {cursor && <button className="ui-button mx-auto" disabled={loading} onClick={() => void load(cursor)}>تحميل المزيد</button>}
+        </> : canManage && <>
+            <section className="ui-card space-y-2" aria-label="حالة التنفيذ التلقائي">
+                <h2 className="font-bold">حالة التنفيذ التلقائي</h2>
+                <p className="text-sm">{health?.job?.lastSuccessAt ? 'آخر تشغيل ناجح: ' + new Date(health.job.lastSuccessAt).toLocaleString('ar-LY', { timeZone: 'Africa/Tripoli' }) : 'لم يُسجل تشغيل ناجح بعد.'}</p>
+                {health?.job?.lastError && <p className="text-destructive" role="alert">تعذر التشغيل الأخير. راجع مسؤول النظام.</p>}
+                {health?.stale && <p className="text-destructive" role="alert">لم يعمل مشغّل التنبيهات خلال آخر 15 دقيقة. راجع مسؤول النظام.</p>}
+                <p className="text-sm text-muted-foreground">يفحص الخادم القواعد كل خمس دقائق بتوقيت ليبيا. يُرسل التنبيه الداخلي مرة واحدة لكل طلب وقاعدة ويوم، إلى الموظفين المسموح لهم بمتابعة الطلب.</p>
+                <p className="text-sm">{health?.whatsappConfigured ? 'اتصال واتساب الآلي مضبوط.' : 'واتساب الآلي غير مفعّل أو غير مكتمل الإعداد؛ تعمل التنبيهات الداخلية.'}</p>
+                {!!health?.failures.length && <div className="space-y-2"><p className="font-bold">إرسالات تحتاج متابعة</p>{health.failures.map(item => <p key={item.id} className="text-sm"><Link className="underline" href={'/orders/' + item.order.id}>طلب #{item.order.serialNumber}</Link> · {item.alertSetting.name} · {item.status === 'FAILED' ? 'رفض مزود الإرسال الطلب' : item.status === 'SENDING' ? 'جارٍ الإرسال أو بانتظار تأكيد النتيجة' : 'نتيجة الإرسال غير مؤكدة؛ تحقق قبل إعادة الإرسال'}</p>)}</div>}
+            </section>
+            <div className="grid lg:grid-cols-3 gap-5">
+                <form onSubmit={save} className="ui-card space-y-4">
+                    <h2 className="font-bold">{editingId ? 'تعديل القاعدة' : 'إضافة تنبيه آلي'}</h2>
+                    <label className="block">اسم التنبيه<input className="ui-field mt-1" required minLength={2} maxLength={100} value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} /></label>
+                    <label className="block">حالة الطلب<select className="ui-field mt-1" value={form.triggerStatus} onChange={event => setForm({ ...form, triggerStatus: event.target.value })}>{Object.values(ORDER_STATUS).map(status => <option key={status} value={status}>{ORDER_STATUS_LABELS[status]}</option>)}</select></label>
+                    <label className="block">التوقيت بالنسبة لموعد التسليم<input className="ui-field mt-1" type="number" required min={-365} max={365} step={1} value={form.timingDays} onChange={event => setForm({ ...form, timingDays: Number(event.target.value) })} /></label>
+                    <p className="text-xs text-muted-foreground">0 = يوم التسليم، -1 = قبله بيوم، 1 = بعده بيوم. تُطابق القاعدة حالة الطلب الحالية.</p>
+                    <label className="flex gap-2 items-center"><input type="checkbox" checked={form.whatsappEnabled} onChange={event => setForm({ ...form, whatsappEnabled: event.target.checked })} />إرسال واتساب أيضاً</label>
+                    {form.whatsappEnabled && <>
+                        {accounts.length > 0 && <label className="block">إضافة رقم موظف<select className="ui-field mt-1" value="" onChange={event => { const account = accounts.find(item => item.id === event.target.value); if (account?.phoneNumber) setForm({ ...form, phones: [form.phones, account.phoneNumber].filter(Boolean).join(', ') }); }}><option value="">اختر موظفاً</option>{accounts.filter(account => account.phoneNumber).map(account => <option key={account.id} value={account.id}>{account.displayName}</option>)}</select></label>}
+                        <label className="block">أرقام المستلمين<textarea className="ui-field mt-1" required dir="ltr" value={form.phones} placeholder="2189xxxxxxxx" onChange={event => setForm({ ...form, phones: event.target.value })} /></label>
+                        <p className="text-xs text-muted-foreground">صيغة دولية، وافصل الأرقام بفاصلة أو سطر جديد. الإرسال إلى هذه الأرقام فقط.</p>
+                    </>}
+                    <div className="flex gap-2"><button className="ui-button ui-button-primary" disabled={saving}>{saving ? 'جارٍ الحفظ...' : 'حفظ القاعدة'}</button>{editingId && <button type="button" className="ui-button" onClick={() => { setEditingId(null); setForm(emptyRule); }}>إلغاء التعديل</button>}</div>
+                </form>
+                <div className="lg:col-span-2 space-y-3">{rules.map(rule => <article key={rule.id} className="ui-card flex justify-between gap-3">
+                    <div><h3 className="font-bold">{rule.name}</h3><p className="text-sm text-muted-foreground">{ORDER_STATUS_LABELS[rule.triggerStatus]} · {rule.timingDays === 0 ? 'يوم التسليم' : Math.abs(rule.timingDays) + ' يوم ' + (rule.timingDays < 0 ? 'قبل التسليم' : 'بعد التسليم')}</p><p className="text-xs mt-1">تنبيه داخلي{rule.whatsappEnabled ? ' + واتساب إلى ' + rule.recipientPhones.length + ' رقم' : ''}</p></div>
+                    <div className="flex gap-2"><button className="ui-button" aria-label={'تعديل ' + rule.name} onClick={() => { setEditingId(rule.id); setForm({ ...rule, phones: rule.recipientPhones.join(', ') }); }}><Settings size={16} /></button><button className="ui-button text-destructive" disabled={saving} aria-label={'حذف ' + rule.name} onClick={() => void remove(rule.id)}><Trash2 size={16} /></button></div>
+                </article>)}{!loading && rules.length === 0 && <p className="ui-card">لم تُضف قواعد تنبيه بعد.</p>}</div>
+            </div>
+        </>}
+    </main>;
 }

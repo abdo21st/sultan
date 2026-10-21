@@ -27,6 +27,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 IDEMPOTENCY_CONFLICT: [409, 'استُخدم مفتاح العملية لطلب مختلف'],
                 LEDGER_MISMATCH: [409, 'رصيد الطلب لا يطابق سجل التحصيل؛ يلزم إجراء مصالحة قبل التصحيح'],
                 CONCURRENT_CHANGE: [409, 'تزامنت عملية أخرى؛ أعد المحاولة بنفس مفتاح العملية'],
+                ORDER_CLOSED: [409, 'توقف تعديل الدفعات الأصلية بسبب طلب إلغاء أو مرتجع. استخدم التسوية المنفصلة بعد قرار المدير.'],
             } as const;
             const [status, message] = errors[error.code];
             return NextResponse.json({ error: message, code: error.code }, { status });

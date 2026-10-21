@@ -17,6 +17,7 @@ export default function SettingsPage() {
         logoUrl: '',
         printHeader: '',
         printFooter: '',
+        printTerms: '',
         themeColor: '#796453',
         whatsappAutoSend: false,
         whatsappApiUrl: '',
@@ -34,6 +35,7 @@ export default function SettingsPage() {
                         logoUrl: data.logoUrl || '',
                         printHeader: data.printHeader || '',
                         printFooter: data.printFooter || '',
+                        printTerms: data.printTerms || '',
                         themeColor: data.themeColor || '#796453',
                         whatsappAutoSend: data.whatsappAutoSend || false,
                         whatsappApiUrl: data.whatsappApiUrl || '',
@@ -241,6 +243,7 @@ export default function SettingsPage() {
                                 </div>
                             </div>
 
+                            <label className="block space-y-2"><span className="text-sm font-medium">ملاحظات وشروط مستند الطلب</span><textarea className="ui-field min-h-32" value={settings.printTerms} maxLength={5000} onChange={e => setSettings({ ...settings, printTerms: e.target.value })} placeholder="أدخل الشروط المعتمدة لنشاطكم. اترك الحقل فارغاً لإخفاء قسم الشروط." /><span className="block text-xs text-muted-foreground">يظهر النص كما تكتبه في الطباعة وملف PDF، دون إضافة شروط جاهزة.</span></label>
                             <div className="pt-4 flex justify-end">
                                 <button
                                     type="submit"

@@ -1,0 +1,12 @@
+[Unit]
+Description=Process scheduled Sultan order alerts
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/sultan-production
+ExecStart=/usr/bin/flock -n /run/lock/sultan-alerts.lock /usr/bin/node scripts/cloud-alerts.mjs
+TimeoutStartSec=210s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true

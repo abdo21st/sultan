@@ -1,21 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
-import { getRequestUser } from "@/lib/request-user";
-import { z } from "zod";
+import { canAccessAllFacilities, getRequestUser } from "@/lib/request-user";
+import { PERMISSIONS } from '@/lib/permissions';
+import { alertSchema } from '@/lib/alert-settings';
 import { writeAudit } from "@/lib/audit";
-
-const alertSchema = z.object({
-    name: z.string().trim().min(2).max(100),
-    triggerStatus: z.string().trim().min(2).max(100),
-    timingDays: z.number().int().min(0).max(365),
-    whatsappEnabled: z.boolean(),
-    recipientPhones: z.array(z.string().regex(/^\d{10,15}$/)).max(100),
-});
 
 export async function GET() {
     try {
         const user = await getRequestUser();
-        if (!user || user.role !== 'ADMIN') {
+        if (!user?.permissions.includes(PERMISSIONS.ALERTS_MANAGE) || !canAccessAllFacilities(user)) {
             return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
         }
 
@@ -31,7 +24,7 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         const user = await getRequestUser();
-        if (!user || user.role !== 'ADMIN') {
+        if (!user?.permissions.includes(PERMISSIONS.ALERTS_MANAGE) || !canAccessAllFacilities(user)) {
             return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
         }
 

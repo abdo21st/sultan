@@ -6,12 +6,13 @@ export const NAVIGATION_GROUPS: { label: string; items: { href: string; label: s
         { href: '/', label: 'الطلبات', icon: List, permissions: [PERMISSIONS.ORDERS_VIEW] },
         { href: '/admin/booking', label: 'سعة الإنتاج', icon: CalendarDays, permissions: [PERMISSIONS.BOOKING_MANAGE] },
         { href: '/admin/alerts', label: 'متابعة الاستحقاقات', icon: BellRing, permissions: [PERMISSIONS.ALERTS_MANAGE] },
+        { href: '/adjustments', label: 'الإلغاء والمرتجعات', icon: List, permissions: [PERMISSIONS.ORDERS_ADJUSTMENT_REQUEST, PERMISSIONS.ORDERS_ADJUSTMENT_APPROVE, PERMISSIONS.ORDERS_REFUND] },
     ] },
     { label: 'الماليات', items: [
         { href: '/transactions', label: 'التحصيل والحركات المالية', icon: Wallet, permissions: [PERMISSIONS.TRANSACTIONS_VIEW] },
     ] },
     { label: 'التقارير', items: [
-        { href: '/admin/analytics', label: 'التقارير والتحليلات', icon: BarChart3, permissions: [PERMISSIONS.DASHBOARD_VIEW], adminOnly: true },
+        { href: '/admin/analytics', label: 'التقارير والتحليلات', icon: BarChart3, permissions: [PERMISSIONS.DASHBOARD_VIEW] },
     ] },
     { label: 'الإدارة', items: [
         { href: '/admin/users', label: 'المستخدمون والصلاحيات', icon: Users, permissions: [PERMISSIONS.USERS_VIEW, PERMISSIONS.ROLES_MANAGE] },

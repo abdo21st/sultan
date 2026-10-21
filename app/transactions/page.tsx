@@ -8,6 +8,7 @@ import { PERMISSIONS } from '../../lib/permissions';
 import { formatCurrency } from '../../lib/utils';
 import { fetchAllPages } from '@/lib/fetch-all-pages';
 import ReverseTransaction from './ReverseTransaction';
+import Link from 'next/link';
 
 interface Transaction {
     id: string;
@@ -17,6 +18,8 @@ interface Transaction {
     description?: string;
     date: string;
     orderId?: string | null;
+    adjustmentId?: string | null;
+    adjustment?: { orderId: string; kind: string } | null;
     reversalOfId?: string | null;
     reversalReason?: string | null;
     reversedBy?: { id: string } | null;
@@ -36,7 +39,7 @@ export default function TransactionsPage() {
     const [nextTransactionsCursor, setNextTransactionsCursor] = useState<string | null>(null);
     const [loadingMoreTransactions, setLoadingMoreTransactions] = useState(false);
     const [showForm, setShowForm] = useState(false);
-    const [stats, setStats] = useState({ totalDebt: 0, treasuryBalance: 0, totalIncome: 0, totalExpense: 0 });
+    const [stats, setStats] = useState({ totalDebt: 0, treasuryBalance: 0, totalIncome: 0, totalExpense: 0, pendingRefunds: 0 });
 
     // Payment Modal State
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -167,7 +170,8 @@ export default function TransactionsPage() {
 
             <main className="ui-page">
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
+                    <div className="ui-card"><p className="text-sm text-muted-foreground mb-1">مبالغ معتمدة متبقية للرد</p><p className="text-2xl font-bold text-rose-700">{formatCurrency(stats.pendingRefunds || 0)}</p><Link href="/adjustments" className="text-sm text-primary underline">فتح التسويات</Link></div>
                     <div className="bg-card border border-border p-4 rounded-xl ">
                         <p className="text-sm text-muted-foreground mb-1">الخزينة (الكاش)</p>
                         <p className={`text-2xl font-bold font-mono ${stats.treasuryBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>

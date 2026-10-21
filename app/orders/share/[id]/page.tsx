@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getStatusInfo, formatCurrency, formatDate } from "@/lib/utils";
 import { readOrderShareToken } from "@/lib/order-share-token";
+import { CLOSED_ORDER_STATUSES } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,11 +20,14 @@ export default async function ShareOrderPage({
 
     const order = await prisma.order.findUnique({
         where: { id },
+        include: { adjustments: { where: { status: 'APPROVED' }, take: 1 } },
     });
 
     if (!order || claims.version !== order.shareVersion) notFound();
 
     const statusInfo = getStatusInfo(order.status);
+    const closed = CLOSED_ORDER_STATUSES.includes(order.status);
+    const adjustment = order.adjustments[0];
 
     // Fetch facility names
     const factory = order.factoryId ? await prisma.facility.findUnique({ where: { id: order.factoryId } }) : null;
@@ -90,6 +94,7 @@ export default async function ShareOrderPage({
                 </div>
 
                 {/* Financial Summary */}
+                {closed && <p className="mb-4 rounded-xl border p-4 text-sm">أُغلق الطلب بإلغاء أو مرتجع. السجل المالي الأصلي أدناه محفوظ، ولا يُطلب سداد رصيده. المتبقي لإعادته للعميل: {formatCurrency(adjustment ? adjustment.refundAmount.minus(adjustment.refundedAmount) : 0)}.</p>}
                 <div className="bg-green-50 p-6 rounded-xl border-2 border-green-200">
                     <h2 className="text-lg font-black text-green-800 mb-4">الملخص المالي</h2>
                     <div className="space-y-3">
@@ -102,7 +107,7 @@ export default async function ShareOrderPage({
                             <span className="text-xl font-black font-mono" dir="ltr">{formatCurrency(order.paidAmount)}</span>
                         </div>
                         <div className="flex justify-between items-center pt-3 border-t-2 border-green-300">
-                            <span className="text-sm font-bold">الرصيد المتبقي</span>
+                            <span className="text-sm font-bold">{closed ? 'الرصيد الأصلي الملغى تحصيله' : 'الرصيد المتبقي'}</span>
                             <span className={`text-2xl font-black font-mono ${Number(order.remainingAmount) > 0 ? 'text-red-600' : 'text-gray-500'}`} dir="ltr">
                                 {formatCurrency(order.remainingAmount)}
                             </span>

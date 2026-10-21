@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { ORDER_STATUS, ALLOWED_TRANSITIONS } from "@/lib/constants";
+import { ORDER_STATUS, ALLOWED_TRANSITIONS, CLOSED_ORDER_STATUSES } from "@/lib/constants";
 import { PERMISSIONS } from "@/lib/permissions";
 import { createStatusChangeNotification } from "@/lib/services/notification-service";
 import { canAccessOrderFacility, getRequestUser, type RequestUser } from "@/lib/request-user";
@@ -139,6 +139,8 @@ export async function updateOrderStatus(id: string, newStatus: string, rejection
         if (!user) return { success: false, error: 'يجب تسجيل الدخول' };
         const permissions = user.permissions;
 
+        if (newStatus === ORDER_STATUS.COMPLETED) return { success: false, error: 'استخدم إجراء إتمام التسليم لتسجيل التحصيل وملاحظة الرصيد.' };
+
         // Permission Checks
         if (newStatus === ORDER_STATUS.PROCESSING && !permissions.includes(PERMISSIONS.STATUS_CHANGE_PROCESSING)) {
             return { success: false, error: 'ليس لديك صلاحية نقل الطلب إلى "قيد التجهيز"' };
@@ -253,11 +255,15 @@ export async function completeOrder(id: string, paymentAmount: number, paymentNo
         if (!order) return { success: false, error: 'الطلب غير موجود' };
         if (!canAccessOrderFacility(user, order)) return { success: false, error: 'غير مصرح لك بهذا الطلب' };
         if (order.status === ORDER_STATUS.COMPLETED) return { success: false, error: 'الطلب مكتمل بالفعل' };
+        if (CLOSED_ORDER_STATUSES.includes(order.status)) return { success: false, error: 'الطلب مغلق بإلغاء أو مرتجع' };
+        if (![ORDER_STATUS.DELIVERING, 'DELIVERING'].includes(order.status)) return { success: false, error: 'يجب أن يكون الطلب قيد التوصيل قبل إتمام التسليم' };
         if (toCents(order.remainingAmount) < toCents(roundedPayment)) {
             return { success: false, error: 'مبلغ التحصيل أكبر من المبلغ المتبقي' };
         }
 
         await prisma.$transaction(async (tx) => {
+            await tx.$queryRaw`SELECT id FROM "Order" WHERE id=${id} FOR UPDATE`;
+            if (await tx.orderAdjustment.findFirst({ where: { orderId: id, status: { in: ['REQUESTED', 'APPROVED'] } } })) throw new Error('ORDER_ADJUSTMENT_OPEN');
             const updated = await tx.order.updateMany({
                 where: {
                     id,
@@ -325,6 +331,7 @@ export async function completeOrder(id: string, paymentAmount: number, paymentNo
 
         return { success: true };
     } catch (error) {
+        if (error instanceof Error && error.message === 'ORDER_ADJUSTMENT_OPEN') return { success: false, error: 'توقف التسليم بسبب طلب إلغاء أو مرتجع؛ راجع قرار المدير' };
         console.error("Order Completion Error:", error);
         return { success: false, error: 'حدث خطأ أثناء إتمام الطلب' };
     }

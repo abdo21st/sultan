@@ -24,6 +24,9 @@ export async function GET() {
             alertSettings,
             auditLogs,
             blobDeletions,
+            alertDeliveries,
+            orderAdjustments,
+            scheduledJobs,
         ] = await Promise.all([
             prisma.user.findMany({
                 select: {
@@ -51,6 +54,7 @@ export async function GET() {
                     logoUrl: true,
                     printHeader: true,
                     printFooter: true,
+                    printTerms: true,
                     themeColor: true,
                     whatsappAutoSend: true,
                     whatsappApiUrl: true,
@@ -61,6 +65,9 @@ export async function GET() {
             prisma.alertSetting.findMany(),
             prisma.auditLog.findMany(),
             prisma.blobDeletion.findMany(),
+            prisma.alertDelivery.findMany(),
+            prisma.orderAdjustment.findMany(),
+            prisma.scheduledJobState.findMany(),
         ]);
 
         const backupData = {
@@ -78,6 +85,9 @@ export async function GET() {
                 alertSettings,
                 auditLogs,
                 blobDeletions,
+                alertDeliveries,
+                orderAdjustments,
+                scheduledJobs,
             }
         };
 

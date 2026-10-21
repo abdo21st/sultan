@@ -5,7 +5,7 @@ import { RotateCcw } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 export default function ReverseTransaction({ transaction, onSuccess }: {
-    transaction: { id: string; type: string; amount: number; orderId?: string | null };
+    transaction: { id: string; type: string; amount: number; orderId?: string | null; adjustmentId?: string | null };
     onSuccess: () => void;
 }) {
     const [open, setOpen] = useState(false);
@@ -41,7 +41,7 @@ export default function ReverseTransaction({ transaction, onSuccess }: {
             <section role="dialog" aria-modal="true" aria-labelledby={titleId} className="w-full max-w-md rounded-xl border border-border bg-card p-6 space-y-4">
                 <h2 id={titleId} className="text-xl font-bold">تصحيح الحركة بقيد عكسي</h2>
                 <p className="text-sm text-muted-foreground">ستبقى الحركة الأصلية، ويُسجّل تصحيح بقيمتها كاملة: {formatCurrency(transaction.amount)}.</p>
-                <p className="text-sm">{transaction.orderId ? 'سينخفض صافي التحصيل ويزيد المبلغ المتبقي على الطلب بالقيمة نفسها. تبقى حالة التسليم كما هي، ويمكن تحصيل الرصيد المستحق لاحقاً.' : transaction.type === 'INCOME' ? 'سينخفض صافي الإيراد ورصيد الخزينة بالقيمة نفسها.' : 'سينخفض صافي المصروف ويزيد رصيد الخزينة بالقيمة نفسها.'}</p>
+                <p className="text-sm">{transaction.adjustmentId ? 'سينخفض صافي المبلغ المُعاد ويزيد المتبقي المستحق للعميل بالقيمة نفسها. تبقى حالة الإلغاء أو المرتجع كما هي.' : transaction.orderId ? 'سينخفض صافي التحصيل ويزيد المبلغ المتبقي على الطلب بالقيمة نفسها. تبقى حالة التسليم كما هي، ويمكن تحصيل الرصيد المستحق لاحقاً.' : transaction.type === 'INCOME' ? 'سينخفض صافي الإيراد ورصيد الخزينة بالقيمة نفسها.' : 'سينخفض صافي المصروف ويزيد رصيد الخزينة بالقيمة نفسها.'}</p>
                 <form onSubmit={submit} className="space-y-4">
                     <label className="block space-y-2 text-sm">
                         <span>سبب التصحيح</span>

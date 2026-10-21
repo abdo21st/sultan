@@ -43,6 +43,7 @@ services:
       AUTH_TRUST_HOST: "true"
       AUTH_SECRET: ${QA_AUTH_SECRET:?Set the private QA authentication secret}
       CRON_SECRET: ${QA_CRON_SECRET:?Set the private QA cron secret}
+      WHATSAPP_API_ALLOWED_HOSTS: ${WHATSAPP_API_ALLOWED_HOSTS:-}
       ORDER_SHARE_SECRET: ${QA_SHARE_SECRET:?Set the private QA share secret}
       ORDER_IMAGE_STORAGE: local
       ORDER_IMAGE_STORAGE_DIR: /app/storage/order-images

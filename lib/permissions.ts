@@ -8,6 +8,7 @@ export const PERMISSIONS = {
 
     // Facilities
     FACILITIES_VIEW: 'facilities:view',
+    FACILITIES_VIEW_ALL: 'facilities:view_all',
     FACILITIES_ADD: 'facilities:add',
     FACILITIES_EDIT: 'facilities:edit',
     FACILITIES_DELETE: 'facilities:delete',
@@ -23,6 +24,9 @@ export const PERMISSIONS = {
     ORDERS_VIEW_FINANCIALS: 'orders:view_financials', // See price/totals
     ORDERS_SHARE: 'orders:share',
     ORDERS_REVOKE_SHARES: 'orders:revoke_shares',
+    ORDERS_ADJUSTMENT_REQUEST: 'orders:adjustment:request',
+    ORDERS_ADJUSTMENT_APPROVE: 'orders:adjustment:approve',
+    ORDERS_REFUND: 'orders:refund',
 
     // Transactions
     TRANSACTIONS_VIEW: 'transactions:view',
@@ -48,6 +52,8 @@ export const PERMISSIONS = {
     STATUS_VIEW_SHOP_READY: 'orders:status:view:shop_ready',
     STATUS_VIEW_DELIVERING: 'orders:status:view:delivering',
     STATUS_VIEW_COMPLETED: 'orders:status:view:completed',
+    STATUS_VIEW_CANCELLED: 'orders:status:view:cancelled',
+    STATUS_VIEW_RETURNED: 'orders:status:view:returned',
 
     // Status Changes (Who can MOVE TO this status)
     STATUS_CHANGE_REGISTERED: 'orders:status:change:registered',
@@ -66,6 +72,7 @@ export const PERMISSION_LABELS: Record<string, string> = {
     [PERMISSIONS.USERS_DELETE]: 'حذف المستخدمين',
 
     [PERMISSIONS.FACILITIES_VIEW]: 'عرض المنشآت',
+    [PERMISSIONS.FACILITIES_VIEW_ALL]: 'متابعة الطلبات والحركات في جميع المنشآت',
     [PERMISSIONS.FACILITIES_ADD]: 'إضافة منشآت',
     [PERMISSIONS.FACILITIES_EDIT]: 'تعديل المنشآت',
     [PERMISSIONS.FACILITIES_DELETE]: 'حذف المنشآت',
@@ -78,6 +85,9 @@ export const PERMISSION_LABELS: Record<string, string> = {
     [PERMISSIONS.ORDERS_VIEW_FINANCIALS]: 'عرض تفاصيل مالية الطلب',
     [PERMISSIONS.ORDERS_SHARE]: 'إصدار روابط مشاركة الطلب',
     [PERMISSIONS.ORDERS_REVOKE_SHARES]: 'إلغاء روابط مشاركة الطلب',
+    [PERMISSIONS.ORDERS_ADJUSTMENT_REQUEST]: 'طلب إلغاء أو مرتجع مع السبب',
+    [PERMISSIONS.ORDERS_ADJUSTMENT_APPROVE]: 'مراجعة واعتماد الإلغاء والمرتجعات',
+    [PERMISSIONS.ORDERS_REFUND]: 'تسجيل رد المبلغ بعد اعتماد الإلغاء أو المرتجع',
 
     [PERMISSIONS.TRANSACTIONS_VIEW]: 'عرض الحركات المالية',
     [PERMISSIONS.TRANSACTIONS_ADD]: 'إضافة حركة مالية',
@@ -101,6 +111,8 @@ export const PERMISSION_LABELS: Record<string, string> = {
     [PERMISSIONS.STATUS_VIEW_SHOP_READY]: 'عرض: جاهز للمحل',
     [PERMISSIONS.STATUS_VIEW_DELIVERING]: 'عرض: قيد التوصيل',
     [PERMISSIONS.STATUS_VIEW_COMPLETED]: 'عرض: مكتمل',
+    [PERMISSIONS.STATUS_VIEW_CANCELLED]: 'عرض: ملغي',
+    [PERMISSIONS.STATUS_VIEW_RETURNED]: 'عرض: مرتجع',
 
     // Status Changes Labels
     [PERMISSIONS.STATUS_CHANGE_REGISTERED]: 'نقل إلى: قيد التسجيل',
@@ -119,6 +131,7 @@ export const DEFAULT_ROLES = {
     MANAGER: [
         PERMISSIONS.ORDERS_SHARE, PERMISSIONS.ORDERS_REVOKE_SHARES,
         PERMISSIONS.DASHBOARD_VIEW,
+        PERMISSIONS.STATUS_VIEW_CANCELLED, PERMISSIONS.STATUS_VIEW_RETURNED,
         PERMISSIONS.USERS_VIEW,
         PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_ADD, PERMISSIONS.ORDERS_EDIT, PERMISSIONS.ORDERS_CHANGE_STATUS, PERMISSIONS.ORDERS_VIEW_FINANCIALS,
 
@@ -134,6 +147,7 @@ export const DEFAULT_ROLES = {
         PERMISSIONS.FACILITIES_VIEW
     ],
     ACCOUNTANT: [
+        PERMISSIONS.STATUS_VIEW_CANCELLED, PERMISSIONS.STATUS_VIEW_RETURNED,
         PERMISSIONS.ORDERS_SHARE,
         PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_VIEW_FINANCIALS,
         PERMISSIONS.TRANSACTIONS_VIEW, PERMISSIONS.TRANSACTIONS_ADD,

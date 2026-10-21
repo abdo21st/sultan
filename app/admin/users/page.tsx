@@ -140,6 +140,17 @@ export default function AccessManagementPage() {
         });
     };
 
+    const handleSupervisorCreate = () => {
+        setEditingRole({ id: 'new' });
+        setRoleFormData({
+            name: 'OPERATIONS_SUPERVISOR', displayName: 'مدير المتابعة العامة',
+            description: 'متابعة جميع المصانع والمحلات والتقارير، دون صلاحيات إدارة المستخدمين أو الإعدادات أو تسجيل وعكس الحركات.',
+            permissions: [PERMISSIONS.FACILITIES_VIEW, PERMISSIONS.FACILITIES_VIEW_ALL, PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_SHARE,
+                PERMISSIONS.ORDERS_VIEW_FINANCIALS, PERMISSIONS.TRANSACTIONS_VIEW, PERMISSIONS.DASHBOARD_VIEW, PERMISSIONS.ORDERS_ADJUSTMENT_APPROVE,
+                ...Object.values(PERMISSIONS).filter(permission => permission.startsWith('orders:status:view:'))],
+        });
+    };
+
     const togglePermission = (perm: string) => {
         setRoleFormData(prev => ({
             ...prev,
@@ -212,7 +223,7 @@ export default function AccessManagementPage() {
         },
         'المنشآت': {
             icon: <LayoutGrid className="w-4 h-4" />,
-            perms: [PERMISSIONS.FACILITIES_VIEW, PERMISSIONS.FACILITIES_ADD, PERMISSIONS.FACILITIES_EDIT, PERMISSIONS.FACILITIES_DELETE]
+            perms: [PERMISSIONS.FACILITIES_VIEW, PERMISSIONS.FACILITIES_VIEW_ALL, PERMISSIONS.FACILITIES_ADD, PERMISSIONS.FACILITIES_EDIT, PERMISSIONS.FACILITIES_DELETE]
         },
         'الطلبات': {
             icon: <FileText className="w-4 h-4" />,
@@ -222,12 +233,15 @@ export default function AccessManagementPage() {
                 PERMISSIONS.ORDERS_EDIT,
                 PERMISSIONS.ORDERS_DELETE,
                 PERMISSIONS.ORDERS_CHANGE_STATUS,
-                PERMISSIONS.ORDERS_VIEW_FINANCIALS
+                PERMISSIONS.ORDERS_VIEW_FINANCIALS,
+                PERMISSIONS.ORDERS_SHARE,
+                PERMISSIONS.ORDERS_REVOKE_SHARES,
+                PERMISSIONS.ORDERS_ADJUSTMENT_REQUEST, PERMISSIONS.ORDERS_ADJUSTMENT_APPROVE, PERMISSIONS.ORDERS_REFUND,
             ]
         },
         'الحركات المالية': {
             icon: <CreditCard className="w-4 h-4" />,
-            perms: [PERMISSIONS.TRANSACTIONS_VIEW, PERMISSIONS.TRANSACTIONS_ADD]
+            perms: [PERMISSIONS.TRANSACTIONS_VIEW, PERMISSIONS.TRANSACTIONS_ADD, PERMISSIONS.TRANSACTIONS_REVERSE]
         },
         'النظام': {
             icon: <Settings className="w-4 h-4" />,
@@ -235,7 +249,8 @@ export default function AccessManagementPage() {
                 PERMISSIONS.ROLES_MANAGE,
                 PERMISSIONS.SETTINGS_MANAGE,
                 PERMISSIONS.ALERTS_MANAGE,
-                PERMISSIONS.BOOKING_MANAGE
+                PERMISSIONS.BOOKING_MANAGE,
+                PERMISSIONS.DASHBOARD_VIEW, PERMISSIONS.AUDIT_VIEW, PERMISSIONS.WHATSAPP_SEND, PERMISSIONS.BACKUP_MANAGE, PERMISSIONS.DATA_CLEAR,
             ]
         },
         'مشاهدة الحالات': {
@@ -247,7 +262,8 @@ export default function AccessManagementPage() {
                 PERMISSIONS.STATUS_VIEW_DELIVERING_TO_FACTORY,
                 PERMISSIONS.STATUS_VIEW_SHOP_READY,
                 PERMISSIONS.STATUS_VIEW_DELIVERING,
-                PERMISSIONS.STATUS_VIEW_COMPLETED
+                PERMISSIONS.STATUS_VIEW_COMPLETED,
+                PERMISSIONS.STATUS_VIEW_CANCELLED, PERMISSIONS.STATUS_VIEW_RETURNED,
             ]
         },
         'تغيير الحالات': {
@@ -403,6 +419,7 @@ export default function AccessManagementPage() {
                                     onChange={e => setRoleSearchTerm(e.target.value)}
                                 />
                             </div>
+                            <button type="button" onClick={handleSupervisorCreate} className="ui-button">قالب مدير المتابعة العامة</button>
                             <button
                                 onClick={handleRoleCreate}
                                 className="flex items-center justify-center gap-3 px-8 py-4 bg-primary text-white rounded-xl   transition-all duration-500 font-semibold text-sm uppercase  gold-glow transform hover:-translate-y-0.5"

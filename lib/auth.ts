@@ -41,10 +41,13 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             // Every server authentication checks revocation, including page requests.
             const current = await prisma.user.findUnique({
                 where: { id: token.sub },
-                select: { sessionVersion: true, mustChangePassword: true },
+                select: { sessionVersion: true, mustChangePassword: true, role: true, facilityId: true, permissions: true, roles: { select: { permissions: true } } },
             });
             if (!current || current.sessionVersion !== token.sessionVersion) return null;
             token.mustChangePassword = current.mustChangePassword;
+            token.role = current.role;
+            token.facilityId = current.facilityId;
+            token.permissions = [...new Set([...DEFAULT_ROLES[current.role], ...current.permissions, ...current.roles.flatMap(role => role.permissions)])];
             return token;
         },
     },

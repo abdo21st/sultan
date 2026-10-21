@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { exportToPDF } from "@/lib/pdf-export";
 import toast from "react-hot-toast";
 import { formatCurrency } from "@/lib/utils";
+import { PERMISSIONS } from '@/lib/permissions';
 
 interface Facility {
     id: string;
@@ -68,7 +69,10 @@ interface ReportData {
         totalIncome?: number;
         totalExpense?: number;
         netProfit?: number;
+        netCashFlow?: number;
         totalOrders?: number;
+        completedOrders?: number;
+        openOrders?: number;
         statusDistribution?: { name: string; value: number }[];
         orderPayments?: number;
         topFactory?: string;
@@ -94,7 +98,12 @@ export default function FlexibleReportsPage() {
     const [loadingMore, setLoadingMore] = useState(false);
     const [reportError, setReportError] = useState('');
 
-    const isAuthorized = status === "authenticated" && session?.user?.role === 'ADMIN';
+    const permissions = session?.user?.permissions ?? [];
+    const isAuthorized = status === 'authenticated' && permissions.includes(PERMISSIONS.DASHBOARD_VIEW);
+    const showAmounts = permissions.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
+    const canReadFinancial = showAmounts && permissions.includes(PERMISSIONS.TRANSACTIONS_VIEW);
+    const allFacilities = session?.user?.role === 'ADMIN' || permissions.includes(PERMISSIONS.FACILITIES_VIEW_ALL);
+    const effectiveReportType = canReadFinancial ? reportType : (reportType === 'financial' || reportType === 'users' ? 'operational' : reportType);
 
     useEffect(() => {
         if (status === "loading") return;
@@ -108,7 +117,7 @@ export default function FlexibleReportsPage() {
         if (isAuthorized) {
             fetch("/api/facilities")
                 .then(res => res.json())
-                .then(setFacilities)
+                .then(data => setFacilities(Array.isArray(data) ? data : []))
                 .catch(console.error);
         }
     }, [isAuthorized]);
@@ -119,7 +128,7 @@ export default function FlexibleReportsPage() {
         setReportError('');
         try {
             const query = new URLSearchParams({
-                type: reportType,
+                type: effectiveReportType,
                 start: filters.start,
                 end: filters.end,
                 limit: "50",
@@ -137,14 +146,14 @@ export default function FlexibleReportsPage() {
         } finally {
             setLoading(false);
         }
-    }, [reportType, filters]);
+    }, [effectiveReportType, filters]);
 
     const loadMoreReport = useCallback(async () => {
         if (!reportData?.nextCursor || loadingMore) return;
         setLoadingMore(true);
         try {
             const query = new URLSearchParams({
-                type: reportType,
+                type: effectiveReportType,
                 start: filters.start,
                 end: filters.end,
                 limit: "50",
@@ -164,7 +173,7 @@ export default function FlexibleReportsPage() {
         } finally {
             setLoadingMore(false);
         }
-    }, [reportData, loadingMore, reportType, filters]);
+    }, [reportData, loadingMore, effectiveReportType, filters]);
 
     useEffect(() => {
         if (isAuthorized) {
@@ -201,7 +210,7 @@ export default function FlexibleReportsPage() {
         try {
             while (cursor) {
                 const query = new URLSearchParams({
-                    type: reportType,
+                    type: effectiveReportType,
                     start: filters.start,
                     end: filters.end,
                     limit: "100",
@@ -223,7 +232,7 @@ export default function FlexibleReportsPage() {
         let rows: Record<string, string | number>[] = [];
         let title = "";
 
-        switch (reportType) {
+        switch (effectiveReportType) {
             case "financial":
                 title = "التقرير المالي";
                 columns = [
@@ -286,6 +295,8 @@ export default function FlexibleReportsPage() {
                 break;
         }
 
+        if (!showAmounts) columns = columns.filter(column => !['amount', 'value', 'volume'].includes(column.dataKey));
+
         exportToPDF({
             title,
             subtitle: `الفترة من ${filters.start} إلى ${filters.end}`,
@@ -313,7 +324,7 @@ export default function FlexibleReportsPage() {
 
             <main className="ui-page space-y-5">
                 <header className="ui-page-header">
-                    <div><h1 className="ui-page-title">التقارير والتحليلات</h1><p className="ui-page-description">ملخص المالية والتشغيل والإنتاج ونشاط المستخدمين.</p></div>
+                    <div><h1 className="ui-page-title">التقارير والتحليلات</h1><p className="ui-page-description">الحركات المالية والطلبات حسب الحالة والمصنع، ضمن نطاق صلاحياتك.</p></div>
                     <button type="button" onClick={handlePDFExport} className="ui-button"><Download size={18} aria-hidden="true" />تصدير PDF</button>
                 </header>
 
@@ -325,12 +336,12 @@ export default function FlexibleReportsPage() {
                             { id: "financial", label: "المالية", icon: DollarSign },
                             { id: "operational", label: "التشغيل", icon: ClipboardList },
                             { id: "production", label: "الإنتاج", icon: FactoryIcon },
-                            { id: "users", label: "المستخدمون", icon: UsersIcon }
-                        ].map((tab) => (
+                            { id: "users", label: "نشاط تسجيل الحركات", icon: UsersIcon }
+                        ].filter(tab => canReadFinancial || !['financial', 'users'].includes(tab.id)).map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setReportType(tab.id as "financial" | "operational" | "production" | "users")}
-                                aria-pressed={reportType === tab.id}
+                                aria-pressed={effectiveReportType === tab.id}
                                 className="ui-tab flex-1"
                             >
                                 <tab.icon className="w-4 h-4" />
@@ -396,9 +407,9 @@ export default function FlexibleReportsPage() {
                             onChange={(e) => setFilters(f => ({ ...f, facilityId: e.target.value }))}
                             className="ui-field appearance-none"
                         >
-                            <option value="">جميع المنشآت</option>
-                            {facilities.map(f => (
-                                <option key={f.id} value={f.id}>{f.name} ({f.type === 'FACTORY' ? 'مصنع' : 'معرض'})</option>
+                            <option value="">{allFacilities ? 'جميع المنشآت' : 'منشأتي'}</option>
+                            {facilities.filter(f => allFacilities || f.id === session?.user?.facilityId).map(f => (
+                                <option key={f.id} value={f.id}>{f.name} ({f.type === 'FACTORY' ? 'مصنع' : 'محل'})</option>
                             ))}
                         </select>
                     </div>
@@ -410,12 +421,12 @@ export default function FlexibleReportsPage() {
                     <div className="h-[400px] flex items-center justify-center">
                         <Loader2 className="w-10 h-10 animate-spin text-primary/40" />
                     </div>
-                ) : reportData && reportData.type === reportType && (
+                ) : reportData && reportData.type === effectiveReportType && (
                     <div className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-                        {reportType === "financial" && <FinancialView data={reportData} />}
-                        {reportType === "operational" && <OperationalView data={reportData} />}
-                        {reportType === "production" && <ProductionView data={reportData} />}
-                        {reportType === "users" && <UserActivityView data={reportData} />}
+                        {effectiveReportType === "financial" && <FinancialView data={reportData} />}
+                        {effectiveReportType === "operational" && <OperationalView data={reportData} />}
+                        {effectiveReportType === "production" && <ProductionView data={reportData} showAmounts={showAmounts} />}
+                        {effectiveReportType === "users" && <UserActivityView data={reportData} />}
                         {reportData.nextCursor && (
                             <div className="flex justify-center pt-8">
                                 <button
@@ -441,8 +452,9 @@ function FinancialView({ data }: { data: ReportData }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCardSmall title="صافي الدخل" value={data.summary.totalIncome || 0} color="text-emerald-600" bg="bg-emerald-50" icon={TrendingUp} />
                 <StatCardSmall title="صافي المصروفات" value={data.summary.totalExpense || 0} color="text-rose-600" bg="bg-rose-50" icon={Banknote} />
-                <StatCardSmall title="صافي الأرباح" value={data.summary.netProfit || 0} color="text-primary" bg="bg-primary/10" icon={DollarSign} />
+                <StatCardSmall title="صافي التدفق النقدي" value={data.summary.netCashFlow ?? data.summary.netProfit ?? 0} color="text-primary" bg="bg-primary/10" icon={DollarSign} />
             </div>
+            <p className="text-sm text-muted-foreground">صافي التدفق النقدي = الدخل المسجل ناقص المصروفات المسجلة خلال الفترة، مع أثر القيود العكسية. لا يمثل ربح الإنتاج أو تكلفة المخزون غير المسجلة.</p>
 
             <div className="bg-card  rounded-xl border border-border p-5">
                 <h4 className="text-xl font-semibold mb-6">سجل الحركات المالية</h4>
@@ -521,14 +533,15 @@ function OperationalView({ data }: { data: ReportData }) {
                         <Package className="w-12 h-12" />
                     </div>
                     <h5 className="text-4xl font-semibold">{data.summary.totalOrders}</h5>
-                    <p className="text-muted-foreground font-bold">إجمالي الطلبات المنفذة</p>
+                    <p className="text-muted-foreground font-bold">إجمالي الطلبات المسجلة</p>
+                    <p className="text-sm">المكتملة: {data.summary.completedOrders ?? 0} · قيد المتابعة: {data.summary.openOrders ?? 0}</p>
                 </div>
             </div>
         </div>
     );
 }
 
-function ProductionView({ data }: { data: ReportData }) {
+function ProductionView({ data, showAmounts }: { data: ReportData; showAmounts: boolean }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {(data.details as ProductionDetail[]).map((f, i) => (
@@ -546,10 +559,10 @@ function ProductionView({ data }: { data: ReportData }) {
                                 <p className="text-xs font-semibold text-muted-foreground uppercase opacity-60">الطلبات</p>
                                 <p className="text-xl font-semibold">{f.count}</p>
                             </div>
-                            <div>
-                                <p className="text-xs font-semibold text-muted-foreground uppercase opacity-60">القيمة</p>
+                            {showAmounts && <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase opacity-60">القيمة الأصلية للطلبات</p>
                                 <p className="text-xl font-semibold text-emerald-600">{formatCurrency(f.value || 0)}</p>
-                            </div>
+                            </div>}
                         </div>
                     </div>
                 </div>
@@ -561,7 +574,8 @@ function ProductionView({ data }: { data: ReportData }) {
 function UserActivityView({ data }: { data: ReportData }) {
     return (
         <div className="bg-card  rounded-xl border border-border p-5 overflow-hidden">
-            <h4 className="text-xl font-semibold mb-8">نشاط المستخدمين والنظام</h4>
+            <h4 className="text-xl font-semibold mb-3">نشاط تسجيل الحركات المالية</h4>
+            <p className="text-sm text-muted-foreground mb-6">عدد وقيمة الحركات التي سجلها كل مستخدم؛ لا يقيس الحضور أو ساعات العمل أو أداء الإنتاج.</p>
             <div className="grid grid-cols-1 gap-4">
                 {(data.details as UserDetail[]).map((u) => (
                     <div key={u.id} className="flex items-center justify-between p-6 rounded-xl bg-card hover:bg-card/60 transition-all border border-transparent hover:border-primary/20 group">

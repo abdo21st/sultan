@@ -11,6 +11,7 @@ const publicSettingsSelect = {
     logoUrl: true,
     printHeader: true,
     printFooter: true,
+    printTerms: true,
     themeColor: true,
     whatsappAutoSend: true,
     whatsappApiUrl: true,
@@ -24,6 +25,7 @@ function toPublicSettings(settings: {
     logoUrl: string | null;
     printHeader: string | null;
     printFooter: string | null;
+    printTerms: string | null;
     themeColor: string;
     whatsappAutoSend: boolean;
     whatsappApiUrl: string | null;
@@ -39,6 +41,7 @@ const settingsSchema = z.object({
     logoUrl: z.string().max(2048).nullable().optional(),
     printHeader: z.string().max(2000).nullable().optional(),
     printFooter: z.string().max(2000).nullable().optional(),
+    printTerms: z.string().max(5000).nullable().optional(),
     themeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
     whatsappAutoSend: z.boolean().optional(),
     whatsappApiUrl: z.preprocess(
@@ -121,6 +124,7 @@ export async function PATCH(request: Request) {
                 logoUrl: body.logoUrl,
                 printHeader: body.printHeader,
                 printFooter: body.printFooter,
+                printTerms: body.printTerms,
                 themeColor: body.themeColor,
                 whatsappAutoSend: body.whatsappAutoSend,
                 whatsappApiUrl: body.whatsappApiUrl,
@@ -132,6 +136,7 @@ export async function PATCH(request: Request) {
                 logoUrl: body.logoUrl,
                 printHeader: body.printHeader,
                 printFooter: body.printFooter,
+                printTerms: body.printTerms,
                 themeColor: body.themeColor ?? "#d97706",
                 whatsappAutoSend: body.whatsappAutoSend ?? false,
                 whatsappApiUrl: body.whatsappApiUrl,

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, X, Wifi, WifiOff } from "lucide-react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
+import { PERMISSIONS } from '@/lib/permissions';
 
 type Facility = { id: string; name: string; type: "FACTORY" | "SHOP" };
 
@@ -64,9 +65,10 @@ export default function NewOrderPage() {
     const shops = facilities.filter(f => f.type === 'SHOP');
 
     const assignedFacility = facilities.find(f => f.id === user?.facilityId);
-    const userShopId = assignedFacility?.type === 'SHOP' ? assignedFacility.id : null;
-    const userFactoryId = assignedFacility?.type === 'FACTORY' ? assignedFacility.id : null;
-    const canCreateForFacility = user?.role === 'ADMIN' || Boolean(assignedFacility);
+    const allFacilities = user?.role === 'ADMIN' || Boolean(user?.permissions?.includes(PERMISSIONS.FACILITIES_VIEW_ALL));
+    const userShopId = !allFacilities && assignedFacility?.type === 'SHOP' ? assignedFacility.id : null;
+    const userFactoryId = !allFacilities && assignedFacility?.type === 'FACTORY' ? assignedFacility.id : null;
+    const canCreateForFacility = allFacilities || Boolean(assignedFacility);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {

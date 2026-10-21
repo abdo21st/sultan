@@ -2,11 +2,14 @@ import { endOfDay, isValid, parseISO, startOfDay } from "date-fns";
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getRequestUser } from "@/lib/request-user";
+import { getRequestUser, transactionFacilityWhere } from "@/lib/request-user";
 import { fromCents, toCents, toMoneyNumber } from "@/lib/money";
 import { decodeDateIdCursor, encodeDateIdCursor, parsePageSize } from "@/lib/keyset-pagination";
 import { decodeReportGroupCursor } from '@/lib/report-group-pagination';
 import { groupedReport } from '@/lib/report-group-query';
+import { PERMISSIONS } from '@/lib/permissions';
+import { canReadFinancialReports, reportFacility, reportOrderWhere, reportStatuses } from '@/lib/report-access';
+import { ORDER_STATUS } from '@/lib/constants';
 
 interface DateFilter {
     gte?: Date;
@@ -33,28 +36,27 @@ function parseDateFilter(searchParams: URLSearchParams): DateFilter | null {
 }
 
 function transactionWhere(dateFilter: DateFilter, facilityId: string | null): Prisma.TransactionWhereInput {
-    const where: Prisma.TransactionWhereInput = {};
+    const where: Prisma.TransactionWhereInput = transactionFacilityWhere(facilityId);
     if (Object.keys(dateFilter).length > 0) where.date = dateFilter;
-    if (facilityId) {
-        where.OR = [
-            { facilityId },
-            { order: { is: { OR: [{ factoryId: facilityId }, { shopId: facilityId }] } } },
-        ];
-    }
     return where;
 }
 
 export async function GET(request: Request) {
     try {
         const user = await getRequestUser();
-        if (!user || user.role !== "ADMIN") {
+        if (!user?.permissions.includes(PERMISSIONS.DASHBOARD_VIEW)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 
         const { searchParams } = new URL(request.url);
         const reportType = searchParams.get("type") || "financial";
         const dateFilter = parseDateFilter(searchParams);
-        const facilityId = searchParams.get("facilityId");
+        const facilityId = reportFacility(user, searchParams.get("facilityId"));
+        if (facilityId === false) return NextResponse.json({ error: 'لا يمكنك عرض تقارير منشأة خارج نطاقك. اربط الحساب بمنشأة أو امنحه صلاحية متابعة جميع المنشآت.' }, { status: 403 });
+        const financialAccess = canReadFinancialReports(user);
+        const showAmounts = user.permissions.includes(PERMISSIONS.ORDERS_VIEW_FINANCIALS);
+        if ((reportType === 'financial' || reportType === 'users') && !financialAccess) return NextResponse.json({ error: 'يلزم الاطلاع المالي وعرض الحركات المالية.' }, { status: 403 });
+        const statuses = reportStatuses(user);
         const limit = parsePageSize(searchParams.get("limit"));
         const isGrouped = reportType === 'production' || reportType === 'users';
         const cursor = isGrouped ? null : decodeDateIdCursor(searchParams.get("cursor"));
@@ -69,10 +71,10 @@ export async function GET(request: Request) {
                 response = await handleFinancialReport(dateFilter, facilityId, cursor, limit);
                 break;
             case "operational":
-                response = await handleOperationalReport(dateFilter, facilityId, cursor, limit);
+                response = await handleOperationalReport(dateFilter, facilityId, cursor, limit, statuses, showAmounts);
                 break;
             case "production":
-                response = NextResponse.json(await groupedReport(prisma, 'production', dateFilter, facilityId, groupCursor, limit));
+                response = NextResponse.json(await groupedReport(prisma, 'production', dateFilter, facilityId, groupCursor, limit, { statuses, showAmounts }));
                 break;
             case "users":
                 response = NextResponse.json(await groupedReport(prisma, 'users', dateFilter, facilityId, groupCursor, limit));
@@ -129,6 +131,7 @@ async function handleFinancialReport(
             totalIncome: fromCents(incomeCents),
             totalExpense: fromCents(expenseCents),
             netProfit: fromCents(incomeCents - expenseCents),
+            netCashFlow: fromCents(incomeCents - expenseCents),
             orderPayments: fromCents(toCents(orderPayments._sum.amount)),
         },
         details,
@@ -141,10 +144,11 @@ async function handleOperationalReport(
     facilityId: string | null,
     cursor: { date: Date; id: string } | null,
     limit: number,
+    statuses: string[] | null,
+    showAmounts: boolean,
 ) {
-    const where: Prisma.OrderWhereInput = {};
+    const where: Prisma.OrderWhereInput = reportOrderWhere(facilityId, statuses);
     if (Object.keys(dateFilter).length > 0) where.createdAt = dateFilter;
-    if (facilityId) where.shopId = facilityId;
     const pageWhere: Prisma.OrderWhereInput = cursor
         ? { AND: [where, { OR: [{ createdAt: { lt: cursor.date } }, { createdAt: cursor.date, id: { lt: cursor.id } }] }] }
         : where;
@@ -163,7 +167,7 @@ async function handleOperationalReport(
     const details = (hasMore ? page.slice(0, limit) : page).map((order) => ({
         ...order,
         createdAt: order.createdAt.toISOString(),
-        totalAmount: toMoneyNumber(order.totalAmount),
+            totalAmount: showAmounts ? toMoneyNumber(order.totalAmount) : undefined,
     }));
     const last = details.at(-1);
     const statusDistribution = groups.map((group) => ({ name: group.status, value: group._count._all }));
@@ -172,6 +176,8 @@ async function handleOperationalReport(
         type: "operational",
         summary: {
             totalOrders: statusDistribution.reduce((total, group) => total + group.value, 0),
+            completedOrders: statusDistribution.filter(group => [ORDER_STATUS.COMPLETED, 'COMPLETED'].includes(group.name)).reduce((total, group) => total + group.value, 0),
+            openOrders: statusDistribution.filter(group => ![ORDER_STATUS.COMPLETED, 'COMPLETED', 'orders:status:cancelled', 'CANCELLED', 'orders:status:returned', 'RETURNED'].includes(group.name)).reduce((total, group) => total + group.value, 0),
             statusDistribution,
         },
         details,
