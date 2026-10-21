@@ -57,3 +57,16 @@ it('rejects a password beyond the bcrypt UTF-8 limit', async () => {
     expect((await PATCH(request('ض'.repeat(40)))).status).toBe(400);
     expect(bcrypt.hash).not.toHaveBeenCalled();
 });
+
+it('accepts exactly six characters and still revokes prior sessions', async () => {
+    expect((await PATCH(request('A1!b2c'))).status).toBe(200);
+    expect(bcrypt.hash).toHaveBeenCalledWith('A1!b2c', 12);
+    expect(prisma.user.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { password: 'new-hash', mustChangePassword: false, sessionVersion: { increment: 1 } } }));
+});
+
+it('rejects five characters before hashing or writing', async () => {
+    expect((await PATCH(request('A1!b2'))).status).toBe(400);
+    expect(bcrypt.hash).not.toHaveBeenCalled();
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
+    expect(writeAudit).not.toHaveBeenCalled();
+});

@@ -7,6 +7,7 @@ import { User, Shield, LogOut, Save, Lock, Loader2, Eye, EyeOff, Pencil } from '
 import { type User as NextAuthUser } from "next-auth";
 import { signOut } from 'next-auth/react';
 import toast, { Toaster } from 'react-hot-toast';
+import { MIN_PASSWORD_LENGTH, PASSWORD_MINIMUM_MESSAGE } from '@/lib/password-constraints';
 
 export default function ProfilePage() {
     const [user, setUser] = useState<NextAuthUser | null>(null);
@@ -79,8 +80,8 @@ export default function ProfilePage() {
             toast.error('كلمات المرور غير متطابقة');
             return;
         }
-        if (passwordForm.newPassword.length < 12) {
-            toast.error('كلمة المرور يجب أن تكون 12 حرفاً على الأقل');
+        if (passwordForm.newPassword.length < MIN_PASSWORD_LENGTH) {
+            toast.error(PASSWORD_MINIMUM_MESSAGE);
             return;
         }
 
@@ -271,7 +272,7 @@ export default function ProfilePage() {
                                                     title="كلمة المرور الجديدة"
                                                     placeholder="كلمة المرور الجديدة"
                                                     type="password"
-                                                    minLength={12}
+                                                    minLength={MIN_PASSWORD_LENGTH}
                                                     maxLength={128}
                                                     value={passwordForm.newPassword}
                                                     onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
@@ -286,6 +287,8 @@ export default function ProfilePage() {
                                                     title="تأكيد كلمة المرور"
                                                     placeholder="تأكيد كلمة المرور"
                                                     type="password"
+                                                    minLength={MIN_PASSWORD_LENGTH}
+                                                    maxLength={128}
                                                     value={passwordForm.confirmPassword}
                                                     onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                                                     className="w-full p-2 border border-border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 outline-none"

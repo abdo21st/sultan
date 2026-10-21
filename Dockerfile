@@ -20,6 +20,7 @@ COPY package.json prisma.config.ts ./
 COPY prisma ./prisma
 COPY lib/permissions.ts ./lib/permissions.ts
 COPY lib/password-policy.ts ./lib/password-policy.ts
+COPY lib/password-constraints.ts ./lib/password-constraints.ts
 COPY scripts/enroll-initial-admin.ts ./scripts/enroll-initial-admin.ts
 CMD ["npm", "run", "db:migrate:deploy"]
 

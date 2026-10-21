@@ -4,6 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 import { PERMISSIONS } from '../lib/permissions'
 import { newPasswordSchema } from '../lib/password-policy'
+import { MIN_PASSWORD_LENGTH } from '../lib/password-constraints'
 
 loadEnv({ path: '.env.local', quiet: true })
 loadEnv({ path: '.env', quiet: true })
@@ -25,7 +26,7 @@ async function main() {
   if (!admin) {
     const initialPassword = process.env.INITIAL_ADMIN_PASSWORD
     if (!initialPassword || !newPasswordSchema.safeParse(initialPassword).success) {
-      throw new Error('Set INITIAL_ADMIN_PASSWORD (at least 12 characters) to create the initial administrator.')
+      throw new Error(`Set INITIAL_ADMIN_PASSWORD (at least ${MIN_PASSWORD_LENGTH} characters, at most 72 UTF-8 bytes) to create the initial administrator.`)
     }
     const { default: bcrypt } = await import('bcryptjs')
     await prisma.user.create({

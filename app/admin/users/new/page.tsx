@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import NavBar from "../../../components/NavBar";
+import { MIN_PASSWORD_LENGTH } from '@/lib/password-constraints';
 
 
 
@@ -143,7 +144,7 @@ export default function NewUserPage() {
                             required
                             name="password"
                             type="password"
-                            minLength={12}
+                            minLength={MIN_PASSWORD_LENGTH}
                             maxLength={128}
                             value={formData.password}
                             onChange={e => setFormData({ ...formData, password: e.target.value })}
@@ -151,7 +152,7 @@ export default function NewUserPage() {
                             dir="ltr"
                             aria-label="كلمة المرور"
                         />
-                        <p className="text-xs text-muted-foreground">12 حرفاً على الأقل</p>
+                        <p className="text-xs text-muted-foreground">{MIN_PASSWORD_LENGTH} محارف على الأقل</p>
                     </div>
 
                     <div className="space-y-4">

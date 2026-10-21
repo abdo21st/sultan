@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import { signOut } from 'next-auth/react';
 import { LockKeyhole, Loader2 } from 'lucide-react';
+import { MIN_PASSWORD_LENGTH } from '@/lib/password-constraints';
 
 export default function ChangePasswordForm() {
     const [currentPassword, setCurrentPassword] = useState('');
@@ -37,7 +38,7 @@ export default function ChangePasswordForm() {
                 <LockKeyhole className="h-8 w-8 text-primary" aria-hidden="true" />
                 <div className="space-y-2">
                     <h1 className="text-2xl font-bold">غيّر كلمة المرور الأولية</h1>
-                    <p className="text-sm text-muted-foreground">اختر كلمة مرور خاصة بك من 12 حرفاً على الأقل للمتابعة. بعد حفظها ستسجّل الدخول بالكلمة الجديدة.</p>
+                    <p className="text-sm text-muted-foreground">اختر كلمة مرور خاصة بك من {MIN_PASSWORD_LENGTH} محارف على الأقل للمتابعة. بعد حفظها ستسجّل الدخول بالكلمة الجديدة.</p>
                 </div>
                 <form onSubmit={submit} className="space-y-4">
                     <label className="block space-y-2">
@@ -46,11 +47,11 @@ export default function ChangePasswordForm() {
                     </label>
                     <label className="block space-y-2">
                         <span>كلمة المرور الجديدة</span>
-                        <input autoComplete="new-password" type="password" required minLength={12} maxLength={128} value={newPassword} onChange={event => setNewPassword(event.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-3" />
+                        <input autoComplete="new-password" type="password" required minLength={MIN_PASSWORD_LENGTH} maxLength={128} value={newPassword} onChange={event => setNewPassword(event.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-3" />
                     </label>
                     <label className="block space-y-2">
                         <span>تأكيد كلمة المرور الجديدة</span>
-                        <input autoComplete="new-password" type="password" required minLength={12} maxLength={128} value={confirmation} onChange={event => setConfirmation(event.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-3" />
+                        <input autoComplete="new-password" type="password" required minLength={MIN_PASSWORD_LENGTH} maxLength={128} value={confirmation} onChange={event => setConfirmation(event.target.value)} className="w-full rounded-lg border border-border bg-background px-3 py-3" />
                     </label>
                     {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
                     <button disabled={busy} className="w-full rounded-lg bg-primary p-3 font-bold text-primary-foreground disabled:opacity-60 flex justify-center items-center gap-2">

@@ -1,5 +1,7 @@
 'use client';
 
+import { MIN_PASSWORD_LENGTH } from '@/lib/password-constraints';
+
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import NavBar from "../../../../components/NavBar";
@@ -186,7 +188,7 @@ export default function EditUserPage() {
                                     <Lock className="absolute right-3 top-2.5 w-4 h-4 text-muted-foreground" />
                                     <input
                                         type="password"
-                                        minLength={12}
+                                        minLength={MIN_PASSWORD_LENGTH}
                                         maxLength={128}
                                         dir="ltr"
                                         value={formData.password}

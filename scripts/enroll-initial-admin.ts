@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
+import { newPasswordSchema } from '../lib/password-policy';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
@@ -14,7 +15,7 @@ async function main() {
         if (Buffer.byteLength(input) > 4096) throw new Error('Invalid credential input.');
     }
     const { username, initialPassword } = JSON.parse(input);
-    if (typeof username !== 'string' || typeof initialPassword !== 'string' || initialPassword.length < 12) throw new Error('Invalid credential input.');
+    if (typeof username !== 'string' || !newPasswordSchema.safeParse(initialPassword).success) throw new Error('Invalid credential input.');
     const user = await prisma.user.findUnique({ where: { username } });
     if (!user || user.role !== 'ADMIN' || !await bcrypt.compare(initialPassword, user.password)) {
         console.log(JSON.stringify({ status: 'preserved', reason: 'INITIAL_CREDENTIAL_NO_LONGER_MATCHES' }));
