@@ -10,7 +10,7 @@ test ! -e "$root"
 test ! -e "$available"
 test ! -L "$enabled"
 test ! -e /var/www/sultan-mobile-acceptance
-test "$(docker image inspect sultan-release:f6e632f --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = f6e632fd317a7fff0eacaf0e8958c74f82079223
+test "$(docker image inspect sultan-release:b1aa512 --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')" = b1aa512fd2c7bb0ae281460c4812c6383d46cde7
 if ss -ltn | awk '{print $4}' | grep -Eq ':3375$'; then
   printf '%s\n' 'The QA port is already in use.' >&2
   exit 1
@@ -24,7 +24,7 @@ cd "$root"
 docker compose -f compose.yml config --quiet
 docker compose -f compose.yml up -d --wait --wait-timeout 180 sultan-app
 docker compose -f compose.yml run --rm --no-deps -T sultan-migrate node --input-type=module - < fixture.mjs > fixture-result.json
-docker run --rm --read-only --network none --mount type=volume,src=sultan-mobile-acceptance-images,dst=/app/storage/order-images sultan-release:f6e632f node -e "require('fs').writeFileSync('/app/storage/order-images/f0000000-0000-4000-8000-000000000001.png',Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jXioAAAAASUVORK5CYII=','base64'),{mode:0o600})"
+docker run --rm --read-only --network none --mount type=volume,src=sultan-mobile-acceptance-images,dst=/app/storage/order-images sultan-release:b1aa512 node -e "require('fs').writeFileSync('/app/storage/order-images/f0000000-0000-4000-8000-000000000001.png',Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jXioAAAAASUVORK5CYII=','base64'),{mode:0o600})"
 curl -fsS --max-time 10 http://127.0.0.1:3375/api/health >/dev/null
 install -d -o root -g root -m 755 /var/www/sultan-mobile-acceptance
 install -o root -g root -m 644 "$source_root/config/mobile-acceptance.manifest.json" /var/www/sultan-mobile-acceptance/manifest.json
