@@ -11,6 +11,13 @@
   --color-muted: #f1ece6;
   --color-muted-foreground: #72665c;
   --color-accent: #e5dace;
+  --color-secondary: #eee7df;
+  --color-secondary-foreground: #372f2a;
+  --color-accent-foreground: #675344;
+  --color-card-foreground: #372f2a;
+  --color-destructive: #b42318;
+  --color-destructive-foreground: #ffffff;
+  --color-ring: #796453;
 }
 
 @theme inline {
@@ -43,7 +50,7 @@
 }
 
 body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-cairo), Tahoma, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
-h1, h2, h3, h4, .font-heading { font-family: inherit; letter-spacing: normal; }
+h1, h2, h3, h4, .font-heading { letter-spacing: normal; }
 button, input, select, textarea { font: inherit; }
 button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 button:enabled, select { cursor: pointer; }

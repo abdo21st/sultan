@@ -1,7 +1,7 @@
 import { BarChart3, BellRing, Building2, CalendarDays, List, Settings, Users, Wallet, type LucideIcon } from 'lucide-react';
 import { PERMISSIONS } from './permissions';
 
-export const NAVIGATION_GROUPS: { label: string; items: { href: string; label: string; icon: LucideIcon; permissions: string[] }[] }[] = [
+export const NAVIGATION_GROUPS: { label: string; items: { href: string; label: string; icon: LucideIcon; permissions: string[]; adminOnly?: boolean }[] }[] = [
     { label: 'العمل اليومي', items: [
         { href: '/', label: 'الطلبات', icon: List, permissions: [PERMISSIONS.ORDERS_VIEW] },
         { href: '/admin/booking', label: 'سعة الإنتاج', icon: CalendarDays, permissions: [PERMISSIONS.BOOKING_MANAGE] },
@@ -11,7 +11,7 @@ export const NAVIGATION_GROUPS: { label: string; items: { href: string; label: s
         { href: '/transactions', label: 'التحصيل والحركات المالية', icon: Wallet, permissions: [PERMISSIONS.TRANSACTIONS_VIEW] },
     ] },
     { label: 'التقارير', items: [
-        { href: '/admin/analytics', label: 'التقارير والتحليلات', icon: BarChart3, permissions: [PERMISSIONS.DASHBOARD_VIEW] },
+        { href: '/admin/analytics', label: 'التقارير والتحليلات', icon: BarChart3, permissions: [PERMISSIONS.DASHBOARD_VIEW], adminOnly: true },
     ] },
     { label: 'الإدارة', items: [
         { href: '/admin/users', label: 'المستخدمون والصلاحيات', icon: Users, permissions: [PERMISSIONS.USERS_VIEW, PERMISSIONS.ROLES_MANAGE] },
@@ -22,6 +22,10 @@ export const NAVIGATION_GROUPS: { label: string; items: { href: string; label: s
 
 export function canNavigate(user: { role?: string; permissions?: string[] }, permissions: readonly string[]) {
     return user.role === 'ADMIN' || permissions.some(permission => user.permissions?.includes(permission));
+}
+
+export function canAccessDestination(user: { role?: string; permissions?: string[] }, item: { permissions: readonly string[]; adminOnly?: boolean }) {
+    return (!item.adminOnly || user.role === 'ADMIN') && canNavigate(user, item.permissions);
 }
 
 export function isNavigationActive(pathname: string, href: string) {

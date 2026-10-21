@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { PERMISSIONS } from "../../../lib/permissions";
 import { exportToPDF } from "@/lib/pdf-export";
 import toast from "react-hot-toast";
 import { formatCurrency } from "@/lib/utils";
@@ -93,11 +92,9 @@ export default function FlexibleReportsPage() {
     const [reportData, setReportData] = useState<ReportData | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [reportError, setReportError] = useState('');
 
-    const isAuthorized = status === "authenticated" && session?.user && (
-        session.user.role === 'ADMIN' ||
-        session.user.permissions?.includes(PERMISSIONS.DASHBOARD_VIEW)
-    );
+    const isAuthorized = status === "authenticated" && session?.user?.role === 'ADMIN';
 
     useEffect(() => {
         if (status === "loading") return;
@@ -119,6 +116,7 @@ export default function FlexibleReportsPage() {
     // Fetch Report Data
     const fetchReport = useCallback(async () => {
         setLoading(true);
+        setReportError('');
         try {
             const query = new URLSearchParams({
                 type: reportType,
@@ -132,6 +130,8 @@ export default function FlexibleReportsPage() {
             const data = await res.json();
             setReportData(data);
         } catch (err) {
+            setReportData(null);
+            setReportError('تعذر تحميل التقرير. تحقق من الاتصال ثم أعد المحاولة.');
             toast.error("فشل تحميل بيانات التقرير");
             console.error(err);
         } finally {
@@ -405,6 +405,7 @@ export default function FlexibleReportsPage() {
                 </div>
 
                 {/* Content Rendering */}
+                {reportError && <div className="ui-card flex flex-wrap items-center justify-between gap-3" role="alert"><p>{reportError}</p><button type="button" onClick={fetchReport} className="ui-button">إعادة المحاولة</button></div>}
                 {loading ? (
                     <div className="h-[400px] flex items-center justify-center">
                         <Loader2 className="w-10 h-10 animate-spin text-primary/40" />

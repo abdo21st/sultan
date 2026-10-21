@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { LogOut, Menu, PanelRightClose, PanelRightOpen, Plus, Search, User } from 'lucide-react';
-import { canNavigate, isNavigationActive, NAVIGATION_GROUPS, pageTitle, roleLabel } from '@/lib/navigation';
+import { canAccessDestination, canNavigate, isNavigationActive, NAVIGATION_GROUPS, pageTitle, roleLabel } from '@/lib/navigation';
 import { PERMISSIONS } from '@/lib/permissions';
 import Notifications from './Notifications';
 import BottomNav from './BottomNav';
@@ -31,7 +31,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         return () => { abort.abort(); window.removeEventListener('sultan:settings-updated', load); };
     }, [user, standalone]);
     if (!user || user.mustChangePassword || standalone) return children;
-    const groups = NAVIGATION_GROUPS.map(group => ({ ...group, items: group.items.filter(item => canNavigate(user, item.permissions)) })).filter(group => group.items.length);
+    const groups = NAVIGATION_GROUPS.map(group => ({ ...group, items: group.items.filter(item => canAccessDestination(user, item)) })).filter(group => group.items.length);
     const links = (compact: boolean) => <nav aria-label="أقسام التطبيق" className="app-navigation">
         {groups.map(group => <section key={group.label} className="app-navigation-group">
             {!compact && <h2 className="app-navigation-label">{group.label}</h2>}
