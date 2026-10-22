@@ -69,10 +69,6 @@ export default function SettingsPage() {
         }
     };
 
-    const handleBackup = () => {
-        window.open('/api/settings/backup', '_blank');
-    };
-
     const handleClearData = async () => {
         const confirmation = prompt(`تحذير: سيتم حذف جميع الطلبات والحركات المالية والإشعارات. اكتب ${DESTRUCTIVE_CONFIRMATIONS.CLEAR_OPERATIONAL_DATA} للمتابعة.`);
         if (confirmation !== DESTRUCTIVE_CONFIRMATIONS.CLEAR_OPERATIONAL_DATA) return;
@@ -337,13 +333,14 @@ export default function SettingsPage() {
                                         تنزيل تصدير إداري بصيغة JSON. هذا الملف ليس نسخة كاملة قابلة لاستعادة قاعدة البيانات؛ استخدم أداة النسخ والاستعادة المشفّرة الموضحة في دليل التشغيل.
                                     </p>
                                 </div>
-                                <button
-                                    onClick={handleBackup}
+                                <a
+                                    href="/api/settings/backup"
+                                    download
                                     className="bg-blue-50 text-blue-700 border border-blue-200 px-4 py-2 rounded-lg hover:bg-blue-100 flex items-center gap-2 font-medium"
                                 >
                                     <Download className="w-4 h-4" />
                                     تنزيل التصدير
-                                </button>
+                                </a>
                             </div>
                         </div>
 
