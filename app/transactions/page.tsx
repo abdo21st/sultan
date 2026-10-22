@@ -9,6 +9,7 @@ import { formatCurrency } from '../../lib/utils';
 import { fetchAllPages } from '@/lib/fetch-all-pages';
 import ReverseTransaction from './ReverseTransaction';
 import Link from 'next/link';
+import { transactionCategoryLabel } from '@/lib/transaction-category';
 
 interface Transaction {
     id: string;
@@ -407,13 +408,7 @@ export default function TransactionsPage() {
                                     </div>
                                     <div>
                                         <h4 className="font-semibold text-foreground">
-                                            {tx.category === 'SALES' ? 'مبيعات' :
-                                                tx.category === 'SALARY' ? 'رواتب' :
-                                                    tx.category === 'RENT' ? 'إيجار' :
-                                                        tx.category === 'RAW_MATERIALS' ? 'مواد خام' :
-                                                            tx.category === 'UTILITIES' ? 'فواتير وخدمات' :
-                                                                tx.category === 'OTHER' ? 'أخرى' :
-                                                                    tx.category}
+                                            {transactionCategoryLabel(tx.category)}
                                         </h4>
                                         <p className="text-xs text-muted-foreground">{tx.description || '-'}</p>
                                         {tx.reversalOfId && <p className="text-xs font-bold text-primary">قيد عكسي — {tx.reversalReason}</p>}

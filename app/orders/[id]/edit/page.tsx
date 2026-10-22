@@ -14,6 +14,7 @@ interface Facility {
 }
 
 interface OrderFormData {
+    serialNumber: number;
     reviewRequired?: boolean;
     rejectionReason?: string | null;
     customerName: string;
@@ -163,7 +164,7 @@ export default function EditOrderPage() {
         <div className="min-h-full bg-background p-6 flex flex-col items-center">
             <div className="w-full max-w-3xl bg-card border border-border rounded-xl p-8 ">
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold text-foreground">تعديل الطلب #{String(params.id).slice(-6)}</h1>
+                    <h1 className="text-2xl font-bold text-foreground">تعديل الطلب #{formData.serialNumber}</h1>
                     <button type="button" onClick={() => router.back()} className="text-sm bg-muted text-foreground hover:bg-muted/80 px-4 py-2 rounded-lg transition-all">رجوع</button>
                 </div>
 
@@ -215,22 +216,22 @@ export default function EditOrderPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">المعرض (المصدر)</label>
+                            <label className="text-sm font-medium text-muted-foreground">محل تسجيل الطلب</label>
                             <select
                                 value={formData.shopId}
-                                aria-label="المعرض المصدر"
+                                aria-label="محل تسجيل الطلب"
                                 onChange={e => setFormData({ ...formData, shopId: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             >
-                                <option value="">اختر المعرض</option>
+                                <option value="">اختر المحل</option>
                                 {shops.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                             </select>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">المصنع (الهدف)</label>
+                            <label className="text-sm font-medium text-muted-foreground">المصنع المنفذ</label>
                             <select
                                 value={formData.factoryId}
-                                aria-label="المصنع الهدف"
+                                aria-label="المصنع المنفذ"
                                 onChange={e => setFormData({ ...formData, factoryId: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             >

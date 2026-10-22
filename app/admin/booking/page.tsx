@@ -158,9 +158,10 @@ export default function BookingPage() {
                             </h2>
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">المصنع / الورشة</label>
+                                    <label htmlFor="capacity-factory" className="block text-sm font-medium mb-1">المصنع</label>
                                     <select
-                                        title="factory"
+                                        id="capacity-factory"
+                                        title="المصنع"
                                         className="w-full p-2 bg-background border border-border rounded-lg text-sm"
                                         value={form.factoryId}
                                         onChange={(e) => setForm({ ...form, factoryId: e.target.value })}
@@ -190,9 +191,10 @@ export default function BookingPage() {
 
                                 {form.type === 'dayOfWeek' ? (
                                     <div>
-                                        <label className="block text-sm font-medium mb-1">اليوم</label>
+                                        <label htmlFor="capacity-day" className="block text-sm font-medium mb-1">اليوم</label>
                                         <select
-                                            title="dayOfWeek"
+                                            id="capacity-day"
+                                            title="اليوم"
                                             className="w-full p-2 bg-background border border-border rounded-lg text-sm"
                                             value={form.dayOfWeek}
                                             onChange={(e) => setForm({ ...form, dayOfWeek: e.target.value })}
@@ -218,10 +220,11 @@ export default function BookingPage() {
                                 )}
 
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">أقصى كمية حجز</label>
+                                    <label htmlFor="capacity-orders" className="block text-sm font-medium mb-1">الحد الأقصى لعدد الطلبات</label>
                                     <input
+                                        id="capacity-orders"
                                         type="number"
-                                        title="أقصى كمية حجز"
+                                        title="الحد الأقصى لعدد الطلبات"
                                         placeholder="مثلاً: 10"
                                         className="w-full p-2 bg-background border border-border rounded-lg text-sm"
                                         value={form.maxCapacity}
@@ -293,7 +296,7 @@ export default function BookingPage() {
                                                     </span>
                                                     <span className="flex items-center gap-1 text-primary font-medium">
                                                         <ShieldAlert className="w-4 h-4" />
-                                                        سعة: {rule.maxCapacity}
+                                                        السعة: {rule.maxCapacity} طلب
                                                     </span>
                                                 </div>
                                             </div>
@@ -307,7 +310,7 @@ export default function BookingPage() {
                                                 <Settings className="w-5 h-5" />
                                             </button>
                                             <button
-                                                title="delete rule"
+                                                title="حذف القاعدة"
                                                 onClick={() => handleDelete(rule.id)}
                                                 className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                             >

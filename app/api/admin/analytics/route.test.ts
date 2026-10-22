@@ -1,18 +1,19 @@
 /** @jest-environment node */
-jest.mock('@/lib/request-user', () => ({ getRequestUser: jest.fn() }));
+jest.mock('@/lib/request-user', () => ({ getRequestUser: jest.fn(), canAccessAllFacilities: jest.fn(user => user.role === 'ADMIN') }));
 jest.mock('@/lib/prisma', () => ({ prisma: { $queryRaw: jest.fn(), order: { findMany: jest.fn(), groupBy: jest.fn(), aggregate: jest.fn() }, facility: { findMany: jest.fn() } } }));
 import { getRequestUser } from '@/lib/request-user';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { GET } from './route';
+import { PERMISSIONS } from '@/lib/permissions';
 beforeEach(() => jest.clearAllMocks());
 it('denies analytics before reading any financial data', async () => {
-    (getRequestUser as jest.Mock).mockResolvedValue({ role: 'MANAGER' });
+    (getRequestUser as jest.Mock).mockResolvedValue({ role: 'MANAGER', permissions: [] });
     expect((await GET()).status).toBe(403);
     expect(prisma.$queryRaw).not.toHaveBeenCalled();
 });
 it('aggregates months in PostgreSQL without loading individual orders', async () => {
-    (getRequestUser as jest.Mock).mockResolvedValue({ role: 'ADMIN' });
+    (getRequestUser as jest.Mock).mockResolvedValue({ role: 'ADMIN', permissions: [PERMISSIONS.DASHBOARD_VIEW, PERMISSIONS.ORDERS_VIEW_FINANCIALS] });
     (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ month: new Date('2026-10-01T00:00:00Z'), total: new Prisma.Decimal('0.30'), paid: new Prisma.Decimal('0.10') }]);
     (prisma.order.groupBy as jest.Mock).mockResolvedValueOnce([{ factoryId: 'f', _count: { id: 2 }, _sum: { totalAmount: new Prisma.Decimal('0.30') } }]).mockResolvedValueOnce([{ status: 'REGISTERED', _count: { status: 2 } }]);
     (prisma.order.aggregate as jest.Mock).mockResolvedValue({ _count: { id: 2 }, _sum: { totalAmount: new Prisma.Decimal('0.30'), paidAmount: new Prisma.Decimal('0.10') } });

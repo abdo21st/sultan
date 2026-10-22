@@ -2,8 +2,9 @@
 jest.mock('@/lib/prisma', () => ({ prisma: {
     transaction: { findUnique: jest.fn(), aggregate: jest.fn(), create: jest.fn() },
     order: { updateMany: jest.fn() }, $queryRaw: jest.fn(), $executeRaw: jest.fn(), $transaction: jest.fn(),
+    orderAdjustment: { findFirst: jest.fn() },
 } }));
-jest.mock('@/lib/request-user', () => ({ canAccessOrderFacility: jest.fn(() => true) }));
+jest.mock('@/lib/request-user', () => ({ canAccessOrderFacility: jest.fn(() => true), canAccessAllFacilities: jest.fn(() => false) }));
 jest.mock('@/lib/audit', () => ({ writeAudit: jest.fn() }));
 
 import { Prisma } from '@prisma/client';
@@ -27,6 +28,7 @@ beforeEach(() => {
     (prisma.transaction.findUnique as jest.Mock).mockImplementation(({ where }) => where.id ? original : null);
     (prisma.transaction.aggregate as jest.Mock).mockResolvedValue({ _sum: { amount: original.amount } });
     (prisma.order.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+    (prisma.orderAdjustment.findFirst as jest.Mock).mockResolvedValue(null);
     (prisma.transaction.create as jest.Mock).mockImplementation(({ data }) => ({ id: 'reverse', ...data }));
 });
 
@@ -86,6 +88,13 @@ it('rejects an unreconciled ledger before touching the order', async () => {
     (prisma.transaction.aggregate as jest.Mock).mockResolvedValue({ _sum: { amount: new Prisma.Decimal('60') } });
     await expect(reverseTransaction(user, 'source', reason, key)).rejects.toMatchObject({ code: 'LEDGER_MISMATCH' });
     expect(prisma.order.updateMany).not.toHaveBeenCalled();
+});
+
+it('blocks a reversal while a cancellation or return decision is open', async () => {
+    (prisma.orderAdjustment.findFirst as jest.Mock).mockResolvedValue({ id: 'pending-adjustment' });
+    await expect(reverseTransaction(user, 'source', reason, key)).rejects.toMatchObject({ code: 'ORDER_CLOSED' });
+    expect(prisma.order.updateMany).not.toHaveBeenCalled();
+    expect(prisma.transaction.create).not.toHaveBeenCalled();
 });
 
 it('rejects a competing order balance change without creating a row or audit', async () => {

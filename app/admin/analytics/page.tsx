@@ -25,6 +25,7 @@ import toast from "react-hot-toast";
 import { formatCurrency } from "@/lib/utils";
 import { PERMISSIONS } from '@/lib/permissions';
 import { ORDER_STATUS_LABELS } from '@/lib/constants';
+import { transactionCategoryLabel } from '@/lib/transaction-category';
 
 interface Facility {
     id: string;
@@ -231,7 +232,7 @@ export default function FlexibleReportsPage() {
                 rows = (exportDetails as FinancialDetail[]).map(t => ({
                     date: new Date(t.date).toLocaleDateString('ar-EG'),
                     type: `${t.reversalOfId ? 'قيد عكسي / ' : ''}${t.type === "INCOME" ? "دخل" : "مصروف"}`,
-                    category: t.category,
+                    category: transactionCategoryLabel(t.category),
                     amount: formatCurrency(t.amount),
                     description: t.reversalReason || t.description || ""
                 }));
@@ -463,7 +464,7 @@ function FinancialView({ data }: { data: ReportData }) {
                                             {t.reversalOfId ? 'قيد عكسي / ' : ''}{t.type === "INCOME" ? "دخل" : "مصروف"}
                                         </span>
                                     </td>
-                                    <td className="py-5 px-4 text-muted-foreground font-bold">{t.category}</td>
+                                    <td className="py-5 px-4 text-muted-foreground font-bold">{transactionCategoryLabel(t.category)}</td>
                                     <td className="py-5 px-4 font-semibold text-left" dir="ltr">{formatCurrency(t.amount || 0)}</td>
                                 </tr>
                             ))}

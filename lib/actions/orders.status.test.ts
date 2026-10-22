@@ -7,6 +7,8 @@ jest.mock("@/lib/prisma", () => ({
     },
     systemSettings: { findUnique: jest.fn(), findFirst: jest.fn() },
     auditLog: { create: jest.fn(), count: jest.fn() },
+    orderAdjustment: { findFirst: jest.fn() },
+    $queryRaw: jest.fn(),
     $executeRaw: jest.fn(),
     $transaction: jest.fn(),
   },
@@ -15,6 +17,7 @@ jest.mock("@/lib/prisma", () => ({
 jest.mock("@/lib/request-user", () => ({
   getRequestUser: jest.fn(),
   canAccessOrderFacility: jest.fn(() => true),
+  canViewOrderStatus: jest.fn(() => true),
 }));
 
 jest.mock("@/lib/services/notification-service", () => ({
@@ -40,15 +43,16 @@ const mockPrisma = prisma as unknown as {
   };
   $transaction: jest.Mock;
   $executeRaw: jest.Mock;
-  systemSettings: { findFirst: jest.Mock };
+  systemSettings: { findFirst: jest.Mock; findUnique: jest.Mock };
   auditLog: { count: jest.Mock; create: jest.Mock };
+  orderAdjustment: { findFirst: jest.Mock };
 };
 
 const manager = {
   id: "manager-1",
   role: "MANAGER",
   facilityId: "shop-1",
-  permissions: [PERMISSIONS.STATUS_CHANGE_DELIVERING_TO_FACTORY],
+  permissions: [PERMISSIONS.STATUS_CHANGE_PROCESSING],
 };
 
 beforeEach(() => {
@@ -66,6 +70,8 @@ beforeEach(() => {
     shopId: "shop-1",
   });
   mockPrisma.order.updateMany.mockResolvedValue({ count: 1 });
+  mockPrisma.orderAdjustment.findFirst.mockResolvedValue(null);
+  mockPrisma.systemSettings.findUnique.mockResolvedValue(null);
   (getRequestUser as jest.Mock).mockResolvedValue(manager);
 });
 
@@ -122,16 +128,16 @@ describe("updateOrderStatus", () => {
       .mockResolvedValueOnce({ count: 0 });
 
     const results = await Promise.all([
-      updateOrderStatus("order-1", ORDER_STATUS.DELIVERING_TO_FACTORY),
-      updateOrderStatus("order-1", ORDER_STATUS.DELIVERING_TO_FACTORY),
+      updateOrderStatus("order-1", ORDER_STATUS.PROCESSING),
+      updateOrderStatus("order-1", ORDER_STATUS.PROCESSING),
     ]);
 
     expect(results.filter((result) => result.success)).toHaveLength(1);
     expect(results.filter((result) => !result.success)).toHaveLength(1);
     expect(mockPrisma.order.updateMany).toHaveBeenCalledTimes(2);
     expect(mockPrisma.order.updateMany).toHaveBeenCalledWith({
-      where: { id: "order-1", status: ORDER_STATUS.REGISTERED },
-      data: { status: ORDER_STATUS.DELIVERING_TO_FACTORY, rejectionReason: null },
+      where: { id: "order-1", status: ORDER_STATUS.REGISTERED, reviewRequired: false },
+      data: { status: ORDER_STATUS.PROCESSING, rejectionReason: null },
     });
     expect(writeAudit).toHaveBeenCalledTimes(1);
   });
