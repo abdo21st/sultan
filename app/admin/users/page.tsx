@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { roleLabel } from '@/lib/navigation';
+import Modal from '@/app/components/Modal';
 import Link from 'next/link';
 import {
     Plus, Trash2, Edit, User as UserIcon, Users, Shield,
     Search, ChevronDown, ChevronUp, Copy, Info,
-    CheckCircle2, Save, X, LayoutGrid, Settings,
-    UserPlus, CreditCard, FileText, History, RefreshCw
+    CheckCircle2, Save, LayoutGrid, Settings,
+    CreditCard, FileText, History, RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/app/components/ToastProvider';
 import { usePermission } from '../../../lib/usePermission';
@@ -478,40 +479,18 @@ export default function AccessManagementPage() {
 
                 {/* Editor Modal for Roles */}
                 {editingRole && (
-                    <div className="fixed inset-0 bg-black/60  flex items-center justify-center z-50 p-4">
-                        <div className="bg-card rounded-xl  w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-border animate-in zoom-in-95 duration-300">
-                            {/* Modal Header */}
-                            <div className="p-8 border-b border-border/50 flex justify-between items-center bg-muted/30">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center border border-primary/20">
-                                        {editingRole.id === 'new' ? <UserPlus className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-semibold text-foreground">
-                                            {editingRole.id === 'new' ? 'إنشاء دور جديد' : `تعديل دور: ${roleFormData.displayName}`}
-                                        </h2>
-                                        <p className="text-xs text-muted-foreground font-semibold">قم بتخصيص المعلومات والصلاحيات بدقة عالية.</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setEditingRole(null)}
-                                    title="إغلاق النافذة"
-                                    aria-label="إغلاق النافذة"
-                                    className="p-3 hover:bg-red-500/10 hover:text-red-500 rounded-full transition-all text-muted-foreground border border-transparent hover:border-red-500/20"
-                                >
-                                    <X className="w-7 h-7" />
-                                </button>
-                            </div>
-
+                    <Modal isOpen onClose={() => setEditingRole(null)} title={editingRole.id === 'new' ? 'إنشاء دور جديد' : `تعديل دور: ${roleFormData.displayName}`} className="ui-role-dialog">
+                            <p className="px-5 pt-4 text-sm text-muted-foreground">حدد بيانات الدور والصلاحيات المطلوبة، ثم راجعها قبل الحفظ.</p>
                             {/* Modal Body */}
-                            <form onSubmit={handleRoleSubmit} className="flex-1 overflow-y-auto p-10 space-y-10">
+                            <form id="role-editor-form" onSubmit={handleRoleSubmit} className="p-5 space-y-6">
                                 {/* Basic Info */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="space-y-3">
-                                        <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                        <label htmlFor="role-editor-name" className="text-sm font-semibold text-foreground flex items-center gap-2">
                                             الاسم البرمجي <Info className="w-4 h-4 text-primary" />
                                         </label>
                                         <input
+                                            id="role-editor-name"
                                             required
                                             value={roleFormData.name}
                                             onChange={e => setRoleFormData({ ...roleFormData, name: e.target.value.toUpperCase().replace(/\s/g, '_') })}
@@ -521,8 +500,9 @@ export default function AccessManagementPage() {
                                         />
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-sm font-semibold text-foreground">الاسم الظاهر</label>
+                                        <label htmlFor="role-editor-display" className="text-sm font-semibold text-foreground">الاسم الظاهر</label>
                                         <input
+                                            id="role-editor-display"
                                             required
                                             value={roleFormData.displayName}
                                             onChange={e => setRoleFormData({ ...roleFormData, displayName: e.target.value })}
@@ -531,8 +511,9 @@ export default function AccessManagementPage() {
                                         />
                                     </div>
                                     <div className="md:col-span-2 space-y-3">
-                                        <label className="text-sm font-semibold text-foreground">وصف الدور</label>
+                                        <label htmlFor="role-editor-description" className="text-sm font-semibold text-foreground">وصف الدور</label>
                                         <textarea
+                                            id="role-editor-description"
                                             value={roleFormData.description}
                                             onChange={e => setRoleFormData({ ...roleFormData, description: e.target.value })}
                                             className="w-full bg-muted/50 border border-border p-4 rounded-xl text-sm font-bold focus:ring-4 focus:ring-primary/10 outline-none transition-all min-h-[100px] resize-none"
@@ -543,7 +524,7 @@ export default function AccessManagementPage() {
 
                                 {/* Permissions Grid */}
                                 <div className="space-y-8">
-                                    <div className="flex items-center justify-between border-b border-border pb-6">
+                                    <div className="flex flex-wrap gap-3 items-center justify-between border-b border-border pb-4">
                                         <h3 className="text-xl font-semibold text-foreground flex items-center gap-3">
                                             مصفوفة الصلاحيات
                                             <span className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
@@ -570,6 +551,7 @@ export default function AccessManagementPage() {
                                             <div key={category} className="border border-border/50 rounded-xl overflow-hidden bg-muted/20">
                                                 <button
                                                     type="button"
+                                                    aria-expanded={Boolean(expandedCategories[category])}
                                                     onClick={() => toggleCategory(category)}
                                                     className="w-full flex items-center justify-between p-6 hover:bg-muted/40 transition-all font-semibold"
                                                 >
@@ -595,15 +577,7 @@ export default function AccessManagementPage() {
                                                                     <span className={`text-xs font-semibold transition-colors ${isSelected ? 'text-primary' : 'text-muted-foreground group-hover/label:text-foreground'}`}>
                                                                         {PERMISSION_LABELS[perm] || perm}
                                                                     </span>
-                                                                    <div
-                                                                        className={`w-12 h-6 rounded-full relative transition-all duration-300 ${isSelected ? 'bg-primary gold-glow' : 'bg-muted'}`}
-                                                                        onClick={(e) => {
-                                                                            e.preventDefault();
-                                                                            togglePermission(perm);
-                                                                        }}
-                                                                    >
-                                                                        <div className={`absolute top-1 w-4 h-4 bg-card rounded-full  transition-all duration-300 ${isSelected ? 'right-7' : 'right-1'}`} />
-                                                                    </div>
+                                                                    <input type="checkbox" checked={isSelected} onChange={() => togglePermission(perm)} className="h-5 w-5 shrink-0 accent-primary" />
                                                                 </label>
                                                             );
                                                         })}
@@ -616,26 +590,25 @@ export default function AccessManagementPage() {
                             </form>
 
                             {/* Modal Footer */}
-                            <div className="p-8 border-t border-border/50 bg-muted/30 flex justify-end gap-4">
+                            <div className="sticky bottom-0 grid min-[360px]:grid-cols-2 gap-3 border-t border-border bg-card p-4">
                                 <button
                                     type="button"
                                     onClick={() => setEditingRole(null)}
-                                    className="px-8 py-4 text-muted-foreground hover:bg-muted border border-border/50 rounded-xl transition-all font-semibold text-sm"
+                                    className="ui-button justify-center"
                                 >
                                     إلغاء التعديلات
                                 </button>
                                 <button
-                                    type="button"
+                                    type="submit"
+                                    form="role-editor-form"
                                     disabled={savingRole}
-                                    onClick={handleRoleSubmit}
-                                    className="flex items-center gap-3 px-10 py-4 bg-primary text-white rounded-xl   transition-all duration-500 font-semibold text-sm uppercase  gold-glow transform hover:-translate-y-0.5 disabled:opacity-50"
+                                    className="ui-button ui-button-primary justify-center"
                                 >
                                     {savingRole ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                                     <span>{savingRole ? 'جاري الحفظ...' : 'حفظ الدور بالكامل'}</span>
                                 </button>
                             </div>
-                        </div>
-                    </div>
+                    </Modal>
                 )}
             </main>
         </div>

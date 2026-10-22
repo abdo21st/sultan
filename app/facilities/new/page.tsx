@@ -35,8 +35,8 @@ export default function NewFacilityPage() {
 
             router.push("/facilities"); // Redirect to dashboard
             router.refresh(); // Refresh data
-        } catch {
-            setError("حدث خطأ ما. يرجى المحاولة مرة أخرى.");
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : "حدث خطأ ما. يرجى المحاولة مرة أخرى.");
         } finally {
             setLoading(false);
         }
@@ -56,43 +56,46 @@ export default function NewFacilityPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                        <label htmlFor="facility-name" className="block text-sm font-medium text-muted-foreground mb-1">
                             اسم المنشأة
                         </label>
                         <input
+                            id="facility-name"
                             required
                             name="name"
                             type="text"
                             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                            placeholder="مثال: المصنع الرئيسي، معرض وسط البلد"
+                            placeholder="مثال: مصنع الكيك، محل السلطان"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                        <label htmlFor="facility-type" className="block text-sm font-medium text-muted-foreground mb-1">
                             النوع
                         </label>
                         <select
+                            id="facility-type"
                             name="type"
                             required
                             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                             aria-label="نوع المنشأة"
                         >
                             <option value="FACTORY">مصنع</option>
-                            <option value="SHOP">معرض</option>
+                            <option value="SHOP">محل</option>
                         </select>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-muted-foreground mb-1">
+                        <label htmlFor="facility-location" className="block text-sm font-medium text-muted-foreground mb-1">
                             الموقع
                         </label>
                         <input
+                            id="facility-location"
                             required
                             name="location"
                             type="text"
                             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                            placeholder="مثال: القاهرة، الجيزة"
+                            placeholder="مثال: طرابلس"
                         />
                     </div>
 
@@ -100,14 +103,14 @@ export default function NewFacilityPage() {
                         <button
                             type="button"
                             onClick={() => router.back()}
-                            className="px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 rounded-md transition-colors"
+                            className="ui-button"
                         >
                             إلغاء
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-primary rounded-md transition-colors disabled:opacity-50"
+                            className="ui-button ui-button-primary"
                         >
                             {loading ? "جاري الإضافة..." : "إضافة المنشأة"}
                         </button>

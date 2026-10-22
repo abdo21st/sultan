@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 
-export default function Modal({ isOpen, onClose, title, children, drawer = false }: { isOpen: boolean; onClose: () => void; title: string; children: ReactNode; drawer?: boolean }) {
+export default function Modal({ isOpen, onClose, title, children, drawer = false, className = '' }: { isOpen: boolean; onClose: () => void; title: string; children: ReactNode; drawer?: boolean; className?: string }) {
     const ref = useRef<HTMLDialogElement>(null);
     const titleId = useId();
     useEffect(() => {
@@ -20,7 +20,7 @@ export default function Modal({ isOpen, onClose, title, children, drawer = false
         };
     }, [isOpen]);
     if (!isOpen) return null;
-    return <dialog ref={ref} aria-labelledby={titleId} className={`ui-dialog ${drawer ? 'ui-dialog-drawer' : ''}`} onClose={event => { if (!event.currentTarget.open) onClose(); }} onClick={event => {
+    return <dialog ref={ref} aria-labelledby={titleId} className={`ui-dialog ${drawer ? 'ui-dialog-drawer' : ''} ${className}`} onClose={event => { if (!event.currentTarget.open) onClose(); }} onClick={event => {
         if (event.target !== event.currentTarget) return;
         const bounds = event.currentTarget.getBoundingClientRect();
         if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
