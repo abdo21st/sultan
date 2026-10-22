@@ -283,18 +283,18 @@ export default function AccessManagementPage() {
     return (
         <div className="min-h-full bg-background">
 
-            <main className="ui-page space-y-5">
+            <main className="ui-page min-w-0 space-y-5">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div className="space-y-1">
+                    <div className="min-w-0 space-y-1">
                         <h1 className="text-2xl font-semibold text-foreground ">المستخدمون والصلاحيات</h1>
                         <p className="text-muted-foreground font-semibold">التحكم في المستخدمين، الأدوار، وصلاحيات الوصول.</p>
                     </div>
 
-                    <div className="flex bg-muted/50 p-1 rounded-xl border border-border/50 ">
+                    <div className="flex w-full sm:w-auto min-w-0 bg-muted/50 p-1 rounded-xl border border-border/50 ">
                         <button
                             onClick={() => setActiveTab('users')}
-                            className={`px-8 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${activeTab === 'users' ? 'bg-background text-primary  border border-border' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={`flex-1 sm:flex-none px-3 sm:px-8 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${activeTab === 'users' ? 'bg-background text-primary  border border-border' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             <div className="flex items-center gap-2">
                                 <UserIcon className="w-4 h-4" />
@@ -303,7 +303,7 @@ export default function AccessManagementPage() {
                         </button>
                         <button
                             onClick={() => setActiveTab('roles')}
-                            className={`px-8 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${activeTab === 'roles' ? 'bg-background text-primary  border border-border' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={`flex-1 sm:flex-none px-3 sm:px-8 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${activeTab === 'roles' ? 'bg-background text-primary  border border-border' : 'text-muted-foreground hover:text-foreground'}`}
                         >
                             <div className="flex items-center gap-2">
                                 <Shield className="w-4 h-4" />
@@ -315,8 +315,8 @@ export default function AccessManagementPage() {
 
                 {activeTab === 'users' ? (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex justify-between items-center bg-card/50  p-6 rounded-xl border border-border/50  ">
-                            <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-card/50 p-4 sm:p-6 rounded-xl border border-border/50">
+                            <div className="flex min-w-0 items-center gap-4">
                                 <div className="p-3 bg-primary/10 rounded-xl text-primary">
                                     <UserIcon className="w-6 h-6" />
                                 </div>
@@ -328,7 +328,7 @@ export default function AccessManagementPage() {
                             {hasPermission(PERMISSIONS.USERS_ADD) && (
                                 <Link
                                     href="/admin/users/new"
-                                    className="flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-xl   transition-all duration-500 font-semibold text-sm uppercase  gold-glow transform hover:-translate-y-0.5"
+                                    className="ui-button ui-button-primary justify-center"
                                 >
                                     <Plus className="w-5 h-5" strokeWidth={3} />
                                     <span>مستخدم جديد</span>
@@ -340,8 +340,8 @@ export default function AccessManagementPage() {
                             {usersLoading ? (
                                 <div className="p-20 text-center text-muted-foreground font-bold animate-pulse">جاري تحميل المستخدمين...</div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-right">
+                                <div className="max-w-full overflow-x-auto" role="region" aria-label="جدول المستخدمين" tabIndex={0}>
+                                    <table className="w-full min-w-[640px] text-sm text-right">
                                         <thead>
                                             <tr className="bg-muted/30 text-muted-foreground border-b border-border/50">
                                                 <th className="p-4 font-semibold uppercase ">الموظف</th>
@@ -431,7 +431,7 @@ export default function AccessManagementPage() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {filteredRoles.map(role => (
-                                    <div key={role.id} className="group bg-card/50  p-8 rounded-xl border border-border/50     transition-all relative overflow-hidden">
+                                    <div key={role.id} className="group min-w-0 bg-card/50 p-4 sm:p-6 rounded-xl border border-border/50 transition-all relative overflow-hidden">
                                         <div className="absolute top-0 right-0 w-1.5 h-full bg-primary  transition-all" />
 
                                         <div className="flex justify-between items-start mb-6">
