@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  experimental: { agentUpgrade: 'security' },
   output: 'standalone',
   outputFileTracingExcludes: {
     '/*': ['./.env', './.env.*', './scratch/**/*', './local-backups/**/*', './storage/**/*', './.git/**/*'],
