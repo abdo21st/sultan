@@ -62,11 +62,6 @@ export default function AccessManagementPage() {
         permissions: [] as string[]
     });
 
-    useEffect(() => {
-        fetchUsers();
-        fetchRoles();
-    }, []);
-
     // --- Users Logic ---
     async function fetchUsers() {
         try {
@@ -98,7 +93,7 @@ export default function AccessManagementPage() {
     }
 
     // --- Roles Logic ---
-    const fetchRoles = async () => {
+    async function fetchRoles() {
         try {
             setRolesLoading(true);
             const res = await fetch('/api/roles');
@@ -109,7 +104,15 @@ export default function AccessManagementPage() {
         } finally {
             setRolesLoading(false);
         }
-    };
+    }
+
+    useEffect(() => {
+        const task = window.setTimeout(() => {
+            void fetchUsers();
+            void fetchRoles();
+        }, 0);
+        return () => window.clearTimeout(task);
+    }, []);
 
     const handleRoleEdit = (role: Role) => {
         setEditingRole(role);
@@ -224,7 +227,7 @@ export default function AccessManagementPage() {
         },
         'المنشآت': {
             icon: <LayoutGrid className="w-4 h-4" />,
-            perms: [PERMISSIONS.FACILITIES_VIEW, PERMISSIONS.FACILITIES_VIEW_ALL, PERMISSIONS.FACILITIES_ADD, PERMISSIONS.FACILITIES_EDIT, PERMISSIONS.FACILITIES_DELETE]
+            perms: [PERMISSIONS.FACILITIES_VIEW, PERMISSIONS.FACILITIES_VIEW_ALL, PERMISSIONS.FACILITIES_ADD, PERMISSIONS.FACILITIES_EDIT, PERMISSIONS.FACILITIES_DELETE, PERMISSIONS.FACTORY_PREPARATION_MANAGE]
         },
         'الطلبات': {
             icon: <FileText className="w-4 h-4" />,

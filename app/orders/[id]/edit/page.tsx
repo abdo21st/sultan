@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { ORDER_STATUS_LABELS } from '@/lib/constants';
 import { usePermission } from '@/lib/usePermission';
 import { PERMISSIONS } from '@/lib/permissions';
+import { businessDateTimeInput } from '@/lib/preparation-schedule';
 
 interface Facility {
     id: string;
@@ -24,6 +25,7 @@ interface OrderFormData {
     totalAmount: string;
     paidAmount: string;
     dueDate: string;
+    pickupTime: string;
     factoryId: string;
     shopId: string;
     images: string[];
@@ -67,6 +69,7 @@ export default function EditOrderPage() {
                     totalAmount: orderData.totalAmount === undefined ? '' : String(orderData.totalAmount),
                     paidAmount: orderData.paidAmount === undefined ? '' : String(orderData.paidAmount),
                     dueDate: orderData.dueDate ? new Date(orderData.dueDate).toISOString().split('T')[0] : '',
+                    pickupTime: orderData.pickupAt ? businessDateTimeInput(new Date(orderData.pickupAt)).slice(11, 16) : '16:00',
                     images: orderData.images || [],
                 });
                 setLoading(false);
@@ -125,6 +128,7 @@ export default function EditOrderPage() {
                 submitData.append("paidAmount", formData.paidAmount);
             }
             submitData.append("dueDate", formData.dueDate);
+            submitData.append("pickupAt", `${formData.dueDate}T${formData.pickupTime}`);
             submitData.append("factoryId", formData.factoryId);
             submitData.append("shopId", formData.shopId);
             submitData.append("existingImages", JSON.stringify(formData.images));
@@ -248,15 +252,19 @@ export default function EditOrderPage() {
                             <p className="text-xs text-muted-foreground">تتغير المرحلة من إجراءات الطلب. حفظ البيانات أو التصحيح يبقيها كما هي.</p>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-muted-foreground">تاريخ الاستحقاق</label>
+                            <label className="text-sm font-medium text-muted-foreground">تاريخ الاستلام</label>
                             <input
                                 required
                                 type="date"
-                                aria-label="تاريخ الاستحقاق"
+                                aria-label="تاريخ الاستلام"
                                 value={formData.dueDate}
                                 onChange={e => setFormData({ ...formData, dueDate: e.target.value })}
                                 className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-muted-foreground">ساعة استلام العميل</label>
+                            <input type="time" step="900" required aria-label="ساعة استلام العميل" value={formData.pickupTime} onChange={e => setFormData({ ...formData, pickupTime: e.target.value })} className="w-full rounded-lg border border-input bg-background px-4 py-2 text-sm" />
                         </div>
                     </div>
 

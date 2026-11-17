@@ -3,12 +3,14 @@ import { prisma } from "../../../../lib/prisma";
 import { getRequestUser } from "@/lib/request-user";
 import { z } from "zod";
 import { writeAudit } from "@/lib/audit";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const capacityRuleSchema = z.object({
     factoryId: z.string().nullable().optional(),
     dayOfWeek: z.number().int().min(0).max(6).nullable().optional(),
     specificDate: z.string().nullable().optional().refine((value) => !value || !Number.isNaN(Date.parse(value))),
     maxCapacity: z.number().int().min(1).max(10000),
+    warningPercent: z.number().int().min(1).max(99).default(80),
 }).refine((value) => Boolean(value.specificDate) !== (value.dayOfWeek !== null && value.dayOfWeek !== undefined), {
     message: "Choose a weekday or a specific date.",
 });
@@ -16,7 +18,7 @@ const capacityRuleSchema = z.object({
 export async function GET() {
     try {
         const user = await getRequestUser();
-        if (!user || user.role !== 'ADMIN') {
+        if (!user || (user.role !== 'ADMIN' && !user.permissions.includes(PERMISSIONS.BOOKING_MANAGE))) {
             return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
         }
 
@@ -32,7 +34,7 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         const user = await getRequestUser();
-        if (!user || user.role !== 'ADMIN') {
+        if (!user || (user.role !== 'ADMIN' && !user.permissions.includes(PERMISSIONS.BOOKING_MANAGE))) {
             return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
         }
 
@@ -46,6 +48,7 @@ export async function POST(req: Request) {
                     dayOfWeek: body.dayOfWeek ?? null,
                     specificDate: body.specificDate ? new Date(body.specificDate) : null,
                     maxCapacity: body.maxCapacity,
+                    warningPercent: body.warningPercent,
                 },
             });
             await writeAudit(tx, { actorId: user.id, entityType: "CAPACITY_RULE", entityId: created.id, action: "CREATED", after: created });

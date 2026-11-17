@@ -14,6 +14,7 @@ interface PrintAndShareButtonsProps {
         paidAmount: number;
         remainingAmount: number;
         dueDate: Date;
+        pickupAt: Date | null;
         orderId: string;
         shareUrl: string;
         appName: string;
@@ -58,6 +59,7 @@ export default function PrintAndShareButtons({ orderData, canViewFinancials }: P
                     ...(orderData.correctionReason ? [{ label: 'يحتاج تصحيحاً', value: orderData.correctionReason }] : []),
                     // A plain numeric date avoids embedded RTL marks reversing its digits in the PDF renderer.
                     { label: 'موعد التسليم', value: new Date(orderData.dueDate).toLocaleDateString('en-GB', { timeZone: 'Africa/Tripoli' }) },
+                    ...(orderData.pickupAt ? [{ label: 'ساعة استلام العميل', value: new Date(orderData.pickupAt).toLocaleTimeString('ar-LY', { timeZone: 'Africa/Tripoli', hour: '2-digit', minute: '2-digit' }) }] : []),
                     { label: 'تفاصيل الطلب', value: orderData.description || '' },
                     ...(canViewFinancials ? [
                         { label: 'قيمة الطلب', value: formatCurrency(orderData.totalAmount) },
@@ -83,7 +85,7 @@ export default function PrintAndShareButtons({ orderData, canViewFinancials }: P
             message += orderData.closed ? `الحالة: ${orderData.statusLabel}\nالمتبقي لإعادته للعميل: ${formatCurrency(orderData.refundRemaining)}\n\n` : `💰 المبلغ الإجمالي: ${formatCurrency(orderData.totalAmount)}\n✅ المدفوع: ${formatCurrency(orderData.paidAmount)}\n⏳ المتبقي: ${formatCurrency(orderData.remainingAmount)}\n\n`;
         }
 
-        message += `📅 موعد التسليم: ${new Date(orderData.dueDate).toLocaleDateString('ar-LY')}\n\n🔗 رابط المستند:\n${orderData.shareUrl}`;
+        message += `📅 موعد الاستلام: ${new Date(orderData.dueDate).toLocaleDateString('ar-LY', { timeZone: 'Africa/Tripoli' })}${orderData.pickupAt ? ` الساعة ${new Date(orderData.pickupAt).toLocaleTimeString('ar-LY', { timeZone: 'Africa/Tripoli', hour: '2-digit', minute: '2-digit' })}` : ''}\n\n🔗 رابط المستند:\n${orderData.shareUrl}`;
 
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
         window.open(whatsappUrl, '_blank');

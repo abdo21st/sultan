@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { PERMISSIONS } from "../../../../lib/permissions";
+import { ORDER_STATUS } from '@/lib/constants';
 import { saveFile } from "../../../../lib/upload";
 import { orderSchema } from "@/lib/schemas";
 import { canAccessAllFacilities, canAccessOrderFacility, canViewOrderStatus, getRequestUser } from "@/lib/request-user";
@@ -8,6 +9,10 @@ import { fromCents, toCents, toMoneyNumber } from "@/lib/money";
 import { writeAudit } from "@/lib/audit";
 import { cleanupUncommittedBlobUploads, enqueueBlobDeletions, processBlobDeletionQueue } from "@/lib/blob-cleanup";
 import { createStatusChangeNotification } from '@/lib/services/notification-service';
+import { parseBusinessDateTime, hasPreparationConflict, findNearestAvailablePickup } from '@/lib/preparation-schedule';
+import { businessDateKey } from '@/lib/business-date';
+import { getCapacitySummary } from '@/lib/capacity';
+import { createCapacityWarningIfNeeded } from '@/lib/services/capacity-alert';
 
 
 export async function GET(
@@ -34,6 +39,8 @@ export async function GET(
                 reviewRequired: true,
                 rejectionReason: true,
                 dueDate: true,
+                pickupAt: true,
+                preparationMinutes: true,
                 createdAt: true,
                 factoryId: true,
                 shopId: true,
@@ -103,6 +110,8 @@ export async function PATCH(
                 customerPhone: true,
                 description: true,
                 dueDate: true,
+                pickupAt: true,
+                preparationMinutes: true,
                 updatedAt: true,
                 reviewRequired: true,
                 rejectionReason: true,
@@ -120,6 +129,7 @@ export async function PATCH(
             customerPhone: formData.get("customerPhone"),
             description: formData.get("description"),
             dueDate: formData.get("dueDate"),
+            pickupAt: formData.get("pickupAt"),
             totalAmount: canEditFinancials ? formData.get("totalAmount") : String(currentOrder.totalAmount),
             paidAmount: String(currentOrder.paidAmount),
             factoryId: formData.get("factoryId"),
@@ -135,13 +145,17 @@ export async function PATCH(
         }
 
         const body = result.data;
+        const pickupAt = parseBusinessDateTime(body.pickupAt);
+        if (!pickupAt || businessDateKey(pickupAt) !== body.dueDate.slice(0, 10)) {
+            return NextResponse.json({ error: 'يجب تسجيل وقت استلام صحيح في تاريخ الطلب.' }, { status: 400 });
+        }
 
         if (toCents(body.totalAmount) < toCents(currentOrder.paidAmount)) {
             return NextResponse.json({ error: "Total cannot be less than payments already recorded." }, { status: 400 });
         }
         const facilities = await prisma.facility.findMany({
             where: { id: { in: [body.factoryId, body.shopId] } },
-            select: { id: true, type: true },
+            select: { id: true, type: true, preparationMinutes: true, name: true },
         });
         if (
             facilities.find((facility) => facility.id === body.factoryId)?.type !== "FACTORY" ||
@@ -149,6 +163,7 @@ export async function PATCH(
         ) {
             return NextResponse.json({ error: "Select a valid factory and shop." }, { status: 400 });
         }
+        const targetFactory = facilities.find((facility) => facility.id === body.factoryId)!;
         if (!canAccessAllFacilities(user) && (!user.facilityId || ![body.factoryId, body.shopId].includes(user.facilityId))) {
             return NextResponse.json({ error: "You can only edit orders for your assigned facility." }, { status: 403 });
         }
@@ -207,6 +222,40 @@ export async function PATCH(
         const updateResult = await prisma.$transaction(async (tx) => {
             await tx.$queryRaw`SELECT id FROM "Order" WHERE id=${id} FOR UPDATE`;
             if (await tx.orderAdjustment.findFirst({ where: { orderId: id, status: { in: ['REQUESTED', 'APPROVED'] } } })) throw new Error('ORDER_UPDATE_CONFLICT');
+            const lockFactories = [...new Set([currentOrder.factoryId, body.factoryId])].sort();
+            for (const factoryId of lockFactories) {
+                await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`order-booking:${factoryId}`}))`;
+            }
+            const targetDay = businessDateKey(pickupAt);
+            const targetDueDate = new Date(body.dueDate);
+            const capacityRules = await tx.capacityRule.findMany({
+                where: {
+                    OR: [{ factoryId: null }, { factoryId: body.factoryId }],
+                    AND: [{ OR: [{ specificDate: targetDueDate }, { AND: [{ specificDate: null }, { dayOfWeek: targetDueDate.getUTCDay() }] }] }],
+                },
+            });
+            const otherOrdersOnDay = await tx.order.count({
+                where: { id: { not: id }, factoryId: body.factoryId, dueDate: targetDueDate, status: { notIn: [ORDER_STATUS.CANCELLED, 'CANCELLED'] } },
+            });
+            const capacity = getCapacitySummary(capacityRules, body.factoryId, targetDay, otherOrdersOnDay);
+            if (capacity.full) throw new Error(`ORDER_CAPACITY_CONFLICT:${otherOrdersOnDay}/${capacity.limit}`);
+            const factoryBookings = await tx.order.findMany({
+                where: {
+                    id: { not: id }, factoryId: body.factoryId,
+                    status: { notIn: [ORDER_STATUS.CANCELLED, 'CANCELLED'] },
+                    pickupAt: { gte: new Date(pickupAt.getTime() - 24 * 60 * 60_000), lte: new Date(pickupAt.getTime() + 24 * 60 * 60_000) },
+                },
+                select: { pickupAt: true, preparationMinutes: true },
+            });
+            const bookings = factoryBookings.filter(item => item.pickupAt).map(item => ({ pickupAt: item.pickupAt!, preparationMinutes: item.preparationMinutes }));
+            if (hasPreparationConflict(pickupAt, targetFactory.preparationMinutes, bookings)) {
+                const nearest = findNearestAvailablePickup(pickupAt, targetFactory.preparationMinutes, bookings, new Date());
+                const nearestLabel = nearest?.toLocaleString('ar-LY', { timeZone: 'Africa/Tripoli', weekday: 'long', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'long' });
+                throw new Error(`ORDER_SLOT_CONFLICT:${nearestLabel ?? 'لا يوجد موعد متاح خلال الثلاثين يوماً القادمة.'}`);
+            }
+            if (pickupAt.getTime() - targetFactory.preparationMinutes * 60_000 < Date.now()) {
+                throw new Error('ORDER_PREPARATION_TOO_LATE');
+            }
             const updated = await tx.order.updateMany({
                 where: { id, updatedAt: currentOrder.updatedAt },
                 data: {
@@ -216,7 +265,9 @@ export async function PATCH(
                 totalAmount: body.totalAmount,
                 paidAmount: currentOrder.paidAmount,
                 remainingAmount: fromCents(Math.max(0, toCents(body.totalAmount) - toCents(currentOrder.paidAmount))),
-                dueDate: new Date(body.dueDate),
+                dueDate: targetDueDate,
+                pickupAt,
+                preparationMinutes: targetFactory.preparationMinutes,
                 factoryId: body.factoryId || undefined,
                 shopId: body.shopId || undefined,
                 images: images,
@@ -240,6 +291,8 @@ export async function PATCH(
                     customerPhone: currentOrder.customerPhone,
                     description: currentOrder.description,
                     dueDate: currentOrder.dueDate,
+                    pickupAt: currentOrder.pickupAt,
+                    preparationMinutes: currentOrder.preparationMinutes,
                     totalAmount: currentOrder.totalAmount,
                     paidAmount: currentOrder.paidAmount,
                     remainingAmount: currentOrder.remainingAmount,
@@ -252,6 +305,8 @@ export async function PATCH(
                     customerPhone: updatedOrder.customerPhone,
                     description: updatedOrder.description,
                     dueDate: updatedOrder.dueDate,
+                    pickupAt: updatedOrder.pickupAt,
+                    preparationMinutes: updatedOrder.preparationMinutes,
                     totalAmount: updatedOrder.totalAmount,
                     paidAmount: updatedOrder.paidAmount,
                     remainingAmount: updatedOrder.remainingAmount,
@@ -260,6 +315,13 @@ export async function PATCH(
                     imageCount: updatedOrder.images.length,
                     removedImageCount: removedImageUrls.length,
                 },
+            });
+            await createCapacityWarningIfNeeded(tx, {
+                factoryId: body.factoryId,
+                factoryName: targetFactory.name,
+                businessDay: targetDay,
+                orderCount: otherOrdersOnDay + 1,
+                rules: capacityRules,
             });
             return { order: updatedOrder, cleanupQueue };
         });
@@ -296,6 +358,9 @@ export async function PATCH(
         if (error instanceof Error && error.message === "ORDER_UPDATE_CONFLICT") {
             return NextResponse.json({ error: "تغير الطلب أثناء التعديل؛ أعد تحميله وحاول مجدداً." }, { status: 409 });
         }
+        if (error instanceof Error && error.message.startsWith('ORDER_CAPACITY_CONFLICT:')) return NextResponse.json({ error: `سقف المصنع لهذا اليوم لا يسمح بنقل الطلب (${error.message.split(':')[1]} طلباً محجوزاً).` }, { status: 409 });
+        if (error instanceof Error && error.message.startsWith('ORDER_SLOT_CONFLICT:')) return NextResponse.json({ error: `وقت الاستلام مشغول بتجهيز طلبية أخرى. أقرب وقت متاح: ${error.message.slice('ORDER_SLOT_CONFLICT:'.length)}.` }, { status: 409 });
+        if (error instanceof Error && error.message === 'ORDER_PREPARATION_TOO_LATE') return NextResponse.json({ error: 'لا يتبقى وقت كافٍ لبدء تجهيز الطلب قبل استلام العميل.' }, { status: 409 });
         console.error("Order update error:", error);
         return NextResponse.json(
             { error: "Failed to update order" },

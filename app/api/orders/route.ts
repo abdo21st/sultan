@@ -11,6 +11,11 @@ import { writeAudit } from "@/lib/audit";
 import { cleanupUncommittedBlobUploads } from "@/lib/blob-cleanup";
 import { decodeDateIdCursor, encodeDateIdCursor, parsePageSize } from "@/lib/keyset-pagination";
 import { createStatusChangeNotification } from '@/lib/services/notification-service';
+import { parseBusinessDateTime } from '@/lib/preparation-schedule';
+import { businessDateKey } from '@/lib/business-date';
+import { getCapacitySummary } from '@/lib/capacity';
+import { createCapacityWarningIfNeeded } from '@/lib/services/capacity-alert';
+import { hasPreparationConflict, findNearestAvailablePickup } from '@/lib/preparation-schedule';
 
 
 
@@ -161,6 +166,8 @@ export async function GET(request: Request) {
                 description: true,
                 status: true,
                 dueDate: true,
+                pickupAt: true,
+                preparationMinutes: true,
                 reviewRequired: true,
                 rejectionReason: true,
                 createdAt: true,
@@ -206,6 +213,7 @@ export async function POST(request: Request) {
         customerPhone: string;
         description: string;
         dueDate: Date;
+        pickupAt: Date;
         totalAmount: number;
         paidAmount: number;
         factoryId: string;
@@ -229,6 +237,7 @@ export async function POST(request: Request) {
             customerPhone: formData.get("customerPhone"),
             description: formData.get("description"),
             dueDate: formData.get("dueDate"),
+            pickupAt: formData.get("pickupAt"),
             totalAmount: formData.get("totalAmount"),
             paidAmount: formData.get("paidAmount"),
             factoryId: formData.get("factoryId"),
@@ -248,11 +257,16 @@ export async function POST(request: Request) {
         const totalAmount = Math.round((body.totalAmount + Number.EPSILON) * 100) / 100;
         const paidAmount = Math.round((body.paidAmount + Number.EPSILON) * 100) / 100;
         const dueDateObj = new Date(body.dueDate);
+        const pickupAt = parseBusinessDateTime(body.pickupAt);
+        if (!pickupAt || businessDateKey(pickupAt) !== body.dueDate.slice(0, 10)) {
+            return NextResponse.json({ error: 'يجب تسجيل وقت استلام صحيح في يوم التسليم نفسه.' }, { status: 400 });
+        }
         expectedOrderData = {
             customerName: body.customerName,
             customerPhone: body.customerPhone,
             description: body.description,
             dueDate: dueDateObj,
+            pickupAt,
             totalAmount,
             paidAmount,
             factoryId: body.factoryId,
@@ -292,44 +306,6 @@ export async function POST(request: Request) {
             }
             return NextResponse.json(orderResponse(existingOrder, user));
         }
-        const dayOfWeek = dueDateObj.getDay();
-
-        // Capacity Check
-        const capacityRules = await prisma.capacityRule.findMany({
-            where: {
-                OR: [
-                    { factoryId: null },
-                    { factoryId: body.factoryId }
-                ],
-                AND: [
-                    {
-                        OR: [
-                            { specificDate: dueDateObj },
-                            { AND: [{ specificDate: null }, { dayOfWeek: dayOfWeek }] }
-                        ]
-                    }
-                ]
-            }
-        });
-
-        if (capacityRules.length > 0) {
-            const minCapacity = Math.min(...capacityRules.map((r: { maxCapacity: number }) => r.maxCapacity));
-            const currentOrdersCount = await prisma.order.count({
-                where: {
-                    factoryId: body.factoryId,
-                    dueDate: dueDateObj,
-                    status: { notIn: [ORDER_STATUS.CANCELLED, 'CANCELLED'] },
-                }
-            });
-
-            if (currentOrdersCount >= minCapacity) {
-                return NextResponse.json(
-                    { error: `عذراً، تم الوصول للحد الأقصى من الطلبات لهذا اليوم (${minCapacity} طلبات). يرجى اختيار تاريخ آخر.` },
-                    { status: 400 }
-                );
-            }
-        }
-
         // Handle Images
         const imageValues = formData.getAll("images");
         if (imageValues.length > 10 || imageValues.some((value) => !(value instanceof File))) {
@@ -354,6 +330,42 @@ export async function POST(request: Request) {
 
         // Create Order and Transaction Atomically
         const order = await prisma.$transaction(async (tx) => {
+            const lockKey = `order-booking:${body.factoryId}`;
+            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
+            const factory = await tx.facility.findUnique({ where: { id: body.factoryId }, select: { id: true, name: true, type: true, preparationMinutes: true } });
+            if (!factory || factory.type !== 'FACTORY') throw new OrderBookingError('المصنع المحدد غير متاح.');
+            const preparationMinutes = factory.preparationMinutes;
+            const capacityRules = await tx.capacityRule.findMany({
+                where: {
+                    OR: [{ factoryId: null }, { factoryId: body.factoryId }],
+                    AND: [{ OR: [{ specificDate: dueDateObj }, { AND: [{ specificDate: null }, { dayOfWeek: dueDateObj.getUTCDay() }] }] }],
+                },
+            });
+            const currentOrdersCount = await tx.order.count({
+                where: { factoryId: body.factoryId, dueDate: dueDateObj, status: { notIn: [ORDER_STATUS.CANCELLED, 'CANCELLED'] } },
+            });
+            const currentCapacity = getCapacitySummary(capacityRules, body.factoryId, businessDateKey(pickupAt), currentOrdersCount);
+            if (currentCapacity.full) throw new OrderBookingError(`اكتمل سقف المصنع لهذا اليوم (${currentOrdersCount}/${currentCapacity.limit} طلباً). اختر يوماً آخر.`);
+
+            const existingBookings = await tx.order.findMany({
+                where: {
+                    factoryId: body.factoryId,
+                    status: { notIn: [ORDER_STATUS.CANCELLED, 'CANCELLED'] },
+                    pickupAt: { gte: new Date(pickupAt.getTime() - 24 * 60 * 60_000), lte: new Date(pickupAt.getTime() + 24 * 60 * 60_000) },
+                },
+                select: { pickupAt: true, preparationMinutes: true },
+            });
+            const bookings = existingBookings.filter(item => item.pickupAt).map(item => ({ pickupAt: item.pickupAt!, preparationMinutes: item.preparationMinutes }));
+            if (hasPreparationConflict(pickupAt, preparationMinutes, bookings)) {
+                const nearest = findNearestAvailablePickup(pickupAt, preparationMinutes, bookings, new Date());
+                const nearestLabel = nearest?.toLocaleString('ar-LY', { timeZone: 'Africa/Tripoli', weekday: 'long', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'long' });
+                throw new OrderBookingError(nearestLabel ? `الوقت المختار مشغول بتجهيز طلبية أخرى. أقرب وقت متاح: ${nearestLabel}.` : 'الوقت المختار مشغول ولا يوجد موعد متاح خلال الثلاثين يوماً القادمة.');
+            }
+            if (pickupAt.getTime() - preparationMinutes * 60_000 < Date.now()) {
+                const nearest = findNearestAvailablePickup(pickupAt, preparationMinutes, bookings, new Date());
+                const nearestLabel = nearest?.toLocaleString('ar-LY', { timeZone: 'Africa/Tripoli', weekday: 'long', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'long' });
+                throw new OrderBookingError(nearestLabel ? `الوقت لا يسمح ببدء التجهيز قبل موعد الاستلام. أقرب وقت ممكن: ${nearestLabel}.` : 'الوقت لا يسمح ببدء التجهيز ولا يوجد موعد مناسب خلال الثلاثين يوماً القادمة.');
+            }
             const newOrder = await tx.order.create({
                 data: {
                     clientRequestId,
@@ -361,6 +373,8 @@ export async function POST(request: Request) {
                     customerPhone: body.customerPhone,
                     description: body.description,
                     dueDate: dueDateObj,
+                    pickupAt,
+                    preparationMinutes,
                     totalAmount,
                     paidAmount,
                     remainingAmount: totalAmount - paidAmount,
@@ -406,6 +420,13 @@ export async function POST(request: Request) {
             });
 
             await createStatusChangeNotification(newOrder, ORDER_STATUS.REGISTERED, undefined, tx);
+            await createCapacityWarningIfNeeded(tx, {
+                factoryId: factory.id,
+                factoryName: factory.name,
+                businessDay: businessDateKey(pickupAt),
+                orderCount: currentOrdersCount + 1,
+                rules: capacityRules,
+            });
             return newOrder;
         });
         orderCommitted = true;
@@ -422,6 +443,7 @@ export async function POST(request: Request) {
                 console.error("Uncommitted order image cleanup could not be queued.");
             }
         }
+        if (error instanceof OrderBookingError) return NextResponse.json({ error: error.message }, { status: 409 });
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
             if (clientRequestId) {
                 const existingOrder = await prisma.order.findUnique({ where: { clientRequestId } });
@@ -448,6 +470,7 @@ function sameOrderRequest(
         customerPhone: string;
         description: string;
         dueDate: Date;
+        pickupAt: Date | null;
         totalAmount: Prisma.Decimal | number;
         paidAmount: Prisma.Decimal | number;
         factoryId: string;
@@ -458,6 +481,7 @@ function sameOrderRequest(
         customerPhone: string;
         description: string;
         dueDate: Date;
+        pickupAt: Date;
         totalAmount: number;
         paidAmount: number;
         factoryId: string;
@@ -470,9 +494,12 @@ function sameOrderRequest(
         order.factoryId === expected.factoryId &&
         order.shopId === expected.shopId &&
         order.dueDate.getTime() === expected.dueDate.getTime() &&
+        order.pickupAt?.getTime() === expected.pickupAt.getTime() &&
         toCents(order.totalAmount) === toCents(expected.totalAmount) &&
         toCents(order.paidAmount) === toCents(expected.paidAmount);
 }
+
+class OrderBookingError extends Error {}
 
 function orderResponse<T extends { id: string; images: string[]; totalAmount: Prisma.Decimal | number; paidAmount: Prisma.Decimal | number; remainingAmount: Prisma.Decimal | number }>(order: T, user: { role: string; permissions: string[] }) {
     const { totalAmount, paidAmount, remainingAmount, ...orderFields } = order;

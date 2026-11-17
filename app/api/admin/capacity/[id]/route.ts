@@ -3,12 +3,14 @@ import { prisma } from "../../../../../lib/prisma";
 import { getRequestUser } from "@/lib/request-user";
 import { z } from "zod";
 import { writeAudit } from "@/lib/audit";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const capacityRuleSchema = z.object({
     factoryId: z.string().nullable().optional(),
     dayOfWeek: z.number().int().min(0).max(6).nullable().optional(),
     specificDate: z.string().nullable().optional().refine((value) => !value || !Number.isNaN(Date.parse(value))),
     maxCapacity: z.number().int().min(1).max(10000),
+    warningPercent: z.number().int().min(1).max(99).default(80),
 }).refine((value) => Boolean(value.specificDate) !== (value.dayOfWeek !== null && value.dayOfWeek !== undefined), {
     message: "Choose a weekday or a specific date.",
 });
@@ -23,7 +25,7 @@ export async function PUT(
         if (!user) {
             return NextResponse.json({ error: 'الرجاء تسجيل الدخول' }, { status: 401 });
         }
-        if (user.role !== 'ADMIN') {
+        if (user.role !== 'ADMIN' && !user.permissions.includes(PERMISSIONS.BOOKING_MANAGE)) {
             return NextResponse.json({ error: 'غير مصرح بالتعديل.' }, { status: 403 });
         }
 
@@ -40,6 +42,7 @@ export async function PUT(
                     dayOfWeek: body.dayOfWeek ?? null,
                     specificDate: body.specificDate ? new Date(body.specificDate) : null,
                     maxCapacity: body.maxCapacity,
+                    warningPercent: body.warningPercent,
                 },
             });
             await writeAudit(tx, { actorId: user.id, entityType: "CAPACITY_RULE", entityId: id, action: "UPDATED", before, after: result });
@@ -63,7 +66,7 @@ export async function DELETE(
         if (!user) {
             return NextResponse.json({ error: 'الرجاء تسجيل الدخول' }, { status: 401 });
         }
-        if (user.role !== 'ADMIN') {
+        if (user.role !== 'ADMIN' && !user.permissions.includes(PERMISSIONS.BOOKING_MANAGE)) {
             return NextResponse.json({ error: 'غير مصرح بالحذف.' }, { status: 403 });
         }
 

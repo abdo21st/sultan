@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { Plus, Trash2, CalendarDays, Calendar, Clock, Loader2, Factory, ShieldAlert, Settings } from 'lucide-react';
 
 interface CapacityRule {
@@ -9,6 +9,7 @@ interface CapacityRule {
     dayOfWeek: number | null;
     specificDate: string | null;
     maxCapacity: number;
+    warningPercent: number;
 }
 
 interface Facility {
@@ -21,6 +22,10 @@ const DAYS_OF_WEEK = [
     "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"
 ];
 
+const subscribeWithoutChanges = () => () => {};
+const getClientMountedSnapshot = () => true;
+const getServerMountedSnapshot = () => false;
+
 export default function BookingPage() {
     const [rules, setRules] = useState<CapacityRule[]>([]);
     const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -30,15 +35,11 @@ export default function BookingPage() {
         type: "dayOfWeek", // or "specificDate"
         dayOfWeek: "0",
         specificDate: "",
-        maxCapacity: 10
+        maxCapacity: 10,
+        warningPercent: 80,
     });
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-        fetchData();
-    }, []);
+    const mounted = useSyncExternalStore(subscribeWithoutChanges, getClientMountedSnapshot, getServerMountedSnapshot);
 
     const fetchData = async () => {
         try {
@@ -59,6 +60,11 @@ export default function BookingPage() {
         }
     };
 
+    useEffect(() => {
+        const task = window.setTimeout(() => { void fetchData(); }, 0);
+        return () => window.clearTimeout(task);
+    }, []);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -73,7 +79,8 @@ export default function BookingPage() {
                     factoryId: form.factoryId || null,
                     dayOfWeek: form.type === 'dayOfWeek' ? parseInt(form.dayOfWeek) : null,
                     specificDate: form.type === 'specificDate' ? form.specificDate : null,
-                    maxCapacity: form.maxCapacity
+                    maxCapacity: form.maxCapacity,
+                    warningPercent: form.warningPercent,
                 })
             });
             if (res.ok) {
@@ -83,7 +90,8 @@ export default function BookingPage() {
                     type: "dayOfWeek",
                     dayOfWeek: "0",
                     specificDate: "",
-                    maxCapacity: 10
+                    maxCapacity: 10,
+                    warningPercent: 80
                 });
                 setEditingId(null);
             } else {
@@ -101,7 +109,8 @@ export default function BookingPage() {
             type: rule.specificDate ? 'specificDate' : 'dayOfWeek',
             dayOfWeek: rule.dayOfWeek !== null ? rule.dayOfWeek.toString() : "0",
             specificDate: rule.specificDate ? new Date(rule.specificDate).toISOString().split('T')[0] : "",
-            maxCapacity: rule.maxCapacity
+            maxCapacity: rule.maxCapacity,
+            warningPercent: rule.warningPercent ?? 80
         });
         setEditingId(rule.id);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -113,7 +122,8 @@ export default function BookingPage() {
             type: "dayOfWeek",
             dayOfWeek: "0",
             specificDate: "",
-            maxCapacity: 10
+            maxCapacity: 10,
+            warningPercent: 80
         });
         setEditingId(null);
     };
@@ -146,7 +156,7 @@ export default function BookingPage() {
             <main className="ui-page max-w-5xl">
                 <header className="mb-8">
                     <h1 className="text-2xl font-bold text-foreground">سعة الإنتاج</h1>
-                    <p className="text-muted-foreground mt-2">حدد الحد الأقصى للطلبات المقبولة لكل يوم أو مصنع.</p>
+                    <p className="text-muted-foreground mt-2">حدد سقف الطلبات اليومي ونسبة التنبيه. ويراجع النظام مدة تجهيز المصنع وموعد الاستلام قبل اعتماد الطلب.</p>
                 </header>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -234,6 +244,12 @@ export default function BookingPage() {
                                     />
                                 </div>
 
+                                <div>
+                                    <label htmlFor="capacity-warning-percent" className="block text-sm font-medium mb-1">نسبة إرسال تنبيه الاقتراب</label>
+                                    <div className="flex items-center gap-2"><input id="capacity-warning-percent" type="number" min="1" max="99" className="w-full p-2 bg-background border border-border rounded-lg text-sm" value={form.warningPercent} onChange={event => setForm({ ...form, warningPercent: Number(event.target.value) })} required /><span>%</span></div>
+                                    <p className="mt-1 text-xs text-muted-foreground">يصل تنبيه داخلي للمدير عند بلوغ هذه النسبة من السعة.</p>
+                                </div>
+
                                 <div className="flex gap-2">
                                     <button
                                         type="submit"
@@ -296,7 +312,7 @@ export default function BookingPage() {
                                                     </span>
                                                     <span className="flex items-center gap-1 text-primary font-medium">
                                                         <ShieldAlert className="w-4 h-4" />
-                                                        السعة: {rule.maxCapacity} طلب
+                                                        السعة: {rule.maxCapacity} طلب · تنبيه عند {rule.warningPercent ?? 80}%
                                                     </span>
                                                 </div>
                                             </div>

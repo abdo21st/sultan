@@ -122,7 +122,7 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                             <div className="p-5 bg-zinc-50 rounded-2xl border border-zinc-200/60 flex flex-col justify-center gap-2">
                                 <div className="flex justify-between items-center">
                                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">التسليم:</span>
-                                    <span className="font-black text-zinc-900 text-sm whitespace-nowrap">{new Date(currentOrder.dueDate).toLocaleDateString("ar-LY", { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                    <span className="font-black text-zinc-900 text-sm whitespace-nowrap">{new Date(currentOrder.dueDate).toLocaleDateString("ar-LY", { timeZone: 'Africa/Tripoli', month: 'long', day: 'numeric', year: 'numeric' })}{currentOrder.pickupAt ? ` · ${new Date(currentOrder.pickupAt).toLocaleTimeString('ar-LY', { timeZone: 'Africa/Tripoli', hour: '2-digit', minute: '2-digit' })}` : ''}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">المصنع:</span>
@@ -239,6 +239,7 @@ export default async function PrintOrderPage({ params }: { params: Promise<{ id:
                         paidAmount: Number(currentOrder.paidAmount),
                         remainingAmount: Number(currentOrder.remainingAmount),
                         dueDate: currentOrder.dueDate,
+                        pickupAt: currentOrder.pickupAt,
                         orderId: currentOrder.id,
                         shareUrl: orderUrl,
                         appName: settings?.appName || 'سلطان',

@@ -65,10 +65,12 @@ model Facility {
   name     String
   type     String
   location String?
+  preparationMinutes Int @default(60)
 
   factoryOrders Order[]       @relation("FactoryOrders")
   shopOrders    Order[]       @relation("ShopOrders")
   transactions  Transaction[]
+  capacityAlerts CapacityAlert[]
 }
 
 model Order {
@@ -80,6 +82,8 @@ model Order {
   customerPhone   String
   description     String
   dueDate         DateTime
+  pickupAt        DateTime?
+  preparationMinutes Int @default(60)
   status          String        @default("orders:status:registered")
   totalAmount     Decimal       @db.Decimal(14, 2)
   paidAmount      Decimal       @db.Decimal(14, 2)
@@ -100,6 +104,7 @@ model Order {
 
   @@index([factoryId])
   @@index([factoryId, dueDate])
+  @@index([factoryId, pickupAt])
   @@index([factoryId, createdAt, id])
   @@index([shopId])
   @@index([shopId, createdAt, id])
@@ -182,12 +187,26 @@ model CapacityRule {
   dayOfWeek    Int? // 0-6 (Sunday-Saturday), null means specific date
   specificDate DateTime?
   maxCapacity  Int
+  warningPercent Int @default(80)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   @@index([factoryId])
   @@index([dayOfWeek])
   @@index([specificDate])
+}
+
+model CapacityAlert {
+  id          String   @id @default(cuid())
+  factoryId   String
+  factory     Facility @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  businessDay DateTime @db.Date
+  orderCount  Int
+  maxCapacity Int
+  createdAt   DateTime @default(now())
+
+  @@unique([factoryId, businessDay])
+  @@index([businessDay])
 }
 
 model AlertSetting {

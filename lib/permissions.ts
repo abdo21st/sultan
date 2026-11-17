@@ -42,6 +42,7 @@ export const PERMISSIONS = {
     WHATSAPP_SEND: 'whatsapp:send',
     ALERTS_MANAGE: 'alerts:manage',
     BOOKING_MANAGE: 'booking:manage',
+    FACTORY_PREPARATION_MANAGE: 'factory:preparation:manage',
     DASHBOARD_VIEW: 'dashboard:view', // New permission for control panel access
 
     // Status Views (Who can SEE this status)
@@ -101,6 +102,7 @@ export const PERMISSION_LABELS: Record<string, string> = {
     [PERMISSIONS.WHATSAPP_SEND]: 'إرسال إشعارات WhatsApp للعملاء',
     [PERMISSIONS.ALERTS_MANAGE]: 'إدارة نظام التنبيهات',
     [PERMISSIONS.BOOKING_MANAGE]: 'إدارة سعة الإنتاج',
+    [PERMISSIONS.FACTORY_PREPARATION_MANAGE]: 'تحديد مدة تجهيز طلبات المصنع',
     [PERMISSIONS.DASHBOARD_VIEW]: 'عرض التقارير والتحليلات',
 
     // Status Views Labels

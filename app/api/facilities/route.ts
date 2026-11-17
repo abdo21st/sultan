@@ -25,6 +25,7 @@ const facilitySchema = z.object({
     name: z.string().min(2, "اسم المنشأة يجب أن يكون حرفين على الأقل"),
     type: z.enum(["FACTORY", "SHOP"]),
     location: z.string().min(2, "الموقع يجب أن يكون حرفين على الأقل"),
+    preparationMinutes: z.number().int().min(5).max(1440).optional(),
 });
 
 export async function POST(request: Request) {
@@ -44,7 +45,12 @@ export async function POST(request: Request) {
 
         const body = result.data;
         const facility = await prisma.$transaction(async (tx) => {
-            const created = await tx.facility.create({ data: body });
+            const created = await tx.facility.create({
+                data: {
+                    ...body,
+                    preparationMinutes: body.type === 'FACTORY' ? body.preparationMinutes ?? 60 : 60,
+                },
+            });
             await writeAudit(tx, {
                 actorId: user.id,
                 entityType: "FACILITY",

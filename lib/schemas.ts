@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { businessDateKey } from './business-date';
+import { parseBusinessDateTime } from './preparation-schedule';
 
 const MAX_MONEY_AMOUNT = 999_999_999_999.99;
 
@@ -18,6 +20,9 @@ export const orderSchema = z.object({
     dueDate: z.string().refine((val: string) => !isNaN(Date.parse(val)), {
         message: "تاريخ الاستحقاق غير صحيح",
     }),
+    pickupAt: z.string().refine((value) => parseBusinessDateTime(value) !== null, {
+        message: "وقت الاستلام غير صحيح",
+    }),
     totalAmount: moneyAmountSchema.refine((value) => value > 0, "الإجمالي يجب أن يكون قيمة موجبة"),
     paidAmount: z.preprocess((value) => value === "" || value === null ? "0" : value, moneyAmountSchema),
     factoryId: z.string().min(1, "يجب اختيار المصنع"),
@@ -26,6 +31,14 @@ export const orderSchema = z.object({
 }).superRefine((order, context) => {
     const totalCents = Math.round((order.totalAmount + Number.EPSILON) * 100);
     const paidCents = Math.round((order.paidAmount + Number.EPSILON) * 100);
+    const pickupAt = parseBusinessDateTime(order.pickupAt);
+    if (pickupAt && businessDateKey(pickupAt) !== order.dueDate.slice(0, 10)) {
+        context.addIssue({
+            code: "custom",
+            path: ["pickupAt"],
+            message: "يجب أن يقع وقت الاستلام في تاريخ التسليم المحدد",
+        });
+    }
     if (paidCents > totalCents) {
         context.addIssue({
             code: "custom",

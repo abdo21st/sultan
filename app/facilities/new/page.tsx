@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 export default function NewFacilityPage() {
     const router = useRouter();
+    const [facilityType, setFacilityType] = useState<'FACTORY' | 'SHOP'>('FACTORY');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -19,6 +20,7 @@ export default function NewFacilityPage() {
             name: formData.get("name"),
             type: formData.get("type"), // FACTORY or SHOP
             location: formData.get("location"),
+            preparationMinutes: Number(formData.get("preparationMinutes") || 60),
         };
 
         try {
@@ -77,6 +79,8 @@ export default function NewFacilityPage() {
                             id="facility-type"
                             name="type"
                             required
+                            value={facilityType}
+                            onChange={event => setFacilityType(event.target.value as 'FACTORY' | 'SHOP')}
                             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                             aria-label="نوع المنشأة"
                         >
@@ -98,6 +102,23 @@ export default function NewFacilityPage() {
                             placeholder="مثال: طرابلس"
                         />
                     </div>
+
+                    {facilityType === 'FACTORY' && <div>
+                        <label htmlFor="facility-preparation" className="block text-sm font-medium text-muted-foreground mb-1">
+                            مدة تجهيز الطلب الافتراضية للمصنع (بالدقائق)
+                        </label>
+                        <input
+                            id="facility-preparation"
+                            name="preparationMinutes"
+                            type="number"
+                            min="5"
+                            max="1440"
+                            defaultValue="60"
+                            required
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">يُستخدم الزمن لحجز وقت الإنتاج قبل موعد استلام العميل.</p>
+                    </div>}
 
                     <div className="flex justify-end gap-4 pt-4">
                         <button

@@ -85,7 +85,7 @@ export default async function ShareOrderPage({
                         </div>
                         <div>
                             <p className="text-xs text-gray-600 mb-1">تاريخ الاستحقاق</p>
-                            <p className="text-sm font-bold">{formatDate(order.dueDate)}</p>
+                            <p className="text-sm font-bold">{formatDate(order.dueDate)}{order.pickupAt ? ` · ${new Date(order.pickupAt).toLocaleTimeString('ar-LY', { timeZone: 'Africa/Tripoli', hour: '2-digit', minute: '2-digit' })}` : ''}</p>
                         </div>
                         <div>
                             <p className="text-xs text-gray-600 mb-1">تاريخ الإنشاء</p>

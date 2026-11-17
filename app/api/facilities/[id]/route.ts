@@ -3,6 +3,45 @@ import { prisma } from "../../../../lib/prisma";
 import { PERMISSIONS } from "../../../../lib/permissions";
 import { getRequestUser } from "@/lib/request-user";
 import { writeAudit } from "@/lib/audit";
+import { z } from "zod";
+
+const preparationSchema = z.object({ preparationMinutes: z.number().int().min(5).max(1440) });
+
+export async function PUT(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id: facilityId } = await params;
+        const user = await getRequestUser();
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        if (user.role !== 'ADMIN' && !user.permissions.includes(PERMISSIONS.FACTORY_PREPARATION_MANAGE)) {
+            return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+        }
+        if (user.role !== 'ADMIN' && user.facilityId !== facilityId) {
+            return NextResponse.json({ error: 'يمكنك تعديل مدة تجهيز مصنعك فقط.' }, { status: 403 });
+        }
+        const parsed = preparationSchema.safeParse(await request.json());
+        if (!parsed.success) return NextResponse.json({ error: 'أدخل مدة تجهيز بين ٥ و١٤٤٠ دقيقة.' }, { status: 400 });
+        const facility = await prisma.facility.findUnique({ where: { id: facilityId } });
+        if (!facility || facility.type !== 'FACTORY') return NextResponse.json({ error: 'المصنع غير موجود.' }, { status: 404 });
+        const updated = await prisma.$transaction(async tx => {
+            const result = await tx.facility.update({ where: { id: facilityId }, data: parsed.data });
+            await writeAudit(tx, {
+                actorId: user.id,
+                entityType: 'FACILITY',
+                entityId: facilityId,
+                action: 'PREPARATION_TIME_UPDATED',
+                before: { preparationMinutes: facility.preparationMinutes },
+                after: { preparationMinutes: result.preparationMinutes },
+            });
+            return result;
+        });
+        return NextResponse.json(updated);
+    } catch {
+        return NextResponse.json({ error: 'تعذر حفظ مدة التجهيز.' }, { status: 500 });
+    }
+}
 
 export async function DELETE(
     request: NextRequest,

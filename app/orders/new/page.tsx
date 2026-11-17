@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Check, X, Wifi, WifiOff } from "lucide-react";
@@ -8,10 +8,35 @@ import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { PERMISSIONS } from '@/lib/permissions';
 import { libyaDateKey } from '@/lib/calendar-date';
+import { businessDateTimeInput } from '@/lib/preparation-schedule';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/app/components/ToastProvider';
 
 type Facility = { id: string; name: string; type: "FACTORY" | "SHOP" };
+type Availability = {
+    available: boolean;
+    reason: 'capacity' | 'busy' | 'preparation_time' | null;
+    suggestedPickupAt: string | null;
+    preparationMinutes: number;
+    capacity: { current: number; limit: number | null; remainingAfterBooking: number | null; warningAt: number | null; approaching: boolean; full: boolean };
+};
+
+function subscribeToOnlineStatus(onChange: () => void) {
+    window.addEventListener('online', onChange);
+    window.addEventListener('offline', onChange);
+    return () => {
+        window.removeEventListener('online', onChange);
+        window.removeEventListener('offline', onChange);
+    };
+}
+
+function getOnlineSnapshot() {
+    return typeof navigator === 'undefined' || navigator.onLine;
+}
+
+function getServerOnlineSnapshot() {
+    return true;
+}
 
 export default function NewOrderPage() {
     const router = useRouter();
@@ -23,6 +48,9 @@ export default function NewOrderPage() {
     const [selectedFactory, setSelectedFactory] = useState('');
     const [selectedShop, setSelectedShop] = useState('');
     const [dueDate, setDueDate] = useState('');
+    const [pickupTime, setPickupTime] = useState('');
+    const [availabilityResult, setAvailabilityResult] = useState<{ key: string; data: Availability } | null>(null);
+    const [availabilityFailure, setAvailabilityFailure] = useState<{ key: string; message: string } | null>(null);
     const previewUrls = useRef(new Set<string>());
 
     const { data: session } = useSession();
@@ -31,23 +59,12 @@ export default function NewOrderPage() {
 
     const [images, setImages] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
-    const [isOnline, setIsOnline] = useState(true);
+    const isOnline = useSyncExternalStore(subscribeToOnlineStatus, getOnlineSnapshot, getServerOnlineSnapshot);
     const clientRequestId = useRef<string | null>(null);
     useEffect(() => { const urls = previewUrls.current; return () => { urls.forEach(url => URL.revokeObjectURL(url)); }; }, []);
 
     useEffect(() => {
         clientRequestId.current = crypto.randomUUID();
-        setIsOnline(navigator.onLine);
-        const handleOnline = () => setIsOnline(true);
-        const handleOffline = () => setIsOnline(false);
-
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
-
-        return () => {
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-        };
     }, []);
 
     useEffect(() => {
@@ -86,6 +103,36 @@ export default function NewOrderPage() {
     const previewPaid = canCollect ? Number(paidInput || 0) : 0;
     const factoryName = facilities.find(facility => facility.id === (userFactoryId || selectedFactory))?.name;
     const shopName = facilities.find(facility => facility.id === (userShopId || selectedShop))?.name;
+    const activeFactoryId = userFactoryId || selectedFactory;
+    const activeShopId = userShopId || selectedShop;
+    const pickupAtInput = dueDate && pickupTime ? `${dueDate}T${pickupTime}` : '';
+    const availabilityKey = isOnline && activeFactoryId && activeShopId && pickupAtInput
+        ? `${activeFactoryId}|${activeShopId}|${pickupAtInput}`
+        : '';
+    const availability = availabilityResult?.key === availabilityKey ? availabilityResult.data : null;
+    const availabilityError = availabilityFailure?.key === availabilityKey ? availabilityFailure.message : '';
+    const availabilityLoading = Boolean(availabilityKey && !availability && !availabilityError);
+
+    useEffect(() => {
+        if (!availabilityKey) return;
+        const abort = new AbortController();
+        const timer = setTimeout(async () => {
+            const [factoryId, shopId, requestedPickupAt] = availabilityKey.split('|');
+            const query = new URLSearchParams({ factoryId, shopId, pickupAt: requestedPickupAt });
+            try {
+                const response = await fetch(`/api/orders/availability?${query}`, { cache: 'no-store', signal: abort.signal });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'تعذر فحص الموعد.');
+                if (!abort.signal.aborted) {
+                    setAvailabilityResult({ key: availabilityKey, data });
+                    setAvailabilityFailure(null);
+                }
+            } catch (reason) {
+                if (!abort.signal.aborted) setAvailabilityFailure({ key: availabilityKey, message: reason instanceof Error ? reason.message : 'تعذر فحص الموعد.' });
+            }
+        }, 250);
+        return () => { clearTimeout(timer); abort.abort(); };
+    }, [availabilityKey]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -128,6 +175,7 @@ export default function NewOrderPage() {
 
         const form = e.currentTarget;
         const formData = new FormData(form);
+        formData.set('pickupAt', pickupAtInput);
         if (!canCollect) formData.set('paidAmount', '0');
 
         // Append images
@@ -143,6 +191,11 @@ export default function NewOrderPage() {
 
         if (!isOnline || !navigator.onLine) {
             setError('يلزم الاتصال بالإنترنت لإنشاء الطلب.');
+            setLoading(false);
+            return;
+        }
+        if (!availability?.available) {
+            setError(availabilityError || 'تحقق من توفر وقت الاستلام قبل اعتماد الطلب.');
             setLoading(false);
             return;
         }
@@ -195,13 +248,19 @@ export default function NewOrderPage() {
             </fieldset>
             <fieldset className="ui-card order-form-section space-y-4"><legend><span aria-hidden="true">٤</span>التنفيذ والتسليم</legend>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <label><span className="ui-field-label">موعد التسليم *</span><input required name="dueDate" type="date" min={libyaDateKey()} className="ui-field" value={dueDate} onChange={event => setDueDate(event.target.value)} /></label>
+                    <label><span className="ui-field-label">تاريخ استلام الطلبية *</span><input required name="dueDate" type="date" min={libyaDateKey()} className="ui-field" value={dueDate} onChange={event => setDueDate(event.target.value)} /></label>
+                    <label><span className="ui-field-label">ساعة استلام الطلبية *</span><input required name="pickupTime" type="time" step="900" className="ui-field" value={pickupTime} onChange={event => setPickupTime(event.target.value)} /><span className="block text-xs text-muted-foreground mt-2">موعد استلام العميل من المحل، وليس وقت بدء التصنيع.</span></label>
                     <div><label htmlFor="order-factory" className="ui-field-label">المصنع المنفذ *</label>{userFactoryId && user.role !== 'ADMIN' ? <div className="ui-field bg-muted">{assignedFacility?.name}<input type="hidden" name="factoryId" value={userFactoryId} /></div> : <select id="order-factory" name="factoryId" required value={selectedFactory} onChange={event => setSelectedFactory(event.target.value)} className="ui-field"><option value="" disabled>اختر مصنعاً</option>{factories.map(factory => <option key={factory.id} value={factory.id}>{factory.name}</option>)}</select>}</div>
                     <div><label htmlFor="order-shop" className="ui-field-label">محل تسجيل الطلب *</label>{userShopId ? <div className="ui-field bg-muted">{facilities.find(facility => facility.id === userShopId)?.name}<input type="hidden" name="shopId" value={userShopId} /></div> : <select id="order-shop" name="shopId" required value={selectedShop} onChange={event => setSelectedShop(event.target.value)} className="ui-field"><option value="" disabled>اختر محلاً</option>{shops.map(shop => <option key={shop.id} value={shop.id}>{shop.name}</option>)}</select>}</div>
                 </div>
+                <input type="hidden" name="pickupAt" value={pickupAtInput} />
+                {availabilityLoading && <p role="status" className="text-sm text-muted-foreground">جارٍ فحص جدول تجهيز المصنع…</p>}
+                {!availabilityLoading && availabilityError && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900">{availabilityError}</p>}
+                {availability && !availability.available && <div role="alert" className="rounded-lg border border-amber-400 bg-amber-50 p-4 text-sm text-amber-950 space-y-2"><p className="font-semibold">{availability.reason === 'capacity' ? `وصل المصنع إلى سقف الطلبات لهذا اليوم (${availability.capacity.current}/${availability.capacity.limit}).` : availability.reason === 'busy' ? 'هذه الساعة مشغولة بتجهيز طلبية أخرى.' : 'المدة المتبقية لا تكفي لبدء التجهيز قبل وقت الاستلام.'} {availability.suggestedPickupAt ? `أقرب وقت متاح: ${new Date(availability.suggestedPickupAt).toLocaleString('ar-LY', { timeZone: 'Africa/Tripoli', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}.` : 'لا يوجد موعد متاح خلال الثلاثين يوماً القادمة.'}</p>{availability.suggestedPickupAt && <button type="button" className="ui-button" onClick={() => { const next = businessDateTimeInput(new Date(availability.suggestedPickupAt!)); setDueDate(next.slice(0, 10)); setPickupTime(next.slice(11, 16)); }}>استخدام أقرب موعد متاح</button>}</div>}
+                {availability?.available && <div role="status" className="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-950 space-y-1"><p>الوقت متاح · مدة تجهيز المصنع: {availability.preparationMinutes} دقيقة.</p>{availability.capacity.approaching && <p className="font-semibold text-amber-900">تنبيه: بعد تسجيل الطلب ستصل السعة إلى {availability.capacity.current + 1}/{availability.capacity.limit} طلباً لهذا اليوم.</p>}</div>}
             </fieldset>
             </div>
-            <aside className="order-form-aside" aria-label="ملخص الطلب قبل الحفظ"><h2 className="font-bold flex items-center gap-2"><Check size={18} aria-hidden="true" />راجع قبل الحفظ</h2><p className="text-xs text-muted-foreground mt-2 leading-relaxed">يبدأ الطلب بمرحلة «مسجّل» بعد حفظه بنجاح.</p><dl><div><dt>المحل</dt><dd>{shopName || 'لم يُحدد'}</dd></div><div><dt>المصنع</dt><dd>{factoryName || 'لم يُحدد'}</dd></div><div><dt>موعد التسليم</dt><dd><bdi>{dueDate || 'لم يُحدد'}</bdi></dd></div><div><dt>قيمة الطلب</dt><dd><bdi>{totalInput ? formatCurrency(previewTotal) : '—'}</bdi></dd></div>{canCollect && <div><dt>المدفوع</dt><dd><bdi>{formatCurrency(previewPaid)}</bdi></dd></div>}<div className="border-t border-border pt-4"><dt>المتبقي</dt><dd className="text-primary"><bdi>{totalInput ? formatCurrency(previewTotal - previewPaid) : '—'}</bdi></dd></div></dl><div className="order-form-submit mt-6"><button type="submit" disabled={loading || !isOnline || facilities.length === 0 || !canCreateForFacility} className="ui-button ui-button-primary w-full">{loading ? 'جاري إنشاء الطلب...' : 'إنشاء الطلب'}</button><Link href="/" className="ui-button w-full">إلغاء</Link></div></aside>
+            <aside className="order-form-aside" aria-label="ملخص الطلب قبل الحفظ"><h2 className="font-bold flex items-center gap-2"><Check size={18} aria-hidden="true" />راجع قبل الحفظ</h2><p className="text-xs text-muted-foreground mt-2 leading-relaxed">يبدأ الطلب بمرحلة «مسجّل» بعد حفظه بنجاح.</p><dl><div><dt>المحل</dt><dd>{shopName || 'لم يُحدد'}</dd></div><div><dt>المصنع</dt><dd>{factoryName || 'لم يُحدد'}</dd></div><div><dt>موعد الاستلام</dt><dd><bdi>{pickupAtInput ? `${dueDate} · ${pickupTime}` : 'لم يُحدد'}</bdi></dd></div><div><dt>قيمة الطلب</dt><dd><bdi>{totalInput ? formatCurrency(previewTotal) : '—'}</bdi></dd></div>{canCollect && <div><dt>المدفوع</dt><dd><bdi>{formatCurrency(previewPaid)}</bdi></dd></div>}<div className="border-t border-border pt-4"><dt>المتبقي</dt><dd className="text-primary"><bdi>{totalInput ? formatCurrency(previewTotal - previewPaid) : '—'}</bdi></dd></div></dl><div className="order-form-submit mt-6"><button type="submit" disabled={loading || !isOnline || facilities.length === 0 || !canCreateForFacility || !dueDate || !pickupTime || !availability?.available} className="ui-button ui-button-primary w-full">{loading ? 'جاري إنشاء الطلب...' : availabilityLoading ? 'جارٍ فحص الموعد...' : 'إنشاء الطلب'}</button><Link href="/" className="ui-button w-full">إلغاء</Link></div></aside>
             {!canCreateForFacility && <p className="text-sm text-red-700">يجب إسنادك إلى منشأة قبل إنشاء طلب.</p>}
         </form>
     </main>;
