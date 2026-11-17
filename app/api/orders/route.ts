@@ -331,7 +331,7 @@ export async function POST(request: Request) {
         // Create Order and Transaction Atomically
         const order = await prisma.$transaction(async (tx) => {
             const lockKey = `order-booking:${body.factoryId}`;
-            await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
+            await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
             const factory = await tx.facility.findUnique({ where: { id: body.factoryId }, select: { id: true, name: true, type: true, preparationMinutes: true } });
             if (!factory || factory.type !== 'FACTORY') throw new OrderBookingError('المصنع المحدد غير متاح.');
             const preparationMinutes = factory.preparationMinutes;

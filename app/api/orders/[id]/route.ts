@@ -224,7 +224,7 @@ export async function PATCH(
             if (await tx.orderAdjustment.findFirst({ where: { orderId: id, status: { in: ['REQUESTED', 'APPROVED'] } } })) throw new Error('ORDER_UPDATE_CONFLICT');
             const lockFactories = [...new Set([currentOrder.factoryId, body.factoryId])].sort();
             for (const factoryId of lockFactories) {
-                await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`order-booking:${factoryId}`}))`;
+                await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`order-booking:${factoryId}`}))`;
             }
             const targetDay = businessDateKey(pickupAt);
             const targetDueDate = new Date(body.dueDate);
