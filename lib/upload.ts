@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { put } from '@vercel/blob'
 import { saveLocalImage } from './local-image-storage'
+import { MAX_ORDER_IMAGE_SIZE } from './upload-limits'
 
-const MAX_FILE_SIZE = 4.5 * 1024 * 1024
 const IMAGE_SIGNATURES: Record<string, (bytes: Uint8Array) => boolean> = {
     'image/jpeg': (bytes) => bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff,
     'image/png': (bytes) => bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 && bytes[4] === 0x0d && bytes[5] === 0x0a && bytes[6] === 0x1a && bytes[7] === 0x0a,
@@ -19,7 +19,7 @@ async function isSupportedImage(file: File) {
 
 export async function saveFile(file: File, prefix = 'order'): Promise<string | null> {
     if (file.size === 0) return null
-    if (file.size > MAX_FILE_SIZE) throw new Error('حجم الصورة يتجاوز الحد المسموح.')
+    if (file.size > MAX_ORDER_IMAGE_SIZE) throw new Error('حجم الصورة يتجاوز الحد المسموح.')
     if (!(await isSupportedImage(file))) throw new Error('نوع الصورة غير مدعوم.')
 
     if (process.env.ORDER_IMAGE_STORAGE === 'local') {

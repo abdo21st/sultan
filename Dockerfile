@@ -15,13 +15,19 @@ COPY . .
 RUN npx prisma generate && npm run build
 
 FROM base AS migrator
+ARG APP_REVISION=unknown
+LABEL org.opencontainers.image.revision=$APP_REVISION
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json prisma.config.ts ./
 COPY prisma ./prisma
 COPY lib/permissions.ts ./lib/permissions.ts
 COPY lib/password-policy.ts ./lib/password-policy.ts
 COPY lib/password-constraints.ts ./lib/password-constraints.ts
+COPY lib/prisma.ts ./lib/prisma.ts
+COPY lib/login-attempts.ts ./lib/login-attempts.ts
 COPY scripts/enroll-initial-admin.ts ./scripts/enroll-initial-admin.ts
+COPY scripts/verify-login-attempts.ts ./scripts/verify-login-attempts.ts
+COPY scripts/verify-mobile-acceptance-db-roles.mjs ./scripts/verify-mobile-acceptance-db-roles.mjs
 CMD ["npm", "run", "db:migrate:deploy"]
 
 FROM builder AS verification

@@ -7,7 +7,10 @@ if (process.platform !== 'linux' || process.getuid() !== 0) throw new Error('Run
 await mkdir(root, { mode: 0o700 });
 if (await realpath(root) !== root) throw new Error('The acceptance directory must not be a symbolic link.');
 const configuration = {
+    SULTAN_RELEASE_TAG: 'b1aa512',
     QA_DB_PASSWORD: randomBytes(24).toString('hex'),
+    QA_APP_DB_PASSWORD: randomBytes(32).toString('hex'),
+    QA_MIGRATION_DB_PASSWORD: randomBytes(32).toString('hex'),
     QA_AUTH_SECRET: randomBytes(32).toString('base64url'),
     QA_CRON_SECRET: randomBytes(32).toString('base64url'),
     QA_SHARE_SECRET: randomBytes(32).toString('base64url'),

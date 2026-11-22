@@ -4,6 +4,7 @@ import { PERMISSIONS } from "../../../../lib/permissions";
 import { ORDER_STATUS } from '@/lib/constants';
 import { saveFile } from "../../../../lib/upload";
 import { orderSchema } from "@/lib/schemas";
+import { isOversizedOrderContentLength, MAX_NEW_ORDER_IMAGES } from "@/lib/upload-limits";
 import { canAccessAllFacilities, canAccessOrderFacility, canViewOrderStatus, getRequestUser } from "@/lib/request-user";
 import { fromCents, toCents, toMoneyNumber } from "@/lib/money";
 import { writeAudit } from "@/lib/audit";
@@ -88,6 +89,9 @@ export async function PATCH(
     let orderCommitted = false;
     let cleanupSourceOrderId: string | null = null;
     try {
+        if (isOversizedOrderContentLength(request.headers.get('content-length'))) {
+            return NextResponse.json({ error: 'حجم الطلب يتجاوز الحد المسموح.' }, { status: 413 });
+        }
         const user = await getRequestUser();
         if (!user?.permissions.includes(PERMISSIONS.ORDERS_EDIT)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
@@ -204,7 +208,7 @@ export async function PATCH(
             return NextResponse.json({ error: "Invalid image upload" }, { status: 400 });
         }
         const newImageFiles = newImageValues as File[];
-        if (newImageFiles.length + images.length > 10) {
+        if (newImageFiles.length > MAX_NEW_ORDER_IMAGES || newImageFiles.length + images.length > 10) {
             return NextResponse.json({ error: "An order can have at most 10 images" }, { status: 400 });
         }
         if (newImageFiles.length > 0) {

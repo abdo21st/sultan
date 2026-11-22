@@ -7,6 +7,7 @@ import { ORDER_STATUS_LABELS } from '@/lib/constants';
 import { usePermission } from '@/lib/usePermission';
 import { PERMISSIONS } from '@/lib/permissions';
 import { businessDateTimeInput } from '@/lib/preparation-schedule';
+import { MAX_NEW_ORDER_IMAGES, MAX_ORDER_IMAGE_SIZE } from '@/lib/upload-limits';
 
 interface Facility {
     id: string;
@@ -84,6 +85,17 @@ export default function EditOrderPage() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
+            if (newImages.length + files.length > MAX_NEW_ORDER_IMAGES || (formData && formData.images.length + newImages.length + files.length > 10)) {
+                setError('يمكن إضافة ٣ صور جديدة كحد أقصى، وبحد أقصى ١٠ صور للطلب.');
+                e.target.value = '';
+                return;
+            }
+            if (files.some(file => file.size > MAX_ORDER_IMAGE_SIZE || !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type))) {
+                setError('اختر صور JPEG أو PNG أو WebP أو GIF، بحجم لا يتجاوز ٤٫٥ ميجابايت للصورة.');
+                e.target.value = '';
+                return;
+            }
+            setError('');
             setNewImages(prev => [...prev, ...files]);
 
             const previews = files.map(file => URL.createObjectURL(file));

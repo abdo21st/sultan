@@ -27,4 +27,23 @@ describe('money boundaries', () => {
         })
         expect(result.success).toBe(false)
     })
+
+    it('rejects oversized text and malformed dates in orders', () => {
+        const validOrder = {
+            customerName: 'Customer',
+            customerPhone: '0912345678',
+            description: 'Order description',
+            dueDate: '2026-11-01',
+            pickupAt: '2026-11-01T15:00',
+            totalAmount: '100.00',
+            paidAmount: '0',
+            factoryId: 'factory-id',
+            shopId: 'shop-id',
+        }
+
+        expect(orderSchema.safeParse({ ...validOrder, customerName: 'x'.repeat(121) }).success).toBe(false)
+        expect(orderSchema.safeParse({ ...validOrder, description: 'x'.repeat(2001) }).success).toBe(false)
+        expect(orderSchema.safeParse({ ...validOrder, dueDate: '2026-02-30' }).success).toBe(false)
+        expect(orderSchema.safeParse({ ...validOrder, pickupAt: '2026-11-01T15:00'.repeat(4) }).success).toBe(false)
+    })
 })

@@ -204,9 +204,13 @@ export async function GET(request: Request) {
 }
 
 import { orderSchema } from "@/lib/schemas";
+import { isOversizedOrderContentLength, MAX_NEW_ORDER_IMAGES } from "@/lib/upload-limits";
 
 
 export async function POST(request: Request) {
+    if (isOversizedOrderContentLength(request.headers.get('content-length'))) {
+        return NextResponse.json({ error: 'حجم الطلب يتجاوز الحد المسموح.' }, { status: 413 });
+    }
     let clientRequestId: string | null = null;
     let expectedOrderData: {
         customerName: string;
@@ -308,7 +312,7 @@ export async function POST(request: Request) {
         }
         // Handle Images
         const imageValues = formData.getAll("images");
-        if (imageValues.length > 10 || imageValues.some((value) => !(value instanceof File))) {
+        if (imageValues.length > MAX_NEW_ORDER_IMAGES || imageValues.some((value) => !(value instanceof File))) {
             return NextResponse.json({ error: "Invalid image upload." }, { status: 400 });
         }
         const imageFiles = imageValues as File[];

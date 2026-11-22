@@ -37,6 +37,17 @@ model User {
   updatedAt   DateTime @updatedAt
 }
 
+model LoginAttempt {
+  bucketHash     String   @id @map("bucket_hash") @db.VarChar(64)
+  windowStartedAt DateTime @default(now()) @map("window_started_at") @db.Timestamptz(3)
+  failureCount   Int      @default(0) @map("failure_count")
+  lockedUntil    DateTime? @map("locked_until") @db.Timestamptz(3)
+  lastFailureAt DateTime @default(now()) @map("last_failure_at") @db.Timestamptz(3)
+
+  @@index([lastFailureAt])
+  @@map("login_attempts")
+}
+
 model CustomRole {
   id          String   @id @default(cuid())
   name        String   @unique // e.g. "ADMIN", "MANAGER"

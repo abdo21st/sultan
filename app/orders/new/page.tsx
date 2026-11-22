@@ -11,6 +11,7 @@ import { libyaDateKey } from '@/lib/calendar-date';
 import { businessDateTimeInput } from '@/lib/preparation-schedule';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/app/components/ToastProvider';
+import { MAX_NEW_ORDER_IMAGES, MAX_ORDER_IMAGE_SIZE } from '@/lib/upload-limits';
 
 type Facility = { id: string; name: string; type: "FACTORY" | "SHOP" };
 type Availability = {
@@ -137,11 +138,11 @@ export default function NewOrderPage() {
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const newFiles = Array.from(e.target.files);
-            if (images.length + newFiles.length > 3) {
+            if (images.length + newFiles.length > MAX_NEW_ORDER_IMAGES) {
                 setError('يمكن إرفاق ٣ صور كحد أقصى.');
                 return;
             }
-            if (newFiles.some(file => file.size > 4.5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type))) {
+            if (newFiles.some(file => file.size > MAX_ORDER_IMAGE_SIZE || !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type))) {
                 setError('اختر صور JPEG أو PNG أو WebP أو GIF، بحجم لا يتجاوز ٤٫٥ ميجابايت للصورة.');
                 e.target.value = '';
                 return;

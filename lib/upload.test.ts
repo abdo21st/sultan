@@ -2,6 +2,7 @@ jest.mock("@vercel/blob", () => ({ put: jest.fn() }));
 
 import { put } from "@vercel/blob";
 import { saveFile } from "./upload";
+import { isOversizedOrderContentLength, MAX_ORDER_REQUEST_BYTES } from "./upload-limits";
 
 const mockPut = put as jest.Mock;
 const originalToken = process.env.BLOB_READ_WRITE_TOKEN;
@@ -68,5 +69,13 @@ describe("saveFile", () => {
       message: "تعذر رفع الصورة، حاول مرة أخرى.",
       cause: providerError,
     });
+  });
+});
+
+describe('order upload request limits', () => {
+  it('rejects requests above the bounded multipart request size', () => {
+    expect(isOversizedOrderContentLength(String(MAX_ORDER_REQUEST_BYTES + 1))).toBe(true);
+    expect(isOversizedOrderContentLength(String(MAX_ORDER_REQUEST_BYTES))).toBe(false);
+    expect(isOversizedOrderContentLength(null)).toBe(false);
   });
 });
