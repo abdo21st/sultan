@@ -1,6 +1,22 @@
 import { randomUUID } from 'node:crypto';
-import { buildLoginAttemptBuckets, isLoginAttemptBlocked, recordFailedLogin } from '../lib/login-attempts';
-import { prisma } from '../lib/prisma';
+
+const appPassword = process.env.QA_APP_DB_PASSWORD;
+const sourceDatabaseUrl = process.env.DATABASE_URL;
+if (!sourceDatabaseUrl || !appPassword || !/^[a-f0-9]{64}$/.test(appPassword)) {
+  throw new Error('The login attempt check requires the isolated QA database settings.');
+}
+const databaseUrl = new URL(sourceDatabaseUrl);
+if (databaseUrl.hostname !== 'sultan-db' || databaseUrl.pathname !== '/sultan_mobile_acceptance') {
+  throw new Error('The login attempt check may only use the isolated QA database.');
+}
+databaseUrl.username = 'sultan_mobile_runtime';
+databaseUrl.password = appPassword;
+process.env.DATABASE_URL = databaseUrl.href;
+
+const [{ buildLoginAttemptBuckets, isLoginAttemptBlocked, recordFailedLogin }, { prisma }] = await Promise.all([
+  import('../lib/login-attempts'),
+  import('../lib/prisma'),
+]);
 
 const secret = randomUUID() + randomUUID();
 const ipAddress = '192.0.2.88';

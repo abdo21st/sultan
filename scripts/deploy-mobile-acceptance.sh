@@ -24,8 +24,15 @@ if [[ ! "$previous_tag" =~ ^[a-f0-9]{7,40}$ ]]; then
   exit 1
 fi
 previous_compose="$root/.compose-rollback-$release_tag.yml"
-test ! -e "$previous_compose"
-install -o root -g root -m 600 "$root/compose.yml" "$previous_compose"
+if [[ -e "$previous_compose" ]]; then
+  test -f "$previous_compose" && test ! -L "$previous_compose"
+  test "$(stat -c '%a' "$previous_compose")" = 600
+  test "$(stat -c '%u' "$previous_compose")" = 0
+  saved_image=$(docker compose -f "$previous_compose" config --images | grep '^sultan-release:' | head -n 1)
+  test "${saved_image#sultan-release:}" = "$previous_tag"
+else
+  install -o root -g root -m 600 "$root/compose.yml" "$previous_compose"
+fi
 
 rollback_candidate() {
   local code=${1:-1}
@@ -51,6 +58,8 @@ install -o root -g root -m 600 "$source_root/config/mobile-acceptance.compose.ym
 if ! docker compose -f "$root/compose.yml" config --quiet; then rollback_candidate 1; fi
 if ! docker compose -f "$root/compose.yml" run --rm --no-deps sultan-migrate; then rollback_candidate 1; fi
 bash "$source_root/scripts/provision-mobile-acceptance-db-roles.sh"
+if ! docker compose -f "$root/compose.yml" run --rm --no-deps sultan-migrate node scripts/verify-mobile-acceptance-db-roles.mjs; then rollback_candidate 1; fi
+if ! docker compose -f "$root/compose.yml" run --rm --no-deps sultan-migrate npx tsx scripts/verify-login-attempts.ts; then rollback_candidate 1; fi
 if ! docker compose -f "$root/compose.yml" up -d --no-deps --force-recreate --wait --wait-timeout 180 sultan-app; then rollback_candidate 1; fi
 if ! curl -fsS --max-time 10 http://127.0.0.1:3375/api/health >/dev/null; then rollback_candidate 1; fi
 if ! node "$source_root/scripts/verify-mobile-acceptance-security-local.mjs"; then rollback_candidate 1; fi

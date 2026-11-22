@@ -50,8 +50,38 @@ END
 \$roles\$;
 
 ALTER DATABASE sultan_mobile_acceptance OWNER TO sultan_mobile_migrator;
-REASSIGN OWNED BY sultan_mobile_user TO sultan_mobile_migrator;
 ALTER SCHEMA public OWNER TO sultan_mobile_migrator;
+DO \$transfer_application_objects\$
+DECLARE
+  object_record record;
+  object_kind text;
+BEGIN
+  FOR object_record IN
+    SELECT c.relkind, n.nspname, c.relname
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f')
+  LOOP
+    object_kind := CASE object_record.relkind
+      WHEN 'S' THEN 'SEQUENCE'
+      WHEN 'v' THEN 'VIEW'
+      WHEN 'm' THEN 'MATERIALIZED VIEW'
+      WHEN 'f' THEN 'FOREIGN TABLE'
+      ELSE 'TABLE'
+    END;
+    EXECUTE format('ALTER %s %I.%I OWNER TO sultan_mobile_migrator', object_kind, object_record.nspname, object_record.relname);
+  END LOOP;
+
+  FOR object_record IN
+    SELECT n.nspname, t.typname
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE n.nspname = 'public' AND t.typtype IN ('e', 'd')
+  LOOP
+    EXECUTE format('ALTER TYPE %I.%I OWNER TO sultan_mobile_migrator', object_record.nspname, object_record.typname);
+  END LOOP;
+END
+\$transfer_application_objects\$;
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 GRANT CONNECT ON DATABASE sultan_mobile_acceptance TO sultan_mobile_runtime;
 GRANT USAGE ON SCHEMA public TO sultan_mobile_runtime;
