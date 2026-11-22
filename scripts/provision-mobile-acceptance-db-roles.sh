@@ -61,6 +61,15 @@ BEGIN
     FROM pg_class c
     JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f')
+      AND (c.relkind <> 'S' OR NOT EXISTS (
+        SELECT 1
+        FROM pg_depend d
+        WHERE d.classid = 'pg_class'::regclass
+          AND d.objid = c.oid
+          AND d.refclassid = 'pg_class'::regclass
+          AND d.deptype IN ('a', 'i')
+      ))
+    ORDER BY CASE WHEN c.relkind = 'S' THEN 1 ELSE 0 END, c.relname
   LOOP
     object_kind := CASE object_record.relkind
       WHEN 'S' THEN 'SEQUENCE'
