@@ -47,6 +47,8 @@ export async function isLoginAttemptBlocked(buckets: LoginAttemptBucket[], now =
 }
 
 export async function recordFailedLogin(buckets: LoginAttemptBucket[], now = new Date()): Promise<void> {
+  const windowCutoff = new Date(now.getTime() - WINDOW_MINUTES * 60 * 1000);
+  const lockUntil = new Date(now.getTime() + BLOCK_MINUTES * 60 * 1000);
   const retentionCutoff = new Date(now.getTime() - RETENTION_HOURS * 60 * 60 * 1000);
 
   await prisma.$transaction(async (transaction) => {
@@ -56,19 +58,19 @@ export async function recordFailedLogin(buckets: LoginAttemptBucket[], now = new
         VALUES (${bucket.bucketHash}, ${now}, 1, NULL, ${now})
         ON CONFLICT ("bucket_hash") DO UPDATE SET
           "window_started_at" = CASE
-            WHEN "login_attempts"."window_started_at" <= ${now} - (${WINDOW_MINUTES} * INTERVAL '1 minute')
+            WHEN "login_attempts"."window_started_at" <= ${windowCutoff}
               OR ("login_attempts"."locked_until" IS NOT NULL AND "login_attempts"."locked_until" <= ${now})
             THEN ${now} ELSE "login_attempts"."window_started_at" END,
           "failure_count" = CASE
-            WHEN "login_attempts"."window_started_at" <= ${now} - (${WINDOW_MINUTES} * INTERVAL '1 minute')
+            WHEN "login_attempts"."window_started_at" <= ${windowCutoff}
               OR ("login_attempts"."locked_until" IS NOT NULL AND "login_attempts"."locked_until" <= ${now})
             THEN 1 ELSE "login_attempts"."failure_count" + 1 END,
           "locked_until" = CASE
-            WHEN "login_attempts"."window_started_at" <= ${now} - (${WINDOW_MINUTES} * INTERVAL '1 minute')
+            WHEN "login_attempts"."window_started_at" <= ${windowCutoff}
               OR ("login_attempts"."locked_until" IS NOT NULL AND "login_attempts"."locked_until" <= ${now})
             THEN NULL
             WHEN "login_attempts"."failure_count" + 1 >= ${bucket.limit}
-            THEN ${now} + (${BLOCK_MINUTES} * INTERVAL '1 minute')
+            THEN ${lockUntil}
             ELSE "login_attempts"."locked_until" END,
           "last_failure_at" = ${now}
       `;
